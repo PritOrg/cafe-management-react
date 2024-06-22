@@ -103,7 +103,7 @@ const MenuPage = () => {
                     Menu
                 </Typography>
             </Container>
-            <Grid container spacing={1} rowGap={0}>
+            <Grid container spacing={1} rowGap={0} sx={{my:'10px'}}>
                 {menuItems.map((item) => (
                     <Grid item xs={12} sm={6} md={3} key={item._id}>
                         <CoffeeCardComponent
