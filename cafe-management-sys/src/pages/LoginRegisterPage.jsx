@@ -103,9 +103,12 @@ const LoginRegisterPage = () => {
         padding: '2rem',
         boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
         maxWidth: '90%',
-        maxHeight: '90%', // Ensures the box doesn't take up too much width on smaller screens
         margin: 'auto', // Center the box
         textAlign: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
     };
 
     return (

@@ -18,6 +18,7 @@ const CoffeeCard = styled.div`
 
   /* Media query to adjust height based on screen size */
   @media screen and (max-width: 600px) {
+    max-height: 400px;
     min-height: 300px;
   }
 `;
@@ -190,7 +191,7 @@ const CoffeeCardComponent = ({ title, subTitle, price, imageUrl, preparationTime
         </CoffeeCardHeader>
         <CoffeeCardDesc>{description}</CoffeeCardDesc>
         <CoffeeCardDesc>Preparation Time: {preparationTime} mins</CoffeeCardDesc>
-        <CoffeeCardDesc>Price: Medium - ${price.medium}, Large - ${price.large}</CoffeeCardDesc>
+        <CoffeeCardDesc>Price:<br /> Medium - &#8377;{price.medium},<br></br> Large - &#8377;{price.large}</CoffeeCardDesc>
         <CoffeeCardButton onClick={handleOpenOrderDialog}><RestaurantIcon sx={{ marginRight: '12px' }}  />Order Now</CoffeeCardButton>
         <CoffeeOrderDialog
           open={isOrderDialogOpen}

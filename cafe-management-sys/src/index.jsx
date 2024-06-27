@@ -5,6 +5,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import LoginRegisterPage from './pages/LoginRegisterPage';
 import MenuPage from './pages/MenuPage';
 import Layout from './components/Layout';
+import AddMenuItemForm from './pages/admin/AddMenuItemForm';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -15,6 +16,7 @@ root.render(
           <Route index element={<LandingPage />} />
           <Route path="/login-register" element={<LoginRegisterPage />} />
           <Route path='/menu' element={<MenuPage />} />
+          <Route path='/menu/add' element={<AddMenuItemForm />} />
         </Route>
       </Routes>
     </BrowserRouter>
