@@ -7,7 +7,6 @@ const landingPageStyle = {
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
-    height: '100vh',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
@@ -17,6 +16,7 @@ const landingPageStyle = {
     margin: '10px 30px',
     borderRadius: 10,
     padding: '2rem',
+    minHeight: '100vh',
 };
 
 const LandingPage = () => {

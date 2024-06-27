@@ -81,7 +81,7 @@ export default function Navbar() {
                         <Link to={'/'}><Button color="inherit">Home</Button></Link>
                         <Link to={'/menu'}><Button color="inherit">Menu</Button></Link>
                         <Link to={'/login-register'}><Button color="inherit">Login</Button></Link>
-                        <Button color="inherit">About</Button>
+                        <Link to={'/menu/add'}><Button color="inherit">Add</Button></Link>
                         <Button color="inherit">About</Button>
                         <Button color="inherit">About</Button>
 

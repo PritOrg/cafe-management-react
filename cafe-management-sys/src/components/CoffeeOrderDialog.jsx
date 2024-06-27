@@ -11,8 +11,8 @@ const CoffeeOrderDialog = ({ open, onClose, onSizeChange, onOptionChange, onSubm
                         <FormControl component="fieldset">
                             <FormLabel component="legend">Size</FormLabel>
                             <RadioGroup aria-label="size" name="size" value={selectedSize} onChange={onSizeChange}>
-                                <FormControlLabel value="Medium" control={<Radio />} label={`Medium ($${price.medium})`} />
-                                <FormControlLabel value="Large" control={<Radio />} label={`Large ($${price.large})`} />
+                                <FormControlLabel value="Medium" control={<Radio />} label={`Medium (₹${price.medium})`} />
+                                <FormControlLabel value="Large" control={<Radio />} label={`Large (₹${price.large})`} />
                             </RadioGroup>
                         </FormControl>
                         <FormControl component="fieldset">
