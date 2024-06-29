@@ -73,18 +73,17 @@ export default function Navbar() {
                         variant="h6"
                         noWrap
                         component="div"
-                        sx={{ flexGrow: 1, display: { xs: 'none', sm: 'block' } }}
+                        sx={{ flexGrow: 1, display: { xs: 'none', sm: 'block' },fontFamily:'Pacifico, cursive' }}
                     >
-                        CaffeIN
+                        Bug Latte
                     </Typography>
                     <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, justifyContent: 'space-evenly' }}>
                         <Link to={'/'}><Button color="inherit">Home</Button></Link>
                         <Link to={'/menu'}><Button color="inherit">Menu</Button></Link>
                         <Link to={'/login-register'}><Button color="inherit">Login</Button></Link>
                         <Link to={'/menu/add'}><Button color="inherit">Add</Button></Link>
+                        <Link to={'/cart'}><Button color="inherit">Cart</Button></Link>
                         <Button color="inherit">About</Button>
-                        <Button color="inherit">About</Button>
-
                     </Box>
                     <Search>
                         <SearchIconWrapper>

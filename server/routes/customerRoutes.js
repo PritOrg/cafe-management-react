@@ -9,6 +9,7 @@ const bucket = require('../firebase/firebase');
 const { Storage } = require('@google-cloud/storage');
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
+const sendWelcomeEmail = require('../middleware/nodemailer');
 
 // Initialize Firebase Storage
 const storage = new Storage({
@@ -39,6 +40,7 @@ router.post('/register', async (req, res) => {
             phone
         });
         await newCustomer.save();
+        sendWelcomeEmail(newCustomer.email,newCustomer.firstName); 
         res.status(201).json({ message: 'Customer registered successfully' });
     } catch (err) {
         res.status(400).json({ error: err.message });

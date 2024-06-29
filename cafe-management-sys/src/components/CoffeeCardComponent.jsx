@@ -1,11 +1,14 @@
 import styled from 'styled-components';
 import { Share as ShareIcon, Favorite as FavoriteIcon, PlayCircleOutline as PlayCircleOutlineIcon, Restaurant as RestaurantIcon } from '@mui/icons-material';
 import CoffeeOrderDialog from './CoffeeOrderDialog';
-import { useState } from 'react';
+import { useState,useContext } from 'react';
+import { Typography } from '@mui/material';
+import CartContext from './CartContext'
+
 const CoffeeCard = styled.div`
   width: 100%;
   max-width: 800px;
-  height: 89%;
+  height: 100%;
   min-height: 200px;
   display: block;
   margin: 8vh auto;
@@ -26,8 +29,8 @@ const CoffeeCard = styled.div`
 const CoffeeCardOverlay = styled.div`
   width: 100%;
   height: 100%;
-  border-radius: 10px;
-  background: linear-gradient(to bottom, rgba(42, 159, 255, 0.2)  0%, rgba(33, 33, 32, 1) 60%, rgba(33, 33, 32, 1) 90%);
+  border-radius: 18px;
+  background: linear-gradient(to bottom, rgba(42, 159, 255, 0.2)  0%, rgba(33, 33, 32, 1) 72%, rgba(0, 0, 7, 1) 90%);
   position: absolute;
   top: 0;
   bottom: 0;
@@ -95,6 +98,8 @@ const CoffeeCardTitle = styled.h1`
   color: #ffffff;
   margin-bottom: 0.25em;
   opacity: 0.85;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+  font-family: 'Lobster', cursive;
 `;
 
 const CoffeeCardInfo = styled.h4`
@@ -105,20 +110,25 @@ const CoffeeCardInfo = styled.h4`
   line-height: 1.2;
   margin: 0;
   font-weight: 700;
-  opacity: 0.5;
+  opacity: 0.95;
+  background-color: rgba(0, 0, 0, 0.2); 
+  padding: 0.2em;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+  font-family: 'Open Sans', sans-serif;
 `;
+
 
 const CoffeeCardDesc = styled.p`
   font-weight: 300;
-  opacity: 0.84;
+  opacity: 0.89;
   margin-bottom: 2em;
   color: rgba(255, 255, 255, .7);
-
+  font-family: 'Lora', serif;
 `;
 
 const CoffeeCardButton = styled.button`
   padding: 0.5rem 2rem;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.01);
   color: rgba(255, 255, 255, 1);
   display: flex;
   align-items: center;
@@ -132,15 +142,15 @@ const CoffeeCardButton = styled.button`
     color: #2a9fff;
     box-shadow: 0px 1px 8px 0px rgba(40, 14, 255, 0.5);
     background-color: rgba(255, 255, 255, 0.0);
-
+    font-weight: 700;
   }
 `;
 
-const CoffeeCardComponent = ({ title, subTitle, price, imageUrl, preparationTime, description, customizationOptions }) => {
+const CoffeeCardComponent = ({id, title, subTitle, price, imageUrl, preparationTime, description, customizationOptions }) => {
   const [isOrderDialogOpen, setOrderDialogOpen] = useState(false);
   const [selectedSize, setSelectedSize] = useState('Medium');
   const [selectedOptions, setSelectedOptions] = useState([]);
-
+  const { addToCart } = useContext(CartContext);
   const handleOpenOrderDialog = () => {
     setOrderDialogOpen(true);
   };
@@ -161,17 +171,14 @@ const CoffeeCardComponent = ({ title, subTitle, price, imageUrl, preparationTime
       setSelectedOptions([...selectedOptions, value]);
     }
   };
-
   const handleSubmitOrder = () => {
-    // Process the order here
-    console.log('Selected Size:', selectedSize);
-    console.log('Selected Options:', selectedOptions);
-    // Close the dialog
+    addToCart(id,selectedOptions, selectedSize);
     handleCloseOrderDialog();
   };
   return (<>
 
     <CoffeeCard style={{ backgroundImage: `url(${imageUrl})` }}>
+
       <CoffeeCardOverlay />
       <CoffeeCardShare>
         <CoffeeCardIcon>
@@ -192,7 +199,7 @@ const CoffeeCardComponent = ({ title, subTitle, price, imageUrl, preparationTime
         <CoffeeCardDesc>{description}</CoffeeCardDesc>
         <CoffeeCardDesc>Preparation Time: {preparationTime} mins</CoffeeCardDesc>
         <CoffeeCardDesc>Price:<br /> Medium - &#8377;{price.medium},<br></br> Large - &#8377;{price.large}</CoffeeCardDesc>
-        <CoffeeCardButton onClick={handleOpenOrderDialog}><RestaurantIcon sx={{ marginRight: '12px' }}  />Order Now</CoffeeCardButton>
+        <CoffeeCardButton onClick={handleOpenOrderDialog}><RestaurantIcon sx={{ marginRight: '12px' }} /><Typography sx={{fontFamily: 'Open Sans, sans-serif'}}>Order Now</Typography></CoffeeCardButton>
         <CoffeeOrderDialog
           open={isOrderDialogOpen}
           onClose={handleCloseOrderDialog}
