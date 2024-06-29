@@ -1,16 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { Container, Typography, Box, Grid } from '@mui/material';
 import CoffeeCardComponent from '../components/CoffeeCardComponent';
-import backgroundImage from '../assets/cafe-background.jpg';
+import backgroundImage from '../assets/clem-onojeghuo-zlABb6Gke24-unsplash.jpg';
 const MenuPage = () => {
     const [menuItems, setMenuItems] = useState([]); // Initialize with an empty array
     const backgroundStyle = {
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        minHeight: '100vh',
-        width:'100%', // Ensure it covers the full viewport height
-        paddingTop: '70px', // To adjust for any fixed header
+        backgroundAttachment: 'fixed', 
+        minHeight: '100vh', 
+        paddingY: '70px', 
+        color: '#fff',
+        borderRadius:'35px',
+        marginX:"2%",
+        
     };
     useEffect(() => {
         fetch('http://localhost:4969/menu')
@@ -30,8 +34,8 @@ const MenuPage = () => {
 
     return (
         <Box sx={backgroundStyle}>
-            <Container maxWidth="md" sx={{ marginTop: '70px' }}>
-                <Typography variant="h2" component="h1" gutterBottom>
+            <Container maxWidth="md" sx={{  }}>
+                <Typography sx={{fontFamily:'Lobster, cursive'}} variant="h2" component="h1" gutterBottom>
                     Menu
                 </Typography>
             </Container>
@@ -40,6 +44,7 @@ const MenuPage = () => {
                     {menuItems.map((item) => (
                         <Grid item xs={12} sm={6} md={4} key={item._id}>
                             <CoffeeCardComponent
+                            id = {item._id}
                                 title={item.title}
                                 subTitle={item.subTitle}
                                 price={item.price}

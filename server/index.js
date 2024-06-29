@@ -24,7 +24,7 @@ app.use('/menu',menuItemsRoutes)
 
 
 // MongoDB connection
-mongoose.connect('mongodb://localhost:27017/cafe-management')
+mongoose.connect('mongodb+srv://techdevelopersteamservice:tech1234@paradisecluster.vnxfnlq.mongodb.net/bug-latte')
     .then(() => {
         console.log('MongoDB connected');
         // Start the server after successfully connecting to MongoDB
