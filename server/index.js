@@ -20,7 +20,7 @@ app.use(cors(
 app.use('/customer', customerRoutes);
 app.use('/staff-admin', staffAdminRoutes);
 app.use('/order', orderRoutes);
-app.use('/menu',menuItemsRoutes)
+app.use('/menu',menuItemsRoutes);
 
 
 // MongoDB connection
