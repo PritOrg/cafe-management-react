@@ -23,6 +23,7 @@ const AddMenuItemForm = () => {
     const [tags, setTags] = useState('');
     const [allergens, setAllergens] = useState('');
     const [file, setFile] = useState(null);
+    
 
     const handleFileChange = (e) => {
         setFile(e.target.files[0]);

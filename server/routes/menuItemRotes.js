@@ -6,6 +6,7 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 // Create a new menu item
 router.post('/', upload.single('file'), async (req, res) => {
+    
     if (req.file) {
         const blob = bucket.file(`menu-img/${Date.now()}_${req.file.originalname}`);
         const blobStream = blob.createWriteStream({
@@ -13,7 +14,7 @@ router.post('/', upload.single('file'), async (req, res) => {
                 contentType: req.file.mimetype
             }
         });
-
+            
         blobStream.on('error', (err) => {
             res.status(500).json({ message: err.message });
         });
