@@ -1,23 +1,97 @@
 const mongoose = require('mongoose');
 
-const OrderSchema = new mongoose.Schema({
-    customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
-    items: [
-        {
-            menuItem: { type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem', required: true },
-            quantity: { type: Number, required: true },
-            size: { type: String, enum: ['medium', 'large'], required: true },
-            customizations: [{ type: String }]
-        }
-    ],
-    totalPrice: { type: Number, required: true },
-    status: { type: String, enum: ['pending', 'in-progress', 'completed', 'cancelled'], default: 'pending' },
-    paymentMethod: {
-        type: { type: String, enum: ['credit_card', 'paypal', 'cash'], required: true },
-        details: { type: Map, of: String }
+const OrderedItemSchema = new mongoose.Schema({
+    menuItem: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'MenuItem',
+        required: true,
     },
-    orderDate: { type: Date, default: Date.now },
-    completionDate: { type: Date }
+    size: {
+        type: String,
+        enum: ['medium', 'large'],
+        required: true,
+    },
+    quantity: {
+        type: Number,
+        default: 1,
+    },
+    customizations: {
+        type: [String],
+        default: [],
+    },
+    specialInstructions: {
+        type: String,
+        default: '',
+    },
+    itemPrice: {
+        type: Number,
+        required: true,
+    },
+    preparationTime: {
+        type: Number,
+        required: true,
+    }
+});
+
+const OrderSchema = new mongoose.Schema({
+    tableNumber: {
+        type: Number,
+        required: true,
+    },
+    placedByCustomer: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Customer',
+    },
+    placedByStaff: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'StaffAndAdmin',
+    },
+    items: [OrderedItemSchema],
+    status: {
+        type: String,
+        enum: ['pending', 'preparing', 'ready', 'served', 'cancelled'],
+        default: 'pending',
+    },
+    tipAmount: {
+        type: Number,
+        default: 0,
+    },
+    discountCode: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Discount',
+    },
+    discountAmount: {
+        type: Number,
+        default: 0,
+    },
+    paymentStatus: {
+        type: String,
+        enum: ['pending', 'paid'],
+        default: 'pending',
+    },
+    paymentMethod: {
+        type: String,
+        enum: ['cash', 'upi', 'card'],
+        required: true,
+    },
+    totalAmount: {
+        type: Number,
+        required: true,
+    },
+    finalAmount: {
+        type: Number,
+        required: true,
+    },
+    placedAt: {
+        type: Date,
+        default: Date.now,
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now,
+    },
+}, {
+    timestamps: true,
 });
 
 module.exports = mongoose.model('Order', OrderSchema);

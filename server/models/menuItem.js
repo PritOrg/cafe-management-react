@@ -74,6 +74,7 @@ const MenuItemSchema = new mongoose.Schema({
         type: [String],
         default: [],
     },
+    orderCount: { type: Number, default: 0 }
 });
 
 module.exports = mongoose.model('MenuItem', MenuItemSchema);
