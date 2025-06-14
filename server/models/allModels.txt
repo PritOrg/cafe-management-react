@@ -1,0 +1,249 @@
+// To track and analyze various metrics related to sales, customer behavior, etc.
+
+const mongoose = require('mongoose');
+
+const AnalyticsSchema = new mongoose.Schema({
+    date: { type: Date, default: Date.now },
+    totalSales: { type: Number, required: true },
+    totalOrders: { type: Number, required: true },
+    totalCustomers: { type: Number, required: true },
+    mostPopularItems: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }]
+});
+
+module.exports = mongoose.model('Analytics', AnalyticsSchema);
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
+
+const AddressSchema = new mongoose.Schema({
+    type: { type: String, enum: ['home', 'work', 'other'], default: 'home' },
+    line1: { type: String, required: true },
+    line2: { type: String },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    postalCode: { type: String, required: true },
+    country: { type: String, required: true }
+});
+
+const ReviewSchema = new mongoose.Schema({
+    menuItem: { type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' },
+    rating: { type: Number, required: true },
+    comment: { type: String },
+    date: { type: Date, default: Date.now }
+});
+
+const CustomerSchema = new mongoose.Schema({
+    firstName: { type: String, required: true },
+    lastName: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    phone: { type: String },
+    profilePhotoUrl: { type: String }, // URL to profile photo in Firebase
+    address: [AddressSchema],
+    registrationDate: { type: Date, default: Date.now },
+    orders: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Order' }],
+    loyaltyPoints: { type: Number, default: 0 },
+    membershipLevel: { type: String, enum: ['Silver', 'Gold', 'Platinum'], default: 'Silver' },
+    preferredItems: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }],
+    customizations: [{ type: String }],
+    reviews: [ReviewSchema],
+    notifications: { type: Boolean, default: true },
+    notificationPreferences: { type: [String], enum: ['email', 'SMS', 'push'], default: ['email'] },
+    paymentMethods: [{
+        type: { type: String, enum: ['credit_card', 'paypal'], required: true },
+        details: { type: Map, of: String, required: true }
+    }]
+});
+
+// Pre-save hook to hash password before saving
+CustomerSchema.pre('save', async function (next) {
+    if (this.isModified('password')) {
+        this.password = await bcrypt.hash(this.password, 10);
+    }
+    next();
+});
+
+module.exports = mongoose.model('Customer', CustomerSchema);
+// To manage inventory details, track stock levels, and manage supplies.
+
+const mongoose = require('mongoose');
+
+const InventorySchema = new mongoose.Schema({
+    itemName: { type: String, required: true },
+    quantity: { type: Number, required: true },
+    unit: { type: String, required: true },
+    category: { type: String, required: true },
+    lastUpdated: { type: Date, default: Date.now }
+});
+
+module.exports = mongoose.model('Inventory', InventorySchema);
+const mongoose = require('mongoose');
+
+const MenuItemSchema = new mongoose.Schema({
+    title: {
+        type: String,
+        required: true,
+    },
+    subTitle: {
+        type: String,
+        required: true,
+    },
+    price: {
+        medium: {
+            type: Number,
+            required: true,
+        },
+        large: {
+            type: Number,
+            required: true,
+        },
+    },
+    category: {
+        type: String,
+        required: true,
+    },
+    imageUrl: {
+        type: String,
+        default: '',
+    },
+    availability: {
+        type: Boolean,
+        default: true,
+    },
+    calories: {
+        type: Number,
+        default: 0,
+    },
+    customizationOptions: { // extra shots, types of milk, etc.
+        type: [String],
+        default: [],
+    },
+    preparationTime: {
+        type: Number,
+        default: 0, // Time in minutes
+    },
+    rating: {
+        type: Number,
+        default: 0,
+    },
+    reviews: [
+        {
+            customer: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'User',
+            },
+            review: {
+                type: String,
+            },
+            rating: {
+                type: Number,
+                required: true,
+            },
+            date: {
+                type: Date,
+                default: Date.now,
+            },
+        },
+    ],
+    tags: { //(e.g., "new", "seasonal", "bestseller")
+        type: [String],
+        default: [],
+    },
+    allergens: { //Important for customers with food allergies to know if a menu item contains potential allergens
+        type: [String],
+        default: [],
+    },
+});
+
+module.exports = mongoose.model('MenuItem', MenuItemSchema);
+const mongoose = require('mongoose');
+
+const NotificationSchema = new mongoose.Schema({
+    recipient: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    message: { type: String, required: true },
+    type: { type: String, enum: ['orderStatus', 'promotion', 'general'], required: true },
+    sentDate: { type: Date, default: Date.now },
+    read: { type: Boolean, default: false }
+});
+
+module.exports = mongoose.model('Notification', NotificationSchema);
+const mongoose = require('mongoose');
+
+const OrderSchema = new mongoose.Schema({
+    customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
+    items: [
+        {
+            menuItem: { type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem', required: true },
+            quantity: { type: Number, required: true },
+            size: { type: String, enum: ['medium', 'large'], required: true },
+            customizations: [{ type: String }]
+        }
+    ],
+    totalPrice: { type: Number, required: true },
+    status: { type: String, enum: ['pending', 'in-progress', 'completed', 'cancelled'], default: 'pending' },
+    paymentMethod: {
+        type: { type: String, enum: ['credit_card', 'paypal', 'cash'], required: true },
+        details: { type: Map, of: String }
+    },
+    orderDate: { type: Date, default: Date.now },
+    completionDate: { type: Date }
+});
+
+module.exports = mongoose.model('Order', OrderSchema);
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
+
+const AddressSchema = new mongoose.Schema({
+    type: { type: String, enum: ['home', 'work', 'other'], default: 'home' },
+    line1: { type: String, required: true },
+    line2: { type: String },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    postalCode: { type: String, required: true },
+    country: { type: String, required: true }
+});
+
+const StaffAndAdminSchema = new mongoose.Schema({
+    firstName: { type: String, required: true },
+    lastName: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    phone: { type: String },
+    profilePhotoUrl: { type: String }, // URL to profile photo in Firebase
+    address: [AddressSchema],
+    role: { type: String, enum: ['staff', 'admin'], required: true },
+    registrationDate: { type: Date, default: Date.now },
+    workSchedule: [
+        {
+            day: { type: String, enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] },
+            startTime: { type: String },
+            endTime: { type: String }
+        }
+    ]
+});
+
+// Pre-save hook to hash password before saving
+StaffAndAdminSchema.pre('save', async function (next) {
+    if (this.isModified('password')) {
+        this.password = await bcrypt.hash(this.password, 10);
+    }
+    next();
+});
+
+module.exports = mongoose.model('StaffAndAdmin', StaffAndAdminSchema);
+// To manage financial transactions, including payments and refunds.
+
+const mongoose = require('mongoose');
+
+const TransactionSchema = new mongoose.Schema({
+    order: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
+    customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
+    amount: { type: Number, required: true },
+    transactionDate: { type: Date, default: Date.now },
+    paymentMethod: {
+        type: { type: String, enum: ['credit_card', 'paypal', 'cash'], required: true },
+        details: { type: Map, of: String }
+    },
+    transactionType: { type: String, enum: ['payment', 'refund'], required: true }
+});
+
+module.exports = mongoose.model('Transaction', TransactionSchema);
