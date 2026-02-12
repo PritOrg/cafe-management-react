@@ -10,15 +10,15 @@ const {
   getOrdersByStatus,
   getTodaysOrders
 } = require('../controllers/orderController');
-const { ensureAuthenticated, ensureAdminOrWaiter } = require('../middleware/auth');
+const { ensureAuthenticated, ensureAdminOrStaff } = require('../middleware/auth');
 
 router.post('/', placeOrder);
 router.get('/mine', ensureAuthenticated, getMyOrders);
 router.get('/:id', ensureAuthenticated, getOrderById);
-router.put('/:id/status', ensureAdminOrWaiter, updateOrderStatus);
-router.get('/', ensureAdminOrWaiter, getOrders);
+router.put('/:id/status', ensureAdminOrStaff, updateOrderStatus);
+router.get('/', ensureAdminOrStaff, getOrders);
 
 // Staff order-related functionalities
-router.get('/orders/today', ensureAdminOrWaiter, getTodaysOrders);
-router.get('/orders/status/:status', ensureAdminOrWaiter, getOrdersByStatus);
+router.get('/orders/today', ensureAdminOrStaff, getTodaysOrders);
+router.get('/orders/status/:status', ensureAdminOrStaff, getOrdersByStatus);
 module.exports = router;

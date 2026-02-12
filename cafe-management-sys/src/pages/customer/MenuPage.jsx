@@ -19,7 +19,7 @@ import {
   Skeleton
 } from '@mui/material';
 import Grid2 from '@mui/material/Unstable_Grid2';
-import MenuItemCard from '../../components/MenuItemCard';
+import MenuItemCard from '../../components/menu/MenuItemCard';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';

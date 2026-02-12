@@ -1,0 +1,2 @@
+{"timestamp":"2025-08-12T21:45:21.470Z","level":"WARN","message":"Slow query detected","query":"{\"operation\":\"ping\"}","duration":"101ms","threshold":"100ms","type":"PERFORMANCE_EVENT"}
+{"timestamp":"2025-08-12T21:49:21.505Z","level":"WARN","message":"Slow query detected","query":"{\"operation\":\"ping\"}","duration":"105ms","threshold":"100ms","type":"PERFORMANCE_EVENT"}

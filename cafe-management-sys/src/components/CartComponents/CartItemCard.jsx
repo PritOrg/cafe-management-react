@@ -1,5 +1,5 @@
 // components/CartItemCard.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -10,22 +10,28 @@ import {
   Chip,
   Box,
   Fade,
-  Tooltip
+  Tooltip,
+  Button
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
   Add as AddIcon,
   Remove as RemoveIcon,
+  Edit as EditIcon,
+  Settings as SettingsIcon
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import QuantitySelector from './QuantitySelector';
+import CartCustomizationDialog from './CartCustomizationDialog';
 
-const StyledCard = styled(Card)(({ theme }) => ({
+const StyledCard = styled(Card, {
+  shouldForwardProp: (prop) => prop !== 'theme',
+})(({ theme }) => ({
   transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
   position: 'relative',
   overflow: 'hidden',
   background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.tertiary} 100%)`,
-  
+
   '&::before': {
     content: '""',
     position: 'absolute',
@@ -38,11 +44,11 @@ const StyledCard = styled(Card)(({ theme }) => ({
     transformOrigin: 'left',
     transition: 'transform 0.3s ease-in-out',
   },
-  
+
   '&:hover': {
     transform: 'translateY(-8px)',
     boxShadow: theme.shadows[6],
-    
+
     '&::before': {
       transform: 'scaleX(1)',
     },
@@ -69,12 +75,27 @@ const PriceTypography = styled(Typography)(({ theme }) => ({
   textShadow: '0 1px 2px rgba(0,0,0,0.1)',
 }));
 
-const CartItemCard = ({ item, onQuantityChange, onRemoveItem }) => {
-  const itemTotal = (item.price[item.selectedSize?.toLowerCase() || 'regular'] * item.quantity).toFixed(2);
+const CartItemCard = ({ item, onQuantityChange, onRemoveItem, onUpdateCustomization }) => {
+  const [openCustomizationDialog, setOpenCustomizationDialog] = useState(false);
+
+  // Safety checks for item properties
+  if (!item || !item.price || typeof item.quantity !== 'number') {
+    console.error('Invalid item passed to CartItemCard:', item);
+    return null;
+  }
+
+  const selectedSize = item.selectedSize?.toLowerCase() || 'regular';
+  const price = item.price[selectedSize] || item.price.regular || 0;
+  const itemTotal = (price * item.quantity).toFixed(2);
+
+  const handleEditCustomization = () => {
+    setOpenCustomizationDialog(true);
+  };
   
   return (
     <Fade in timeout={500}>
-      <StyledCard>
+      <Box>
+        <StyledCard>
         <CardContent sx={{ p: 3 }}>
           <Grid container spacing={3} alignItems="center">
             {/* Coffee Image */}
@@ -112,25 +133,55 @@ const CartItemCard = ({ item, onQuantityChange, onRemoveItem }) => {
                 Size: {item.selectedSize}
               </Typography>
               
-              {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 && (
-                <Box sx={{ mt: 1 }}>
-                  {Object.entries(item.selectedOptions).map(([key, value]) => (
-                    <Chip
-                      key={key}
-                      label={`${key}: ${value}`}
+              {/* Customizations Section - Always show with edit button */}
+              <Box sx={{ mt: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', mr: 1 }}>
+                    Customizations:
+                  </Typography>
+                  <Tooltip title="Edit customizations" arrow>
+                    <IconButton
                       size="small"
-                      variant="outlined"
-                      sx={{ 
-                        mr: 1, 
-                        mb: 1,
-                        fontSize: '0.7rem',
-                        backgroundColor: 'background.secondary',
-                        border: 'none'
+                      onClick={handleEditCustomization}
+                      sx={{
+                        color: 'primary.main',
+                        '&:hover': {
+                          backgroundColor: 'primary.light',
+                          color: 'white',
+                        },
                       }}
-                    />
-                  ))}
+                    >
+                      <SettingsIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                 </Box>
-              )}
+
+                {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 ? (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {Object.entries(item.selectedOptions).map(([key, value]) => (
+                      <Chip
+                        key={key}
+                        label={`${key}: ${value}`}
+                        size="small"
+                        variant="outlined"
+                        sx={{
+                          fontSize: '0.7rem',
+                          backgroundColor: 'primary.light',
+                          color: 'primary.contrastText',
+                          border: 'none',
+                          '&:hover': {
+                            backgroundColor: 'primary.main',
+                          }
+                        }}
+                      />
+                    ))}
+                  </Box>
+                ) : (
+                  <Typography variant="caption" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+                    No customizations • Click settings to add
+                  </Typography>
+                )}
+              </Box>
             </Grid>
             
             {/* Quantity Controls */}
@@ -188,7 +239,16 @@ const CartItemCard = ({ item, onQuantityChange, onRemoveItem }) => {
             </Grid>
           </Grid>
         </CardContent>
-      </StyledCard>
+        </StyledCard>
+      </Box>
+
+      {/* Customization Edit Dialog */}
+      <CartCustomizationDialog
+        open={openCustomizationDialog}
+        onClose={() => setOpenCustomizationDialog(false)}
+        item={item}
+        onUpdateCustomization={onUpdateCustomization}
+      />
     </Fade>
   );
 };

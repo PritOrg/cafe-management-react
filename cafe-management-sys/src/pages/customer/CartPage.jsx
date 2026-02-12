@@ -46,6 +46,10 @@ const CartPage = () => {
     updateCartItem(cartItemId, { quantity: newQuantity });
   };
 
+  const handleUpdateCustomization = (cartItemId, customizationUpdates) => {
+    updateCartItem(cartItemId, customizationUpdates);
+  };
+
   if (cartItems.length === 0 && activeStep === 0) {
     return <EmptyCart />;
   }
@@ -59,6 +63,7 @@ const CartPage = () => {
             onQuantityChange={handleQuantityChange}
             onRemoveItem={removeCartItem}
             onClearCart={clearCart}
+            onUpdateCustomization={handleUpdateCustomization}
             total={total}
             cartCount={cartCount}
             totalPrepTime={totalPrepTime}

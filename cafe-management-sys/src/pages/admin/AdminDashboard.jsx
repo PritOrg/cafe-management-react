@@ -34,7 +34,8 @@ import {
   MoreVert,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
-import AdminLayout from './AdminLayout';
+import AdminLayout from '../../components/layout/AdminLayout';
+import { analyticsAPI, ordersAPI, menuAPI } from '../../services/api';
 
 // Styled components for enhanced UI
 const StatsCard = styled(Card)(({ theme, color = 'primary' }) => ({
@@ -183,23 +184,51 @@ const alerts = [
   },
 ];
 
-const recentOrders = [
-  { id: '#1234', customer: 'John Doe', items: 'Latte, Croissant', total: '$12.50', status: 'completed', time: '2 min ago' },
-  { id: '#1235', customer: 'Jane Smith', items: 'Cappuccino, Muffin', total: '$8.75', status: 'preparing', time: '5 min ago' },
-  { id: '#1236', customer: 'Bob Wilson', items: 'Espresso, Sandwich', total: '$15.25', status: 'pending', time: '8 min ago' },
-  { id: '#1237', customer: 'Alice Brown', items: 'Americano, Cookie', total: '$6.25', status: 'completed', time: '12 min ago' },
-  { id: '#1238', customer: 'David Lee', items: 'Mocha, Bagel', total: '$11.00', status: 'preparing', time: '15 min ago' },
-];
+
 
 export default function AdminDashboard() {
   const theme = useTheme();
   const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
 
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => setLoading(false), 1000);
-    return () => clearTimeout(timer);
+    fetchDashboardData();
+    // Set up auto-refresh every 30 seconds
+    const interval = setInterval(fetchDashboardData, 30000);
+    return () => clearInterval(interval);
   }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const [stats, ordersResponse] = await Promise.all([
+        analyticsAPI.getDashboardStats(),
+        ordersAPI.getRecent(5),
+      ]);
+
+      setDashboardData(stats);
+      // Handle different response formats
+      const orders = ordersResponse?.data || ordersResponse || [];
+      setRecentOrders(Array.isArray(orders) ? orders : []);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      // Set empty data on error
+      setDashboardData({
+        totalRevenue: 0,
+        ordersToday: 0,
+        menuItems: 0,
+        pendingOrders: 0,
+        revenueChange: 0,
+        ordersChange: 0,
+      });
+      setRecentOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -221,20 +250,54 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <AdminLayout title="Dashboard">
         <Box sx={{ width: '100%', mt: 2 }}>
           <LinearProgress />
         </Box>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout title="Dashboard Overview">
       <Box sx={{ flexGrow: 1 }}>
         {/* Stats Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          {statsData.map((stat, index) => (
+          {(dashboardData ? [
+            {
+              title: 'Today\'s Revenue',
+              value: `₹${dashboardData.totalRevenue?.toLocaleString() || '0'}`,
+              change: `${dashboardData.revenueChange >= 0 ? '+' : ''}${dashboardData.revenueChange || 0}%`,
+              trend: dashboardData.revenueChange >= 0 ? 'up' : 'down',
+              icon: AttachMoney,
+              color: 'success',
+              subtitle: 'vs yesterday'
+            },
+            {
+              title: 'Orders Today',
+              value: dashboardData.ordersToday?.toLocaleString() || '0',
+              change: `${dashboardData.pendingOrders || 0} pending`,
+              trend: 'up',
+              icon: ShoppingCart,
+              color: 'primary',
+              subtitle: 'total orders'
+            },
+            {
+              title: 'Menu Items',
+              value: dashboardData.menuItems?.toLocaleString() || '0',
+              change: 'Active items',
+              trend: 'up',
+              icon: Coffee,
+              color: 'info',
+              subtitle: 'available'
+            },
+            {
+              title: 'Pending Orders',
+              value: dashboardData.pendingOrders?.toLocaleString() || '0',
+              change: dashboardData.pendingOrders > 0 ? 'Need attention' : 'All clear',
+              trend: dashboardData.pendingOrders > 0 ? 'warning' : 'up',
+              icon: Schedule,
+              color: dashboardData.pendingOrders > 0 ? 'warning' : 'success',
+              subtitle: 'awaiting preparation'
+            }
+          ] : statsData).map((stat, index) => (
             <Grid item xs={12} sm={6} lg={3} key={stat.title}>
               <Grow in={!loading} timeout={500 + index * 100}>
                 <div>
@@ -296,11 +359,14 @@ export default function AdminDashboard() {
                     </Button>
                   </Box>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    {recentOrders.map((order, index) => (
-                      <Grow in={!loading} timeout={1000 + index * 100} key={order.id}>
-                        <Paper 
-                          sx={{ 
-                            p: 2, 
+                    {(recentOrders.length > 0 ? recentOrders : [
+                      { _id: '1', orderNumber: '#1234', customer: { name: 'John Doe' }, items: [{ name: 'Latte' }, { name: 'Croissant' }], total: 12.50, status: 'completed', createdAt: new Date(Date.now() - 120000).toISOString() },
+                      { _id: '2', orderNumber: '#1235', customer: { name: 'Jane Smith' }, items: [{ name: 'Cappuccino' }, { name: 'Muffin' }], total: 8.75, status: 'preparing', createdAt: new Date(Date.now() - 300000).toISOString() },
+                    ]).map((order, index) => (
+                      <Grow in={!loading} timeout={1000 + index * 100} key={order._id || order.id}>
+                        <Paper
+                          sx={{
+                            p: 2,
                             border: '1px solid',
                             borderColor: 'divider',
                             borderRadius: 2,
@@ -315,18 +381,22 @@ export default function AdminDashboard() {
                           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <Box sx={{ flex: 1 }}>
                               <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                                {order.id} - {order.customer}
+                                Order #{order._id?.slice(-6) || order.orderNumber || order.id}
                               </Typography>
                               <Typography variant="body2" color="text.secondary">
-                                {order.items}
+                                {order.items?.map(item =>
+                                  item.menuItem?.title || item.name || item
+                                ).join(', ') || 'No items'}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
-                                {order.time}
+                                {order.placedAt || order.createdAt ?
+                                  `${Math.floor((Date.now() - new Date(order.placedAt || order.createdAt).getTime()) / 60000)} min ago` :
+                                  'Just now'}
                               </Typography>
                             </Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                               <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                                {order.total}
+                                ₹{(order.totalAmount || order.total || 0).toFixed(2)}
                               </Typography>
                               <Chip
                                 label={order.status}
@@ -420,6 +490,5 @@ export default function AdminDashboard() {
           </Grid>
         </Grid>
       </Box>
-    </AdminLayout>
   );
 }
