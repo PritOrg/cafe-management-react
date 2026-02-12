@@ -244,4 +244,5 @@ const LandingPage = () => {
   );
 };
 
-export { LandingPage, landingPageStyle };
+export { landingPageStyle };
+export default LandingPage;

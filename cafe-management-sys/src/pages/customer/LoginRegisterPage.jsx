@@ -35,9 +35,12 @@ import {
 } from '@mui/icons-material';
 
 import Grid2 from '@mui/material/Unstable_Grid2';
+import { authAPI } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 
 const LoginRegisterPage = () => {
   const theme = useTheme();
+  const { login } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [role, setRole] = useState('customer');
   const [showPassword, setShowPassword] = useState(false);
@@ -59,8 +62,6 @@ const LoginRegisterPage = () => {
 
   const [fieldErrors, setFieldErrors] = useState({});
   const [profilePhotoPreview, setProfilePhotoPreview] = useState('');
-
-  const API_URL = process.env.REACT_APP_API_URL;
 
   const showSuccessPopup = (message) => {
     Swal.fire({
@@ -197,28 +198,46 @@ const LoginRegisterPage = () => {
   const validateRegisterForm = () => {
     const errors = {};
 
+    // First name validation (2-50 characters)
     if (!registerData.firstName.trim()) {
       errors.firstName = 'First name is required';
+    } else if (registerData.firstName.trim().length < 2 || registerData.firstName.trim().length > 50) {
+      errors.firstName = 'First name must be between 2 and 50 characters';
     }
 
+    // Last name validation (2-50 characters)
     if (!registerData.lastName.trim()) {
       errors.lastName = 'Last name is required';
+    } else if (registerData.lastName.trim().length < 2 || registerData.lastName.trim().length > 50) {
+      errors.lastName = 'Last name must be between 2 and 50 characters';
     }
 
+    // Email validation
     if (!registerData.email) {
       errors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(registerData.email)) {
       errors.email = 'Please enter a valid email address';
+    } else if (registerData.email.length > 254) {
+      errors.email = 'Email address is too long';
     }
 
+    // Enhanced password validation to match server requirements
     if (!registerData.password) {
       errors.password = 'Password is required';
-    } else if (registerData.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters long';
+    } else {
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      if (!passwordRegex.test(registerData.password)) {
+        errors.password = 'Password must be at least 8 characters long and contain uppercase, lowercase, number, and special character';
+      }
     }
 
-    if (registerData.phone && !/^\+?[\d\s-()]+$/.test(registerData.phone)) {
-      errors.phone = 'Please enter a valid phone number';
+    // Phone validation (enhanced)
+    if (registerData.phone && registerData.phone.trim()) {
+      const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+      const cleanPhone = registerData.phone.replace(/[\s\-\(\)]/g, '');
+      if (!phoneRegex.test(cleanPhone)) {
+        errors.phone = 'Please enter a valid phone number (e.g., +1234567890)';
+      }
     }
 
     setFieldErrors(errors);
@@ -237,43 +256,38 @@ const LoginRegisterPage = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(loginData),
-      });
+      // Use the API service for consistent error handling
+      const responseData = await authAPI.login(loginData);
 
-      const data = await response.json();
+      // Extract data from the standardized response format
+      const { data } = responseData;
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+      if (!data || !data.token || !data.user) {
+        throw new Error('Invalid response format from server');
       }
 
-      // Store user data in sessionStorage
-      sessionStorage.setItem('token', data.token);
-      sessionStorage.setItem('userType', data.userType);
-      sessionStorage.setItem('user', JSON.stringify(data.user));
+      // Use AuthContext login method for proper authentication management
+      const loginSuccess = login(data.user, data.token, data.userType);
 
-      showSuccessPopup('Login successful! Redirecting to your dashboard...');
+      if (!loginSuccess) {
+        throw new Error('Failed to store authentication data');
+      }
+
+      showSuccessPopup(responseData.message || 'Login successful! Redirecting to your dashboard...');
       setLoginData({ email: '', password: '' });
 
       // Redirect based on user type after a short delay
       setTimeout(() => {
         if (data.userType === 'customer') {
-          window.location.href = '/customer-dashboard';
+          window.location.href = '/menu';
         } else {
-          // Staff or Admin
-          const userRole = data.user.role;
-          if (userRole === 'admin') {
-            window.location.href = '/admin-dashboard';
-          } else {
-            window.location.href = '/staff-dashboard';
-          }
+          // Staff or Admin (userType is 'staffOrAdmin')
+          window.location.href = '/admin';
         }
       }, 1500);
 
     } catch (error) {
-
+      console.error('Login error:', error);
       showErrorPopup(error.message || 'An error occurred during login');
     } finally {
       setLoading(false);
@@ -285,42 +299,32 @@ const LoginRegisterPage = () => {
 
     setLoading(true);
 
-
     try {
       const formData = new FormData();
-      formData.append('firstName', registerData.firstName);
-      formData.append('lastName', registerData.lastName);
-      formData.append('email', registerData.email);
+      formData.append('firstName', registerData.firstName.trim());
+      formData.append('lastName', registerData.lastName.trim());
+      formData.append('email', registerData.email.toLowerCase().trim());
       formData.append('password', registerData.password);
 
-      if (registerData.phone) {
-        formData.append('phone', registerData.phone);
+      // Only append phone if it's provided and not empty
+      if (registerData.phone && registerData.phone.trim()) {
+        formData.append('phone', registerData.phone.trim());
       }
 
       if (registerData.profilePhoto) {
         formData.append('profilePhoto', registerData.profilePhoto);
       }
 
-      let registerUrl;
+      // Use the appropriate API service method
+      let responseData;
       if (role === 'customer') {
-        registerUrl = `${API_URL}/auth/register/customer`;
+        responseData = await authAPI.registerCustomer(formData);
       } else {
-        registerUrl = `${API_URL}/auth/register/staff`;
         formData.append('role', role);
+        responseData = await authAPI.registerStaff(formData);
       }
 
-      const response = await fetch(registerUrl, {
-        method: 'POST',
-        body: formData, // Note: No Content-Type header for FormData
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
-
-      showSuccessPopup('Registration successful! You can now login with your new account.');
+      showSuccessPopup(responseData.message || 'Registration successful! You can now login with your new account.');
       setRegisterData({
         firstName: '',
         lastName: '',
@@ -337,6 +341,7 @@ const LoginRegisterPage = () => {
       }, 2000);
 
     } catch (error) {
+      console.error('Registration error:', error);
       showErrorPopup(error.message || 'An error occurred during registration');
     } finally {
       setLoading(false);
@@ -819,7 +824,7 @@ const LoginRegisterPage = () => {
                   onChange={handleRegisterChange}
                   disabled={loading}
                   error={!!fieldErrors.password}
-                  helperText={fieldErrors.password || 'Minimum 6 characters'}
+                  helperText={fieldErrors.password || 'Minimum 8 characters with uppercase, lowercase, number, and special character'}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">

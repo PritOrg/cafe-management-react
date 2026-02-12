@@ -6,16 +6,17 @@ import { Link } from 'react-router-dom';
 import CartItemCard from './CartItemCard';
 import OrderSummary from './OrderSummary';
 
-const CartItems = ({ 
-  cartItems, 
-  onQuantityChange, 
-  onRemoveItem, 
+const CartItems = ({
+  cartItems,
+  onQuantityChange,
+  onRemoveItem,
   onClearCart,
+  onUpdateCustomization,
   total,
   cartCount,
   totalPrepTime,
   onNext,
-  isLoading 
+  isLoading
 }) => {
   return (
     <Grid container spacing={3}>
@@ -27,6 +28,7 @@ const CartItems = ({
               item={item}
               onQuantityChange={onQuantityChange}
               onRemoveItem={onRemoveItem}
+              onUpdateCustomization={onUpdateCustomization}
             />
           ))}
         </Box>
