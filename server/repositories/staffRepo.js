@@ -6,7 +6,7 @@ const cols = ['id', 'tenant_id', 'is_platform_admin', 'first_name', 'last_name',
     'phone', 'profile_photo_url', 'role', 'is_active', 'registration_date', 'last_login', 'created_at', 'updated_at'];
 
 const findAll = async (tenantId) => {
-    const rows = await getDb()('staff_admins').where({ tenant_id: tenantId }).orderBy('created_at', 'desc');
+    const rows = await getDb()('staff_admins').where({ tenant_id: tenantId }).andWhere('is_active', true).orderBy('created_at', 'desc');
     return rows.map((r) => mapStaff(toPublic(r)));
 };
 
@@ -72,7 +72,7 @@ const updateById = async (tenantId, id, data) => {
 const deleteById = async (tenantId, id) => {
     const [row] = await getDb()('staff_admins')
         .where({ id, tenant_id: tenantId })
-        .del()
+        .update({ is_active: false, updated_at: new Date() })
         .returning(cols);
     return row ? mapStaff(toPublic(row)) : null;
 };

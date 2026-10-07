@@ -11,7 +11,7 @@ const withSizes = async (tenantId, item) => {
 };
 
 const findAll = async (tenantId) => {
-    const rows = await getDb()('menu_items').where({ tenant_id: tenantId }).orderBy('title');
+    const rows = await getDb()('menu_items').where({ tenant_id: tenantId }).andWhere('availability', true).orderBy('title');
     const items = rows.map(mapMenuItem);
     return Promise.all(items.map((it) => withSizes(tenantId, it)));
 };

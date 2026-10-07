@@ -46,7 +46,16 @@ exports.removeStaff = async (req, res) => {
     try {
         const removed = await staffRepo.deleteById(req.tenantId, req.params.id);
         if (!removed) return sendResponse(res, 404, false, 'Staff not found');
-        return sendResponse(res, 200, true, 'Staff removed');
+        await activityRepo.log({
+            tenantId: req.tenantId,
+            actorId: req.userId,
+            actorType: req.role,
+            action: 'staff.soft_delete',
+            entity: 'staff',
+            entityId: removed._id,
+            meta: { email: removed.email },
+        });
+        return sendResponse(res, 200, true, 'Staff deactivated', removed);
     } catch (err) {
         console.error('Error removing staff:', err);
         return sendResponse(res, 500, false, err.message || 'Server error');
