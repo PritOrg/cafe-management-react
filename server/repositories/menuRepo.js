@@ -4,8 +4,10 @@ const { mapMenuItem } = require('../db/mappers');
 const withSizes = async (tenantId, item) => {
     if (!item) return item;
     const sizeRepo = require('./sizeRepo');
+    const modifierRepo = require('./modifierRepo');
     const sizes = await sizeRepo.listForMenu(tenantId, item._id);
-    return { ...item, sizes };
+    const modifierGroups = await modifierRepo.getMenuItemGroups(tenantId, item._id);
+    return { ...item, sizes, modifierGroups };
 };
 
 const findAll = async (tenantId) => {

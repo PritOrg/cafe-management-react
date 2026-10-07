@@ -214,6 +214,10 @@ export const inventoryAPI = {
   remove: (id) => apiRequest(`/inventory/${id}`, { method: 'DELETE' }),
   addMovement: (id, data) =>
     apiRequest(`/inventory/${id}/movements`, { method: 'POST', body: JSON.stringify(data) }),
+  listRecipesForItem: (id) => apiRequest(`/inventory/${id}/recipes`),
+  listRecipesForMenu: (menuId) => apiRequest(`/inventory/recipes/menu/${menuId}`),
+  addRecipe: (data) => apiRequest('/inventory/recipes', { method: 'POST', body: JSON.stringify(data) }),
+  removeRecipe: (id) => apiRequest(`/inventory/recipes/${id}`, { method: 'DELETE' }),
 };
 
 // Categories API

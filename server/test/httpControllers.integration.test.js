@@ -27,11 +27,12 @@ describe('HTTP controllers integration', () => {
     beforeAll(async () => {
         await getDb().raw('select 1');
         tenant = await tenantRepo.findBySlug('cafe1') || await tenantRepo.create({ slug: 'cafe1', name: 'Cafe One' });
-        menu = (await menuRepo.findAll(tenant._id))[0];
+        menu = (await menuRepo.findAll(tenant._id)).find((m) => !m.sizes?.length && Number(m.price?.medium) > 0);
         if (!menu) {
             menu = await menuRepo.create(tenant._id, {
                 title: 'Ctrl Latte', subTitle: 'Hot', category: 'Coffee',
                 price: { medium: 110, large: 150 }, preparationTime: 4,
+                sizes: [],
             });
         }
         staffUser = await staffRepo.create(tenant._id, {

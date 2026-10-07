@@ -14,7 +14,17 @@ describe('customerRepo + controller integration', () => {
         await getDb().raw('select 1');
         tenant = await tenantRepo.findBySlug('cafe1') || await tenantRepo.create({ slug: 'cafe1', name: 'Cafe One' });
         phone = `9${Date.now().toString().slice(-9)}`;
-        const menu = (await menuRepo.findAll(tenant._id))[0];
+        let menu = (await menuRepo.findAll(tenant._id)).find((m) => !m.sizes?.length && Number(m.price?.medium) > 0);
+        if (!menu) {
+            menu = await menuRepo.create(tenant._id, {
+                title: `Cust Latte ${Date.now()}`,
+                subTitle: 'Hot',
+                category: 'Coffee',
+                price: { medium: 110, large: 150 },
+                preparationTime: 3,
+                sizes: [],
+            });
+        }
         await placeOrder({
             tenantId: tenant._id,
             body: {
