@@ -4,6 +4,7 @@ import { Box, Drawer, List, Typography, Avatar, ListItem, ListItemButton, ListIt
 import { styled } from '@mui/material/styles';
 import { Dashboard, ShoppingCart, Restaurant, People, AttachMoney, Inventory, Analytics, Settings, Logout, Coffee, Close as CloseIcon, Business } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
+import { useBrand } from '../../contexts/BrandContext';
 
 const drawerWidth = 280;
 
@@ -37,7 +38,7 @@ const LogoContainer = styled(Box)(({ theme }) => ({
   alignItems: 'center',
   padding: theme.spacing(2, 3),
   minHeight: 70,
-  background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)',
+  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
   color: 'white',
   position: 'relative',
   overflow: 'hidden',
@@ -131,6 +132,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, isPlatformAdmin } = useAuth();
+  const { brand } = useBrand();
   const sidebarItems = isPlatformAdmin() ? [...baseSidebarItems, platformItem] : baseSidebarItems;
 
   const handleLogout = async () => {
@@ -165,7 +167,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
           </Box>
         <Box>
           <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 'bold' }}>
-            Bug Latte
+            {brand?.title || 'Cafe'}
           </Typography>
           <Typography variant="body2" sx={{ opacity: 0.8 }}>
             Admin Panel
