@@ -67,14 +67,14 @@ const AddMenuItemForm = () => {
         severity: 'success'
     });
     const [formErrors, setFormErrors] = useState({});
-    
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData({
             ...formData,
             [name]: value
         });
-        
+
         // Clear error for this field if it exists
         if (formErrors[name]) {
             setFormErrors({
