@@ -12,7 +12,8 @@
     "db:migrate": "knex migrate:latest --knexfile db/knexfile.js",
     "db:deploy": "NODE_ENV=production knex migrate:latest --knexfile db/knexfile.js",
     "db:seed": "knex seed:run --knexfile db/knexfile.js",
-    "db:reset": "node scripts/db-reset.js"
+    "db:reset": "node scripts/db-reset.js",
+    "verify": "npm run lint && npm test"
   },
   "keywords": [],
   "author": "",
