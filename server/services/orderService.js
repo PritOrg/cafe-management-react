@@ -172,6 +172,42 @@ const placeOrder = async (req) => {
             await orderRepo.incrementMenuItemOrderCount(tenantId, line.menuItem, trx);
         }
 
+        // Stock deduction: recipe BOM first, then subtract_stock flag
+        const inventoryRepo = require('../repositories/inventoryRepo');
+        const recipeRepo = require('../repositories/recipeRepo');
+        for (const line of lines) {
+            const soldMenu = await menuRepo.findByIdLean(tenantId, line.menuItem);
+
+            const recipeDeductions = await recipeRepo.deductForOrderLine(
+                tenantId,
+                line.menuItem,
+                line.quantity,
+                { refOrderId: order._id, actorId: req.userId, trx },
+            );
+            if (recipeDeductions.length) continue;
+
+            if (!soldMenu?.subtractStock) continue;
+
+            let inv = await trx('inventory')
+                .where({ tenant_id: tenantId, menu_item_id: line.menuItem, is_active: true })
+                .first();
+            if (!inv) {
+                inv = await trx('inventory')
+                    .where({ tenant_id: tenantId, is_active: true })
+                    .whereRaw('lower(item_name) = lower(?)', [soldMenu.title])
+                    .first();
+            }
+            if (!inv) continue;
+
+            await inventoryRepo.addMovement(tenantId, inv.id, {
+                type: 'order',
+                delta: -line.quantity,
+                note: `order ${order.orderNumber || order._id}`,
+                refOrderId: order._id,
+                actorId: req.userId,
+            }, trx);
+        }
+
         if (parsedTable) {
             await tableRepo.updateByNumber(tenantId, parsedTable, {
                 status: 'occupied',
