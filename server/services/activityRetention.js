@@ -1,5 +1,5 @@
 const { getDb } = require('../db/pool');
-const settingsRepo = require('./settingsRepo');
+const settingsRepo = require('../repositories/settingsRepo');
 
 /**
  * Nightly activity retention: delete rows older than ops.activity_retention_days (default 365).
