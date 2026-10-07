@@ -116,6 +116,11 @@ const findByIdForOwner = async (tenantId, id) => {
     return (await withItems(getDb(), [mapped]))[0];
 };
 
+const findStatus = async (tenantId, id, trx = getDb()) => {
+    const row = await trx('orders').where({ id, tenant_id: tenantId }).first('status');
+    return row ? row.status : null;
+};
+
 const updateStatus = async (tenantId, id, status, trx = getDb()) => {
     const [row] = await trx('orders')
         .where({ id, tenant_id: tenantId })
@@ -165,6 +170,7 @@ module.exports = {
     findForHistory,
     findMany,
     findByIdForOwner,
+    findStatus,
     updateStatus,
     countToday,
     findByOrderNumberPrefix,

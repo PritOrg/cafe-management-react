@@ -24,7 +24,7 @@ import {
   LinearProgress,
 } from '@mui/material';
 import { Refresh, Search, DeleteOutline } from '@mui/icons-material';
-import { customersAPI, unwrap } from '../../services/api';
+import { customersAPI, activityAPI, unwrap } from '../../services/api';
 import { formatMoney } from '../../utils/formatMoney';
 
 const MEMBERSHIP = ['Silver', 'Gold', 'Platinum'];
@@ -42,6 +42,7 @@ const AdminCustomers = () => {
   const [summary, setSummary] = useState(null);
   const [orders, setOrders] = useState([]);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [customerHistory, setCustomerHistory] = useState([]);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const fetchCustomers = useCallback(async () => {
@@ -73,13 +74,16 @@ const AdminCustomers = () => {
     setDetailOpen(true);
     setSummary(null);
     setOrders([]);
+    setCustomerHistory([]);
     try {
-      const [sumBody, ordBody] = await Promise.all([
+      const [sumBody, ordBody, histBody] = await Promise.all([
         customersAPI.getSummary(customer._id),
         customersAPI.getOrders(customer._id),
+        activityAPI.byEntity('customer', customer._id).catch(() => null),
       ]);
       setSummary(unwrap(sumBody));
       setOrders(unwrap(ordBody) || []);
+      setCustomerHistory(histBody ? (unwrap(histBody) || []) : []);
     } catch (err) {
       console.error('Error loading customer detail:', err);
     }
@@ -235,6 +239,23 @@ const AdminCustomers = () => {
                     <Typography variant="body2">{o.orderNumber}</Typography>
                     <Chip size="small" label={o.status} />
                     <Typography variant="body2">{formatMoney(o.finalAmount)}</Typography>
+                  </Box>
+                ))}
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom>History</Typography>
+                {customerHistory.length === 0 && (
+                  <Typography variant="body2" color="text.secondary">No activity yet</Typography>
+                )}
+                {customerHistory.map((h) => (
+                  <Box key={h._id} sx={{ mb: 1, pb: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="subtitle2">{h.action}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {h.createdAt ? new Date(h.createdAt).toLocaleString() : ''}
+                      </Typography>
+                    </Box>
+                    <Typography variant="caption" color="text.secondary">{h.actorType}</Typography>
                   </Box>
                 ))}
               </Grid>

@@ -119,20 +119,15 @@ exports.updateOrderStatus = async (req, res) => {
         if (!ORDER_STATUSES.includes(status)) {
             return sendResponse(res, 400, false, `Invalid status. Allowed: ${ORDER_STATUSES.join(', ')}`);
         }
+        const previousStatus = await orderRepo.findStatus(req.tenantId, req.params.id);
         const order = await orderRepo.updateStatus(req.tenantId, req.params.id, status);
         if (!order) return sendResponse(res, 404, false, 'Order not found');
 
         if (order.tableNumber) {
-            const table = await tableRepo.findByNumber(req.tenantId, order.tableNumber);
-            if (table) {
-                if (status === 'served' || status === 'cancelled') {
-                    table.status = 'available';
-                    table.currentOrder = null;
-                } else {
-                    table.status = 'occupied';
-                    table.currentOrder = order._id;
-                }
-                await table.save();
+            if (status === 'served' || status === 'cancelled') {
+                await tableRepo.updateByNumber(req.tenantId, order.tableNumber, { status: 'available', currentOrder: null });
+            } else {
+                await tableRepo.updateByNumber(req.tenantId, order.tableNumber, { status: 'occupied', currentOrder: order._id });
             }
         }
 
@@ -143,7 +138,8 @@ exports.updateOrderStatus = async (req, res) => {
             action: 'order.status',
             entity: 'order',
             entityId: order._id,
-            meta: { status },
+            requestId: req.id,
+            meta: { status, before: previousStatus, after: status },
         });
 
         return sendResponse(res, 200, true, 'Order status updated', { status: order.status });
