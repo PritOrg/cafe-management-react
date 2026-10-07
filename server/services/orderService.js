@@ -95,24 +95,25 @@ const placeOrder = async (req) => {
 
     for (const raw of items) {
         const menuId = (raw && (raw.menuItemId || raw.menuItem)) || null;
-        const size = String((raw && (raw.size || raw.selectedSize)) || '').toLowerCase();
+        const requestedSize = raw && raw.size !== undefined ? raw.size : (raw && raw.selectedSize) ?? null;
         const quantity = Number(raw && raw.quantity);
 
         if (!menuId) return { status: 400, message: 'Each item requires a menuItemId' };
-        if (!['medium', 'large'].includes(size)) {
-            return { status: 400, message: `Invalid size "${size}". Allowed: medium, large` };
-        }
         if (!Number.isInteger(quantity) || quantity < 1) {
             return { status: 400, message: 'Each item quantity must be a positive integer' };
         }
 
         const menu = await menuRepo.findByIdLean(tenantId, menuId);
         if (!menu) return { status: 400, message: `Menu item not found: ${menuId}` };
-        const price = Number(menu.price && menu.price[size]);
-        if (!Number.isFinite(price)) {
-            return { status: 400, message: `Menu item "${menu.title}" has no price for size ${size}` };
+
+        const sizeRepo = require('../repositories/sizeRepo');
+        const resolved = await sizeRepo.resolvePrice(tenantId, menu, requestedSize);
+        if (!resolved) {
+            const labels = (menu.sizes || []).map((s) => s.label).join(', ') || 'medium, large';
+            return { status: 400, message: `Invalid size "${requestedSize}". Allowed: ${labels}` };
         }
 
+        const price = resolved.price;
         subtotal += price * quantity;
         const prep = Number(menu.preparationTime) || 0;
         totalPreparationTime += prep;
@@ -120,7 +121,7 @@ const placeOrder = async (req) => {
         const options = normalizeOptions(raw.options, raw.selectedOptions);
         lines.push({
             menuItem: menu._id,
-            size,
+            size: resolved.sizeLabel,
             quantity,
             customizations: options.map((o) => o.name),
             specialInstructions: (raw && typeof raw.specialInstructions === 'string') ? raw.specialInstructions : '',
@@ -170,6 +171,42 @@ const placeOrder = async (req) => {
 
         for (const line of lines) {
             await orderRepo.incrementMenuItemOrderCount(tenantId, line.menuItem, trx);
+        }
+
+        // Stock deduction: recipe BOM first, then subtract_stock flag
+        const inventoryRepo = require('../repositories/inventoryRepo');
+        const recipeRepo = require('../repositories/recipeRepo');
+        for (const line of lines) {
+            const soldMenu = await menuRepo.findByIdLean(tenantId, line.menuItem);
+
+            const recipeDeductions = await recipeRepo.deductForOrderLine(
+                tenantId,
+                line.menuItem,
+                line.quantity,
+                { refOrderId: order._id, actorId: req.userId, trx },
+            );
+            if (recipeDeductions.length) continue;
+
+            if (!soldMenu?.subtractStock) continue;
+
+            let inv = await trx('inventory')
+                .where({ tenant_id: tenantId, menu_item_id: line.menuItem, is_active: true })
+                .first();
+            if (!inv) {
+                inv = await trx('inventory')
+                    .where({ tenant_id: tenantId, is_active: true })
+                    .whereRaw('lower(item_name) = lower(?)', [soldMenu.title])
+                    .first();
+            }
+            if (!inv) continue;
+
+            await inventoryRepo.addMovement(tenantId, inv.id, {
+                type: 'order',
+                delta: -line.quantity,
+                note: `order ${order.orderNumber || order._id}`,
+                refOrderId: order._id,
+                actorId: req.userId,
+            }, trx);
         }
 
         if (parsedTable) {

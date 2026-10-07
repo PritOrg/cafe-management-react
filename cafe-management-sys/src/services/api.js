@@ -216,6 +216,30 @@ export const inventoryAPI = {
     apiRequest(`/inventory/${id}/movements`, { method: 'POST', body: JSON.stringify(data) }),
 };
 
+// Categories API
+export const categoriesAPI = {
+  list: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return apiRequest(`/categories${qs ? `?${qs}` : ''}`);
+  },
+  create: (data) => apiRequest('/categories', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => apiRequest(`/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  remove: (id) => apiRequest(`/categories/${id}`, { method: 'DELETE' }),
+};
+
+// Modifier groups API (priced customization options)
+export const modifiersAPI = {
+  list: () => apiRequest('/modifiers'),
+  create: (data) => apiRequest('/modifiers', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => apiRequest(`/modifiers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  remove: (id) => apiRequest(`/modifiers/${id}`, { method: 'DELETE' }),
+};
+
+// Kitchen display API
+export const kitchenAPI = {
+  getActiveOrders: () => apiRequest('/kitchen/orders'),
+};
+
 // Orders API
 export const ordersAPI = {
   getAll: (params = {}) => {
