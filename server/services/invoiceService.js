@@ -53,20 +53,24 @@ const issueForOrder = async (tenantId, orderId, { interState = false, actorId, a
         const qty = Number(it.quantity) || 1;
         const rate = money.toMinor(Number(it.itemPrice) || 0);
         const lineTaxable = rate * qty;
-        const tax = money.applyBps(lineTaxable, bps);
+        // Per-item GST override when menu row provides gst_rate_bps (e.g. 0 for packaged)
+        const itemBps = it.menuItemDoc?.gstRateBps != null
+            ? Number(it.menuItemDoc.gstRateBps)
+            : (it.menuItemDoc?.gst_rate_bps != null ? Number(it.menuItemDoc.gst_rate_bps) : bps);
+        const tax = money.applyBps(lineTaxable, Number.isFinite(itemBps) ? itemBps : bps);
         return {
             description: it.menuItemDoc?.title || it.name || 'Item',
-            hsnSac: settings.gst.hsnSAC || '996311',
+            hsnSac: it.menuItemDoc?.sacCode || it.menuItemDoc?.sac_code || settings.gst.hsnSAC || '996311',
             quantity: qty,
             unit: 'PCS',
             taxable: money.fromMinor(lineTaxable),
-            rateBps: bps,
+            rateBps: Number.isFinite(itemBps) ? itemBps : bps,
             taxAmount: money.fromMinor(tax),
             amount: money.fromMinor(lineTaxable + tax),
         };
     });
 
-    const taxTotal = money.applyBps(taxable, bps);
+    const taxTotal = lineItems.reduce((s, li) => s + money.toMinor(li.taxAmount), 0);
     let cgst = 0;
     let sgst = 0;
     let igst = 0;
