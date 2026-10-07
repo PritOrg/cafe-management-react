@@ -118,20 +118,23 @@ export const CartProvider = ({ children }) => {
     const { total, totalPrepTime } = useMemo(() => {
         return cartItems.reduce((acc, item) => {
             const sizes = item?.sizes || [];
-            let itemPrice = 0;
+            let unitBase = 0;
             if (sizes.length) {
                 const match = sizes.find((s) => s.label === item.selectedSize)
                     || sizes.find((s) => s.isDefault)
                     || sizes[0];
-                itemPrice = Number(match?.price || 0);
+                unitBase = Number(match?.price || 0);
             } else {
-                itemPrice = Number(item.price?.[normalizeSize(item.selectedSize)] || 0);
+                unitBase = Number(item.price?.[normalizeSize(item.selectedSize)] || 0);
             }
+            // Modifier priceDeltas stored as selectedOptions values
+            const optionsDelta = Object.values(item.selectedOptions || {})
+                .reduce((sum, v) => sum + (Number(v) || 0), 0);
             const quantity = item.quantity || 1;
             const prepTime = item.preparationTime || 0;
 
             return {
-                total: acc.total + (itemPrice * quantity),
+                total: acc.total + ((unitBase + optionsDelta) * quantity),
                 totalPrepTime: acc.totalPrepTime + (prepTime * quantity)
             };
         }, { total: 0, totalPrepTime: 0 });
