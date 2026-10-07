@@ -1,0 +1,75 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    name: Build artifacts + package
+    runs-on: ubuntu-latest
+    needs: []
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install + build frontend
+        working-directory: cafe-management-sys
+        run: |
+          npm ci
+          npm run test:run
+          npm run build
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL || 'http://localhost:4969/api/v1' }}
+
+      - name: Install backend (prod deps only)
+        working-directory: server
+        run: |
+          npm ci --omit=dev
+          node --check index.js
+
+      - name: Package artifacts
+        run: |
+          mkdir -p dist
+          cp -r cafe-management-sys/build dist/frontend
+          tar -czf dist/server-dist.tar.gz \
+            --exclude=node_modules \
+            --exclude=logs \
+            --exclude=uploads \
+            --exclude=coverage \
+            server
+          ls -la dist
+
+      - name: Upload deploy artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cafe-pos-${{ github.sha }}
+          path: dist
+          retention-days: 30
+
+      # Optional: uncomment and configure for real hosting
+      # - name: Deploy to server
+      #   uses: appleboy/ssh-action@v1
+      #   with:
+      #     host: ${{ secrets.DEPLOY_HOST }}
+      #     username: ${{ secrets.DEPLOY_USER }}
+      #     key: ${{ secrets.DEPLOY_SSH_KEY }}
+      #     script: |
+      #       cd /var/www/cafe && git pull && npm ci && npm run db:migrate && pm2 restart cafe
+
+      - name: Summary
+        run: |
+          echo "## Deploy package" >> $GITHUB_SUMMARY
+          echo "- Frontend: \`dist/frontend\` (Vite build)" >> $GITHUB_SUMMARY
+          echo "- Backend: \`dist/server-dist.tar.gz\` (npm ci --omit=dev on target)" >> $GITHUB_SUMMARY
+          echo "- Set repo vars: \`VITE_API_URL\`; secrets if using SSH deploy" >> $GITHUB_SUMMARY

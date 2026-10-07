@@ -76,7 +76,7 @@ module.exports = {
         ...base,
         connection: {
             ...(base.connection || {}),
-            database: process.env.PGDATABASE || 'cafe_test',
+            database: process.env.PGDATABASE || (runtimeUrl ? (base.connection?.database || 'cafe') : 'cafe'),
         },
     },
     production: parse(directUrl) || base,

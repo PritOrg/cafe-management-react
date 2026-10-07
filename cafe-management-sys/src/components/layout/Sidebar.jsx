@@ -135,7 +135,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
   const location = useLocation();
   const { user, logout, isPlatformAdmin } = useAuth();
   const { brand } = useBrand();
-  const [lowStockCount, setLowStockCount] = useState(0);
+  const [lowStockCount, setLowStockCount] = React.useState(0);
 
   React.useEffect(() => {
     let cancelled = false;
