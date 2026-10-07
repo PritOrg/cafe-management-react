@@ -1,0 +1,102 @@
+openapi: 3.0.3
+info:
+  title: Developer's Paradise Cafe API
+  description: API documentation for cafe management backend.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:4969/api
+    description: Local development server
+
+paths:
+  /auth/register/customer:
+    post:
+      summary: Register a new customer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                profilePhoto:
+                  type: string
+                  format: binary
+                name:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '201':
+          description: Customer created successfully
+
+  /auth/login:
+    post:
+      summary: Login user (customer/staff/admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful, returns token
+
+  /customers/profile:
+    get:
+      summary: Get current customer's profile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Customer profile data
+
+    put:
+      summary: Update current customer's profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+      responses:
+        '200':
+          description: Profile updated successfully
+
+    delete:
+      summary: Delete current customer's account
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Account deleted successfully
+
+  /staff-admin:
+    get:
+      summary: Get all staff members (admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of staff members
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
