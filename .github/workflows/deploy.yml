@@ -13,7 +13,6 @@ jobs:
   build-and-deploy:
     name: Build artifacts + package
     runs-on: ubuntu-latest
-    needs: []
     steps:
       - uses: actions/checkout@v4
 
@@ -57,19 +56,17 @@ jobs:
           path: dist
           retention-days: 30
 
-      # Optional: uncomment and configure for real hosting
-      # - name: Deploy to server
-      #   uses: appleboy/ssh-action@v1
-      #   with:
-      #     host: ${{ secrets.DEPLOY_HOST }}
-      #     username: ${{ secrets.DEPLOY_USER }}
-      #     key: ${{ secrets.DEPLOY_SSH_KEY }}
-      #     script: |
-      #       cd /var/www/cafe && git pull && npm ci && npm run db:migrate && pm2 restart cafe
-
       - name: Summary
+        if: always()
+        env:
+          SUMMARY_FILE: ${{ github.step_summary }}
         run: |
-          echo "## Deploy package" >> $GITHUB_SUMMARY
-          echo "- Frontend: \`dist/frontend\` (Vite build)" >> $GITHUB_SUMMARY
-          echo "- Backend: \`dist/server-dist.tar.gz\` (npm ci --omit=dev on target)" >> $GITHUB_SUMMARY
-          echo "- Set repo vars: \`VITE_API_URL\`; secrets if using SSH deploy" >> $GITHUB_SUMMARY
+          if [ -n "${SUMMARY_FILE:-}" ]; then
+            {
+              echo "## Deploy package"
+              echo "- Frontend: \`dist/frontend\` (Vite build)"
+              echo "- Backend: \`dist/server-dist.tar.gz\` (npm ci --omit=dev on target)"
+              echo "- SHA: \`${{ github.sha }}\`"
+            } >> "$SUMMARY_FILE"
+          fi
+          echo "Deploy artifacts packaged for ${{ github.sha }}"
