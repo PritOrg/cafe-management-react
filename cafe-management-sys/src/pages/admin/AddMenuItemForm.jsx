@@ -58,6 +58,20 @@ const AddMenuItemForm = () => {
         tags: [],
         allergens: []
     });
+
+    // Flexible size variants (Swiggy-style): [] = no sizes (use medium/large fallback)
+    const [sizes, setSizes] = useState([
+        { label: 'Small', price: '', isDefault: true },
+        { label: 'Large', price: '' },
+    ]);
+    const [useCustomSizes, setUseCustomSizes] = useState(false);
+
+    const updateSize = (index, patch) => {
+        setSizes((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)));
+    };
+
+    const addSizeRow = () => setSizes((prev) => [...prev, { label: '', price: '', isDefault: false }]);
+    const removeSizeRow = (index) => setSizes((prev) => prev.filter((_, i) => i !== index));
     
     const [file, setFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState('');
@@ -107,29 +121,34 @@ const AddMenuItemForm = () => {
     
     const validateForm = () => {
         const errors = {};
-        const requiredFields = ['title', 'priceMedium', 'category'];
-        
+        const requiredFields = useCustomSizes ? ['title', 'category'] : ['title', 'priceMedium', 'category'];
+
         requiredFields.forEach(field => {
             if (!formData[field]) {
                 errors[field] = 'This field is required';
             }
         });
-        
-        if (formData.priceMedium && isNaN(parseFloat(formData.priceMedium))) {
+
+        if (!useCustomSizes && formData.priceMedium && isNaN(parseFloat(formData.priceMedium))) {
             errors.priceMedium = 'Price must be a valid number';
         }
-        
-        if (formData.priceLarge && isNaN(parseFloat(formData.priceLarge))) {
+
+        if (!useCustomSizes && formData.priceLarge && isNaN(parseFloat(formData.priceLarge))) {
             errors.priceLarge = 'Price must be a valid number';
         }
-        
+
+        if (useCustomSizes) {
+            const valid = sizes.filter((s) => s.label.trim() && s.price !== '' && !isNaN(parseFloat(s.price)));
+            if (!valid.length) errors.sizes = 'Add at least one size with label and price';
+        }
+
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
     };
-    
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (!validateForm()) {
             setSnackbar({
                 open: true,
@@ -138,7 +157,7 @@ const AddMenuItemForm = () => {
             });
             return;
         }
-        
+
         const submitData = new FormData();
         Object.entries(formData).forEach(([key, value]) => {
             if (Array.isArray(value)) {
@@ -147,9 +166,21 @@ const AddMenuItemForm = () => {
                 submitData.append(key, value);
             }
         });
-        
+
+        if (useCustomSizes) {
+            const clean = sizes
+                .filter((s) => s.label.trim() && s.price !== '')
+                .map((s, i) => ({
+                    label: s.label.trim(),
+                    price: parseFloat(s.price),
+                    isDefault: !!s.isDefault,
+                    sortOrder: i,
+                }));
+            submitData.append('sizes', JSON.stringify(clean));
+        }
+
         if (file) submitData.append('file', file);
-        
+
         try {
             await menuAPI.create(submitData);
             
@@ -316,49 +347,104 @@ const AddMenuItemForm = () => {
                                         </Typography>
                                     </Grid>
                                     
-                                    <Grid item xs={12} sm={6}>
-                                        <TextField
-                                            fullWidth
-                                            required
-                                            type="number"
-                                            label="Medium Size Price"
-                                            name="priceMedium"
-                                            value={formData.priceMedium}
-                                            onChange={handleChange}
-                                            error={!!formErrors.priceMedium}
-                                            helperText={formErrors.priceMedium}
-                                            InputProps={{
-                                                startAdornment: (
-                                                    <InputAdornment position="start">
-                                                        $
-                                                    </InputAdornment>
-                                                ),
-                                            }}
-                                            variant="outlined"
-                                        />
+                                    <Grid item xs={12}>
+                                        <Button
+                                            size="small"
+                                            variant={useCustomSizes ? 'contained' : 'outlined'}
+                                            onClick={() => setUseCustomSizes((v) => !v)}
+                                            sx={{ mb: 1 }}
+                                        >
+                                            {useCustomSizes ? 'Using custom size variants' : 'Add size variants (250ml / 500g / …)'}
+                                        </Button>
                                     </Grid>
-                                    
-                                    <Grid item xs={12} sm={6}>
-                                        <TextField
-                                            fullWidth
-                                            type="number"
-                                            label="Large Size Price"
-                                            name="priceLarge"
-                                            value={formData.priceLarge}
-                                            onChange={handleChange}
-                                            error={!!formErrors.priceLarge}
-                                            helperText={formErrors.priceLarge}
-                                            InputProps={{
-                                                startAdornment: (
-                                                    <InputAdornment position="start">
-                                                        $
-                                                    </InputAdornment>
-                                                ),
-                                            }}
-                                            variant="outlined"
-                                        />
-                                    </Grid>
-                                    
+
+                                    {useCustomSizes ? (
+                                        <Grid item xs={12}>
+                                            {formErrors.sizes && (
+                                                <Typography variant="caption" color="error" sx={{ display: 'block', mb: 1 }}>
+                                                    {formErrors.sizes}
+                                                </Typography>
+                                            )}
+                                            {sizes.map((size, index) => (
+                                                <Box key={index} sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
+                                                    <TextField
+                                                        size="small"
+                                                        label="Label"
+                                                        value={size.label}
+                                                        onChange={(e) => updateSize(index, { label: e.target.value })}
+                                                        placeholder="250ml / Small / 500g"
+                                                        sx={{ flex: 2 }}
+                                                    />
+                                                    <TextField
+                                                        size="small"
+                                                        type="number"
+                                                        label="Price"
+                                                        value={size.price}
+                                                        onChange={(e) => updateSize(index, { price: e.target.value })}
+                                                        sx={{ flex: 1 }}
+                                                    />
+                                                    <Button
+                                                        size="small"
+                                                        variant={size.isDefault ? 'contained' : 'outlined'}
+                                                        onClick={() => setSizes((prev) => prev.map((s, i) => ({ ...s, isDefault: i === index })))}
+                                                    >
+                                                        Default
+                                                    </Button>
+                                                    <Button size="small" color="error" onClick={() => removeSizeRow(index)}>
+                                                        Remove
+                                                    </Button>
+                                                </Box>
+                                            ))}
+                                            <Button size="small" onClick={addSizeRow} sx={{ mt: 0.5 }}>
+                                                + Add size
+                                            </Button>
+                                        </Grid>
+                                    ) : (
+                                        <>
+                                            <Grid item xs={12} sm={6}>
+                                                <TextField
+                                                    fullWidth
+                                                    required
+                                                    type="number"
+                                                    label="Medium Size Price"
+                                                    name="priceMedium"
+                                                    value={formData.priceMedium}
+                                                    onChange={handleChange}
+                                                    error={!!formErrors.priceMedium}
+                                                    helperText={formErrors.priceMedium}
+                                                    InputProps={{
+                                                        startAdornment: (
+                                                            <InputAdornment position="start">
+                                                                ₹
+                                                            </InputAdornment>
+                                                        ),
+                                                    }}
+                                                    variant="outlined"
+                                                />
+                                            </Grid>
+                                            <Grid item xs={12} sm={6}>
+                                                <TextField
+                                                    fullWidth
+                                                    type="number"
+                                                    label="Large Size Price"
+                                                    name="priceLarge"
+                                                    value={formData.priceLarge}
+                                                    onChange={handleChange}
+                                                    error={!!formErrors.priceLarge}
+                                                    helperText={formErrors.priceLarge}
+                                                    InputProps={{
+                                                        startAdornment: (
+                                                            <InputAdornment position="start">
+                                                                ₹
+                                                            </InputAdornment>
+                                                        ),
+                                                    }}
+                                                    variant="outlined"
+                                                />
+                                            </Grid>
+                                        </>
+                                    )}
+
                                     <Grid item xs={12} sm={6}>
                                         <TextField
                                             fullWidth

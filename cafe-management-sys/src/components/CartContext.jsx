@@ -8,6 +8,16 @@ const normalizeSize = (size) => {
     return s === 'large' ? 'large' : 'medium';
 };
 
+const resolveSize = (item, selectedSize) => {
+    const sizes = item?.sizes || [];
+    if (sizes.length) {
+        if (selectedSize && sizes.some((s) => s.label === selectedSize)) return selectedSize;
+        const def = sizes.find((s) => s.isDefault) || sizes[0];
+        return def?.label || null;
+    }
+    return normalizeSize(selectedSize);
+};
+
 export const CartProvider = ({ children }) => {
     const [cartItems, setCartItems] = useState(() => {
         try {
@@ -47,7 +57,7 @@ export const CartProvider = ({ children }) => {
                 throw new Error('Menu item not found');
             }
 
-            const size = normalizeSize(selectedSize);
+            const size = resolveSize(item, selectedSize);
             const cartItemId = generateCartItemId(id, size, selectedOptions);
 
             setCartItems(prevItems => {
@@ -107,8 +117,16 @@ export const CartProvider = ({ children }) => {
 
     const { total, totalPrepTime } = useMemo(() => {
         return cartItems.reduce((acc, item) => {
-            const size = normalizeSize(item.selectedSize);
-            const itemPrice = item.price?.[size] || 0;
+            const sizes = item?.sizes || [];
+            let itemPrice = 0;
+            if (sizes.length) {
+                const match = sizes.find((s) => s.label === item.selectedSize)
+                    || sizes.find((s) => s.isDefault)
+                    || sizes[0];
+                itemPrice = Number(match?.price || 0);
+            } else {
+                itemPrice = Number(item.price?.[normalizeSize(item.selectedSize)] || 0);
+            }
             const quantity = item.quantity || 1;
             const prepTime = item.preparationTime || 0;
 
@@ -124,7 +142,7 @@ export const CartProvider = ({ children }) => {
         try {
             const orderItems = cartItems.map(item => ({
                 menuItem: item._id,
-                size: normalizeSize(item.selectedSize),
+                size: resolveSize(item, item.selectedSize),
                 quantity: item.quantity || 1,
                 options: Object.entries(item.selectedOptions || {}).map(([name, value]) => ({
                     name: typeof value === 'string' ? value : name,

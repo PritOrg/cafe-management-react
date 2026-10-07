@@ -64,6 +64,7 @@ const mapMenuItem = (row) => row && ({
     allergens: row.allergens || [],
     orderCount: row.order_count,
     subtractStock: row.subtract_stock === true,
+    sizes: [],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
 });

@@ -10,19 +10,28 @@ exports.createMenuItem = async (req, res) => {
             title, subTitle, priceMedium, priceLarge,
             category, calories, preparationTime,
             customizationOptions, tags, allergens,
+            sizes, categoryId, subtractStock, modifierGroupIds,
         } = req.body;
 
         const imageUrl = req.file
             ? await uploadToFirebase(req.file.buffer, req.file.originalname, req.file.mimetype, 'menu-img')
             : '';
 
+        let parsedSizes = [];
+        if (Array.isArray(sizes)) {
+            parsedSizes = sizes;
+        } else if (typeof sizes === 'string' && sizes.trim()) {
+            try { parsedSizes = JSON.parse(sizes); } catch { parsedSizes = []; }
+        }
+
         const item = await menuRepo.create(req.tenantId, {
             title,
             subTitle,
             category,
+            categoryId: categoryId || undefined,
             price: {
-                medium: parseFloat(priceMedium),
-                large: parseFloat(priceLarge),
+                medium: parseFloat(priceMedium) || 0,
+                large: parseFloat(priceLarge) || 0,
             },
             calories: parseFloat(calories) || 0,
             preparationTime: parseFloat(preparationTime) || 0,
@@ -30,6 +39,11 @@ exports.createMenuItem = async (req, res) => {
             tags: tags?.split(',').map((tag) => tag.trim()),
             allergens: allergens?.split(',').map((all) => all.trim()),
             imageUrl,
+            sizes: parsedSizes,
+            subtractStock: subtractStock === true || subtractStock === 'true',
+            modifierGroupIds: Array.isArray(modifierGroupIds)
+                ? modifierGroupIds
+                : (typeof modifierGroupIds === 'string' && modifierGroupIds ? modifierGroupIds.split(',').filter(Boolean) : []),
         });
 
         await activityRepo.log({
@@ -69,7 +83,11 @@ exports.getMenuItemById = async (req, res) => {
 
 exports.updateMenuItem = async (req, res) => {
     try {
-        const item = await menuRepo.updateById(req.tenantId, req.params.id, req.body);
+        const body = { ...(req.body || {}) };
+        if (typeof body.sizes === 'string' && body.sizes.trim()) {
+            try { body.sizes = JSON.parse(body.sizes); } catch { body.sizes = []; }
+        }
+        const item = await menuRepo.updateById(req.tenantId, req.params.id, body);
         if (!item) return sendResponse(res, 404, false, 'Item not found');
         return sendResponse(res, 200, true, 'Menu item updated', item);
     } catch (err) {
