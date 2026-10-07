@@ -3,7 +3,7 @@ import { Box, Grid, Card, CardContent, Typography, Button, Chip, Paper, LinearPr
 import { TrendingUp, TrendingDown, ShoppingCart, AttachMoney, Inventory, Add, Coffee, BarChart, Schedule, Warning, CheckCircle, Info } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 
-import { analyticsAPI, ordersAPI, unwrap } from '../../services/api';
+import { analyticsAPI, ordersAPI, inventoryAPI, unwrap } from '../../services/api';
 import { formatMoney } from '../../utils/formatMoney';
 import { adaptOrder } from '../../adapters';
 
@@ -93,16 +93,18 @@ export default function AdminDashboard() {
   const [dashboardData, setDashboardData] = useState(null);
   const [topItems, setTopItems] = useState([]);
   const [recentOrders, setRecentOrders] = useState([]);
+  const [lowStock, setLowStock] = useState([]);
   const [, setLastUpdated] = useState(new Date());
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const [summaryBody, topBody, ordersResponse] = await Promise.all([
+      const [summaryBody, topBody, ordersResponse, lowBody] = await Promise.all([
         analyticsAPI.getSummary(),
         analyticsAPI.getTopItems('7d', 5).catch(() => null),
         ordersAPI.getRecent(5),
+        inventoryAPI.list({ lowStock: 'true' }).catch(() => null),
       ]);
 
       const summary = unwrap(summaryBody);
@@ -112,6 +114,9 @@ export default function AdminDashboard() {
 
       const orders = unwrap(ordersResponse) || [];
       setRecentOrders((Array.isArray(orders) ? orders : []).map(adaptOrder));
+
+      const lowData = lowBody ? unwrap(lowBody) : {};
+      setLowStock(lowData.items || []);
       setLastUpdated(new Date());
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
@@ -119,6 +124,7 @@ export default function AdminDashboard() {
       setDashboardData(null);
       setTopItems([]);
       setRecentOrders([]);
+      setLowStock([]);
     } finally {
       setLoading(false);
     }
@@ -166,6 +172,15 @@ export default function AdminDashboard() {
       icon: CheckCircle,
       color: 'info',
       subtitle: 'completed',
+    },
+    {
+      title: 'Low stock',
+      value: String(lowStock.length),
+      change: lowStock.length > 0 ? 'Needs reorder' : 'All good',
+      trend: lowStock.length > 0 ? 'warning' : 'up',
+      icon: Warning,
+      color: lowStock.length > 0 ? 'warning' : 'success',
+      subtitle: lowStock.length ? lowStock.slice(0, 2).map((i) => i.itemName).join(', ') : 'inventory OK',
     },
   ] : [];
 
