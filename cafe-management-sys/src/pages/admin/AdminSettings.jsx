@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Card, CardContent, Grid, TextField, Button, Switch, FormControlLabel, Divider, Alert, Tabs, Tab, List, ListItem, ListItemText, ListItemSecondaryAction, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress } from '@mui/material';
-import { Save, Refresh, Security, Notifications, Store, Payment, Backup, Delete, Palette } from '@mui/icons-material';
+import { Save, Refresh, Security, Notifications, Store, Payment, Backup, Delete, Palette, ReceiptLong } from '@mui/icons-material';
 import { useThemeContext } from '../../contexts/ThemeContext';
 import { settingsAPI, unwrap } from '../../services/api';
 import { useBrand } from '../../contexts/BrandContext';
 
 const isValidHex = (c) => /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(c || '');
+const GSTIN_RE = /^\d{2}[A-Z]{5}\d{4}[A-Z]\dZ\d$/;
 
 const AdminSettings = () => {
   const { toggleMode, isDarkMode } = useThemeContext();
@@ -23,6 +24,20 @@ const AdminSettings = () => {
     accentColor: '#f7931e',
   });
 
+  const [gst, setGst] = useState({
+    gstin: '',
+    legalName: '',
+    legalAddress: '',
+    stateCode: '',
+    stateName: '',
+    hsnSAC: '996311',
+    invoicePrefix: 'INV',
+    fyStartMonth: 4,
+    bps: 500,
+  });
+  const [gstError, setGstError] = useState('');
+  const [gstSaving, setGstSaving] = useState(false);
+
   const loadBrandSettings = useCallback(async () => {
     try {
       setLoadingBrand(true);
@@ -34,6 +49,19 @@ const AdminSettings = () => {
           logoUrl: data.brand.logoUrl || '',
           primaryColor: data.brand.primaryColor || '#ff6b35',
           accentColor: data.brand.accentColor || '#f7931e',
+        });
+      }
+      if (data.gst) {
+        setGst({
+          gstin: data.gst.gstin || '',
+          legalName: data.gst.legalName || '',
+          legalAddress: data.gst.legalAddress || '',
+          stateCode: data.gst.stateCode || '',
+          stateName: data.gst.stateName || '',
+          hsnSAC: data.gst.hsnSAC || '996311',
+          invoicePrefix: data.gst.invoicePrefix || 'INV',
+          fyStartMonth: data.gst.fyStartMonth || 4,
+          bps: data.gst.bps ?? 500,
         });
       }
     } catch (err) {
@@ -71,6 +99,42 @@ const AdminSettings = () => {
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
       setSaveError(err.message || 'Failed to save brand settings');
+    }
+  };
+
+  const gstValid = !!gst.gstin && GSTIN_RE.test(gst.gstin) && !!gst.legalName && !!gst.legalAddress && !!gst.stateCode;
+
+  const handleSaveGst = async () => {
+    setGstError('');
+    if (!gst.gstin || !GSTIN_RE.test(gst.gstin)) {
+      setGstError('GSTIN must look like 27AAAAA0000A1Z5 (15 chars)');
+      return;
+    }
+    if (!gst.legalName || !gst.legalAddress || !gst.stateCode) {
+      setGstError('legalName, legalAddress and stateCode are required for invoices');
+      return;
+    }
+    try {
+      setGstSaving(true);
+      await settingsAPI.update({
+        gst: {
+          gstin: gst.gstin.toUpperCase(),
+          legalName: gst.legalName,
+          legalAddress: gst.legalAddress,
+          stateCode: gst.stateCode,
+          stateName: gst.stateName,
+          hsnSAC: gst.hsnSAC,
+          invoicePrefix: gst.invoicePrefix || 'INV',
+          fyStartMonth: Number(gst.fyStartMonth) || 4,
+          bps: Number(gst.bps) || 500,
+        },
+      });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      setGstError(err.message || 'Failed to save GST settings');
+    } finally {
+      setGstSaving(false);
     }
   };
 
@@ -170,6 +234,7 @@ const AdminSettings = () => {
           scrollButtons="auto"
         >
         <Tab icon={<Palette />} label="Brand" />
+          <Tab icon={<ReceiptLong />} label="GST / Invoice" />
           <Tab icon={<Store />} label="General" />
           <Tab icon={<Notifications />} label="Notifications" />
           <Tab icon={<Security />} label="Security" />
@@ -254,6 +319,117 @@ const AdminSettings = () => {
         </TabPanel>
 
         <TabPanel value={activeTab} index={1}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>GST tax invoice settings</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Required before invoices can be issued. GSTIN validated as 15-character Indian format.
+              </Typography>
+              {loadingBrand ? (
+                <CircularProgress size={28} />
+              ) : (
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      fullWidth
+                      label="GSTIN"
+                      value={gst.gstin}
+                      onChange={(e) => setGst({ ...gst, gstin: e.target.value.toUpperCase() })}
+                      error={!!gst.gstin && !GSTIN_RE.test(gst.gstin)}
+                      helperText={GSTIN_RE.test(gst.gstin) ? 'Valid format' : 'e.g. 27AAAAA0000A1Z5'}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      fullWidth
+                      label="Legal name"
+                      value={gst.legalName}
+                      onChange={(e) => setGst({ ...gst, legalName: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      fullWidth
+                      label="State code"
+                      value={gst.stateCode}
+                      onChange={(e) => setGst({ ...gst, stateCode: e.target.value })}
+                      helperText="e.g. 27 Maharashtra"
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Legal address"
+                      value={gst.legalAddress}
+                      onChange={(e) => setGst({ ...gst, legalAddress: e.target.value })}
+                      multiline
+                      minRows={2}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={3}>
+                    <TextField
+                      fullWidth
+                      label="State name"
+                      value={gst.stateName}
+                      onChange={(e) => setGst({ ...gst, stateName: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid item xs={6} md={3}>
+                    <TextField
+                      fullWidth
+                      label="Default HSN/SAC"
+                      value={gst.hsnSAC}
+                      onChange={(e) => setGst({ ...gst, hsnSAC: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid item xs={6} md={3}>
+                    <TextField
+                      fullWidth
+                      label="Invoice prefix"
+                      value={gst.invoicePrefix}
+                      onChange={(e) => setGst({ ...gst, invoicePrefix: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid item xs={6} md={3}>
+                    <TextField
+                      fullWidth
+                      label="FY start month"
+                      type="number"
+                      value={gst.fyStartMonth}
+                      onChange={(e) => setGst({ ...gst, fyStartMonth: Number(e.target.value) })}
+                    />
+                  </Grid>
+                  <Grid item xs={6} md={3}>
+                    <TextField
+                      fullWidth
+                      label="GST bps (500 = 5%)"
+                      type="number"
+                      value={gst.bps}
+                      onChange={(e) => setGst({ ...gst, bps: Number(e.target.value) })}
+                    />
+                  </Grid>
+                  {gstError && (
+                    <Grid item xs={12}>
+                      <Alert severity="error">{gstError}</Alert>
+                    </Grid>
+                  )}
+                  <Grid item xs={12}>
+                    <Button
+                      variant="contained"
+                      startIcon={<Save />}
+                      onClick={handleSaveGst}
+                      disabled={!gstValid || gstSaving}
+                    >
+                      {gstSaving ? 'Saving…' : 'Save GST settings'}
+                    </Button>
+                  </Grid>
+                </Grid>
+              )}
+            </CardContent>
+          </Card>
+        </TabPanel>
+
+        <TabPanel value={activeTab} index={2}>
           <CardContent>
             <Typography variant="h6" gutterBottom>
               Cafe Information
@@ -360,7 +536,7 @@ const AdminSettings = () => {
         </TabPanel>
 
         {/* Notification Settings */}
-        <TabPanel value={activeTab} index={2}>
+        <TabPanel value={activeTab} index={3}>
           <CardContent>
             <Typography variant="h6" gutterBottom>
               Notification Preferences
@@ -437,7 +613,7 @@ const AdminSettings = () => {
         </TabPanel>
 
         {/* Security Settings */}
-        <TabPanel value={activeTab} index={3}>
+        <TabPanel value={activeTab} index={4}>
           <CardContent>
             <Typography variant="h6" gutterBottom>
               Security Configuration
@@ -494,7 +670,7 @@ const AdminSettings = () => {
         </TabPanel>
 
         {/* Payment Settings */}
-        <TabPanel value={activeTab} index={4}>
+        <TabPanel value={activeTab} index={5}>
           <CardContent>
             <Typography variant="h6" gutterBottom>
               Payment Configuration
@@ -566,7 +742,7 @@ const AdminSettings = () => {
         </TabPanel>
 
         {/* System Settings */}
-        <TabPanel value={activeTab} index={5}>
+        <TabPanel value={activeTab} index={6}>
           <CardContent>
             <Typography variant="h6" gutterBottom>
               System Management

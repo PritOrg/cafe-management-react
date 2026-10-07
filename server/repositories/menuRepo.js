@@ -24,6 +24,7 @@ const create = async (tenantId, data) => {
         price_medium: data.price?.medium ?? data.priceMedium ?? 0,
         price_large: data.price?.large ?? data.priceLarge ?? 0,
         category: data.category,
+        category_id: data.categoryId || null,
         image_url: data.imageUrl || '',
         availability: data.availability !== false,
         calories: data.calories || 0,
@@ -33,8 +34,20 @@ const create = async (tenantId, data) => {
         tags: data.tags || [],
         allergens: data.allergens || [],
         order_count: data.orderCount || 0,
+        subtract_stock: data.subtractStock === true,
     }).returning('*');
-    return mapMenuItem(row);
+
+    if (Array.isArray(data.modifierGroupIds) && data.modifierGroupIds.length) {
+        const modifierRepo = require('./modifierRepo');
+        await modifierRepo.setMenuItemGroups(tenantId, row.id, data.modifierGroupIds);
+    }
+
+    const mapped = mapMenuItem(row);
+    if (Array.isArray(data.modifierGroupIds)) {
+        const modifierRepo = require('./modifierRepo');
+        mapped.modifierGroups = await modifierRepo.getMenuItemGroups(tenantId, row.id);
+    }
+    return mapped;
 };
 
 const updateById = async (tenantId, id, data) => {
@@ -55,6 +68,7 @@ const updateById = async (tenantId, id, data) => {
     if (data.preparationTime !== undefined) patch.preparation_time = data.preparationTime;
     if (data.tags !== undefined) patch.tags = data.tags;
     if (data.allergens !== undefined) patch.allergens = data.allergens;
+    if (data.subtractStock !== undefined) patch.subtract_stock = data.subtractStock;
     const [row] = await getDb()('menu_items').where({ id, tenant_id: tenantId }).update(patch).returning('*');
     return row ? mapMenuItem(row) : null;
 };

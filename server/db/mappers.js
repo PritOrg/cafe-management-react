@@ -53,6 +53,7 @@ const mapMenuItem = (row) => row && ({
     subTitle: row.sub_title,
     price: { medium: Number(row.price_medium), large: Number(row.price_large) },
     category: row.category,
+    categoryId: row.category_id || null,
     imageUrl: row.image_url,
     availability: row.availability,
     calories: row.calories,
@@ -62,6 +63,7 @@ const mapMenuItem = (row) => row && ({
     tags: row.tags || [],
     allergens: row.allergens || [],
     orderCount: row.order_count,
+    subtractStock: row.subtract_stock === true,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
 });
