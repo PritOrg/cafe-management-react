@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Button, TextField, InputAdornment, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Tabs, Tab, Badge } from '@mui/material';
 import { Search, FilterList, MoreVert, Visibility, CheckCircle, Cancel, Schedule, LocalShipping } from '@mui/icons-material';
-import { ordersAPI, unwrap } from '../../services/api';
+import { ordersAPI, activityAPI, unwrap } from '../../services/api';
 import { adaptOrder } from '../../adapters';
 
 const AdminOrders = () => {
@@ -10,6 +10,8 @@ const AdminOrders = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [orderHistory, setOrderHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [orderDetailOpen, setOrderDetailOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
@@ -107,9 +109,22 @@ const AdminOrders = () => {
     setSelectedOrderId(null);
   };
 
-  const handleViewOrder = (order) => {
+  const handleViewOrder = async (order) => {
     setSelectedOrder(order);
     setOrderDetailOpen(true);
+    setOrderHistory([]);
+    if (order?._id) {
+      setHistoryLoading(true);
+      try {
+        const body = await activityAPI.byEntity('order', order._id);
+        setOrderHistory(unwrap(body) || []);
+      } catch (err) {
+        console.error('Error loading order history:', err);
+        setOrderHistory([]);
+      } finally {
+        setHistoryLoading(false);
+      }
+    }
     handleMenuClose();
   };
 
@@ -334,6 +349,31 @@ const AdminOrders = () => {
                   <Typography>{selectedOrder.notes}</Typography>
                 </Grid>
               )}
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom>History</Typography>
+                {historyLoading && <Typography variant="body2">Loading history…</Typography>}
+                {!historyLoading && orderHistory.length === 0 && (
+                  <Typography variant="body2" color="text.secondary">No activity yet</Typography>
+                )}
+                {!historyLoading && orderHistory.map((h) => (
+                  <Box key={h._id} sx={{ mb: 1, pb: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="subtitle2">{h.action}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {h.createdAt ? new Date(h.createdAt).toLocaleString() : ''}
+                      </Typography>
+                    </Box>
+                    <Typography variant="caption" color="text.secondary">
+                      {h.actorType}{h.requestId ? ` · ${String(h.requestId).slice(0, 8)}` : ''}
+                    </Typography>
+                    {h.meta && Object.keys(h.meta).length > 0 && (
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        {JSON.stringify(h.meta)}
+                      </Typography>
+                    )}
+                  </Box>
+                ))}
+              </Grid>
             </Grid>
           )}
         </DialogContent>
