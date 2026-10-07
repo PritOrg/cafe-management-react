@@ -97,9 +97,18 @@ exports.updateMenuItem = async (req, res) => {
 
 exports.deleteMenuItem = async (req, res) => {
     try {
-        const item = await menuRepo.deleteById(req.tenantId, req.params.id);
+        const item = await menuRepo.updateById(req.tenantId, req.params.id, { availability: false });
         if (!item) return sendResponse(res, 404, false, 'Item not found');
-        return sendResponse(res, 200, true, 'Menu item deleted');
+        await activityRepo.log({
+            tenantId: req.tenantId,
+            actorId: req.userId,
+            actorType: req.role,
+            action: 'menu.soft_delete',
+            entity: 'menuItem',
+            entityId: item._id,
+            meta: { title: item.title },
+        });
+        return sendResponse(res, 200, true, 'Menu item deactivated', item);
     } catch (err) {
         handleError(res, err);
     }
