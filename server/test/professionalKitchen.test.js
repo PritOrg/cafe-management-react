@@ -188,7 +188,7 @@ describe('professional kitchen: categories, modifiers, recipes, alerts, kitchen 
             .first();
         expect(loaded.special_instructions).toBe('Extra hot, less sugar');
         expect(JSON.stringify(loaded.customizations)).toContain('Extra shot');
-        // base price still from menu; modifiers priced server-side when provided in options
-        expect(Number(loaded.item_price)).toBe(100);
+        // base 100 + modifier priceDelta 40
+        expect(Number(loaded.item_price)).toBe(140);
     });
 });
