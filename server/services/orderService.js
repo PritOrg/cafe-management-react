@@ -114,18 +114,20 @@ const placeOrder = async (req) => {
         }
 
         const price = resolved.price;
-        subtotal += price * quantity;
+        const options = normalizeOptions(raw.options, raw.selectedOptions);
+        const modifierDelta = options.reduce((sum, o) => sum + (Number(o.priceDelta) || 0), 0);
+        const unitPrice = price + modifierDelta;
+        subtotal += unitPrice * quantity;
         const prep = Number(menu.preparationTime) || 0;
         totalPreparationTime += prep;
 
-        const options = normalizeOptions(raw.options, raw.selectedOptions);
         lines.push({
             menuItem: menu._id,
             size: resolved.sizeLabel,
             quantity,
             customizations: options.map((o) => o.name),
             specialInstructions: (raw && typeof raw.specialInstructions === 'string') ? raw.specialInstructions : '',
-            itemPrice: price,
+            itemPrice: unitPrice,
             preparationTime: prep,
         });
     }

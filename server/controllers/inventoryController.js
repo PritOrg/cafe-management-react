@@ -1,5 +1,7 @@
 const { sendResponse } = require('../middleware/auth');
 const inventoryRepo = require('../repositories/inventoryRepo');
+const recipeRepo = require('../repositories/recipeRepo');
+const menuRepo = require('../repositories/menuRepo');
 const activityRepo = require('../repositories/activityRepo');
 
 const requireAdmin = (req, res) => {
@@ -99,6 +101,67 @@ exports.deleteItem = async (req, res) => {
     } catch (err) {
         console.error('Error deleting inventory:', err);
         return sendResponse(res, 500, false, err.message || 'Server error');
+    }
+};
+
+exports.listRecipesForInventory = async (req, res) => {
+    try {
+        const recipes = await recipeRepo.listForInventory(req.tenantId, req.params.id);
+        const withMenus = [];
+        for (const r of recipes) {
+            const menu = await menuRepo.findById(req.tenantId, r.menuItemId);
+            withMenus.push({ ...r, menuItemTitle: menu?.title || null });
+        }
+        return sendResponse(res, 200, true, 'Recipes retrieved', withMenus);
+    } catch (err) {
+        console.error('Error listing recipes:', err);
+        return sendResponse(res, 500, false, 'Server error');
+    }
+};
+
+exports.listRecipesForMenu = async (req, res) => {
+    try {
+        const recipes = await recipeRepo.listForMenu(req.tenantId, req.params.id);
+        return sendResponse(res, 200, true, 'Recipes retrieved', recipes);
+    } catch (err) {
+        console.error('Error listing menu recipes:', err);
+        return sendResponse(res, 500, false, 'Server error');
+    }
+};
+
+exports.addRecipe = async (req, res) => {
+    try {
+        if (!requireAdmin(req, res)) return;
+        const { menuItemId, inventoryItemId, qty, unit } = req.body || {};
+        if (!menuItemId || !inventoryItemId || qty == null || !unit) {
+            return sendResponse(res, 400, false, 'menuItemId, inventoryItemId, qty and unit are required');
+        }
+        const recipe = await recipeRepo.add(req.tenantId, { menuItemId, inventoryItemId, qty, unit });
+        await activityRepo.log({
+            tenantId: req.tenantId,
+            actorId: req.userId,
+            actorType: req.role,
+            action: 'recipe.add',
+            entity: 'recipe',
+            entityId: recipe._id,
+            meta: { menuItemId, inventoryItemId, qty, unit },
+        });
+        return sendResponse(res, 201, true, 'Recipe added', recipe);
+    } catch (err) {
+        console.error('Error adding recipe:', err);
+        return sendResponse(res, err.code === '23505' ? 409 : 500, false, err.message || 'Server error');
+    }
+};
+
+exports.removeRecipe = async (req, res) => {
+    try {
+        if (!requireAdmin(req, res)) return;
+        const ok = await recipeRepo.remove(req.tenantId, req.params.id);
+        if (!ok) return sendResponse(res, 404, false, 'Recipe not found');
+        return sendResponse(res, 200, true, 'Recipe removed');
+    } catch (err) {
+        console.error('Error removing recipe:', err);
+        return sendResponse(res, 500, false, 'Server error');
     }
 };
 

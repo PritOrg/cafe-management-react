@@ -27,7 +27,10 @@ describe('invoiceService + PDF integration', () => {
             },
         });
         const menus = await menuRepo.findAll(tenant._id);
-        const menu = menus[0];
+        const menu = menus.find((m) => !m.sizes?.length && Number(m.price?.medium) > 0) || menus[0];
+        if (!menu?.price?.medium && !menu?.sizes?.length) {
+            throw new Error('No billable menu item found for invoice test');
+        }
         const placed = await placeOrder({
             tenantId: tenant._id,
             role: 'customer',
