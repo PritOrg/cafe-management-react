@@ -1,6 +1,6 @@
 // CustomizationDialog.jsx - With CartContext integration
 import React, { useState, useContext } from 'react';
-import { Dialog, DialogContent, DialogActions, Typography, Button, Checkbox, FormControlLabel, Radio, RadioGroup, Box, Divider, IconButton, Paper, Chip, Slide, Snackbar, Alert } from '@mui/material';
+import { Dialog, DialogContent, DialogActions, Typography, Button, Checkbox, FormControlLabel, Radio, RadioGroup, Box, Divider, IconButton, Paper, Chip, Slide, Snackbar, Alert, useMediaQuery, useTheme } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
@@ -14,6 +14,8 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 const   CustomizationDialog = ({ open, onClose, menuItem }) => {
     // Use CartContext instead of passing addToCart as prop
     const { addToCart } = useContext(CartContext);
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const sizeOptions = (menuItem?.sizes?.length
         ? menuItem.sizes.map((s) => ({ value: s.label, label: s.label, price: s.price }))
@@ -115,12 +117,14 @@ const   CustomizationDialog = ({ open, onClose, menuItem }) => {
                 open={open}
                 onClose={onClose}
                 TransitionComponent={Transition}
+                fullScreen={isMobile}
                 fullWidth
                 maxWidth="sm"
                 PaperProps={{
                     sx: {
-                        borderRadius: '16px',
-                        overflow: 'hidden'
+                        borderRadius: isMobile ? 0 : '16px',
+                        overflow: 'hidden',
+                        maxHeight: isMobile ? '100dvh' : undefined,
                     }
                 }}
             >
@@ -155,7 +159,7 @@ const   CustomizationDialog = ({ open, onClose, menuItem }) => {
                     </IconButton>
                 </Box>
 
-                <DialogContent sx={{ padding: '24px' }}>
+                <DialogContent sx={{ padding: isMobile ? '16px' : '24px' }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 600, marginBottom: 2 }}>Select Size</Typography>
                     <Paper variant="outlined" sx={{ padding: 2, borderRadius: '12px', marginBottom: 3, borderColor: '#eee' }}>
                         <RadioGroup
