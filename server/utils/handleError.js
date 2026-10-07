@@ -1,7 +1,7 @@
-// utils/handleError.js
+const { sendResponse } = require('../middleware/auth');
 const handleError = (res, error, status = 500, message = 'Internal server error') => {
     console.error(error);
-    return res.status(status).json({ message });
+    return sendResponse(res, status, false, message);
 };
 
 module.exports = handleError;

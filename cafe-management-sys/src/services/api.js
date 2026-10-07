@@ -1,7 +1,7 @@
-// API Configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4969/api';
+// API Configuration — all product endpoints are versioned under /api/v1
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4969/api/v1';
 
-// Helper function to get auth token (using sessionStorage for better security)
+// Helper function to get auth token (sessionStorage preferred, localStorage fallback)
 const getAuthToken = () => {
   return sessionStorage.getItem('token') || localStorage.getItem('token');
 };
@@ -9,6 +9,12 @@ const getAuthToken = () => {
 // Helper function to create headers
 const createHeaders = (includeAuth = true, isFormData = false) => {
   const headers = {};
+
+  // Correlate client requests with server access logs
+  headers['X-Request-Id'] =
+    (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : `req-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
   // Don't set Content-Type for FormData - browser will set it with boundary
   if (!isFormData) {
@@ -60,16 +66,25 @@ const apiRequest = async (endpoint, options = {}) => {
       }
     }
 
-    return await response.json();
+    return await response.json().then((body) => {
+      if (body && typeof body === 'object' && !Array.isArray(body)) {
+        const serverRequestId = response.headers.get('X-Request-Id');
+        if (serverRequestId && !body.requestId) {
+          body.requestId = serverRequestId;
+        }
+      }
+      return body;
+    });
   } catch (error) {
     console.error(`API request failed for ${endpoint}:`, error);
     throw error;
   }
 };
 
-// Authentication API - Updated to match LoginRegisterPage implementation
+// Unwrap standardized { success, message, data } envelope; pass through raw payloads
+export const unwrap = (body) => (body != null && body.data !== undefined ? body.data : body);
+
 export const authAPI = {
-  // Login with enhanced error handling
   login: (credentials) =>
     apiRequest('/auth/login', {
       method: 'POST',
@@ -77,49 +92,21 @@ export const authAPI = {
       auth: false,
     }),
 
-  // Customer registration with FormData support for file uploads
-  registerCustomer: (formData) =>
-    apiRequest('/auth/register/customer', {
-      method: 'POST',
-      body: formData, // FormData object for file upload
-      auth: false,
-      isFormData: true,
-    }),
-
-  // Staff registration with FormData support for file uploads
   registerStaff: (formData) =>
     apiRequest('/auth/register/staff', {
       method: 'POST',
-      body: formData, // FormData object for file upload
+      body: formData,
       auth: false,
       isFormData: true,
     }),
 
-  // Profile update with FormData support
-  updateProfile: (formData) =>
-    apiRequest('/auth/profile', {
-      method: 'PUT',
-      body: formData,
-      isFormData: true,
-    }),
-
-  // Delete profile
-  deleteProfile: () =>
-    apiRequest('/auth/profile', {
-      method: 'DELETE',
-    }),
-
-  // Logout helper function
   logout: () => {
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('userType');
-    sessionStorage.removeItem('user');
-    localStorage.removeItem('token'); // Clean up legacy storage
-    localStorage.removeItem('userType');
-    localStorage.removeItem('user');
+    ['token', 'user', 'userType'].forEach((key) => {
+      sessionStorage.removeItem(key);
+      localStorage.removeItem(key);
+    });
   },
 
-  // Get current user from storage
   getCurrentUser: () => {
     try {
       const user = sessionStorage.getItem('user') || localStorage.getItem('user');
@@ -130,12 +117,10 @@ export const authAPI = {
     }
   },
 
-  // Check if user is authenticated
   isAuthenticated: () => {
     return !!(sessionStorage.getItem('token') || localStorage.getItem('token'));
   },
 
-  // Get user type
   getUserType: () => {
     return sessionStorage.getItem('userType') || localStorage.getItem('userType');
   },
@@ -147,10 +132,11 @@ export const menuAPI = {
   
   getById: (id) => apiRequest(`/menu/${id}`, { auth: false }),
   
-  create: (menuData) => 
+  create: (menuData) =>
     apiRequest('/menu', {
       method: 'POST',
-      body: JSON.stringify(menuData),
+      body: menuData,
+      isFormData: typeof FormData !== 'undefined' && menuData instanceof FormData,
     }),
     
   update: (id, menuData) => 
@@ -189,140 +175,87 @@ export const staffAPI = {
     }),
 };
 
-// Customers API
+// Customers API (Phase K)
 export const customersAPI = {
-  getAll: () => apiRequest('/customers'),
-  
+  list: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return apiRequest(`/customers${qs ? `?${qs}` : ''}`);
+  },
   getById: (id) => apiRequest(`/customers/${id}`),
-  
-  update: (id, customerData) => 
-    apiRequest(`/customers/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(customerData),
-    }),
-    
-  delete: (id) => 
-    apiRequest(`/customers/${id}`, {
-      method: 'DELETE',
-    }),
+  getOrders: (id) => apiRequest(`/customers/${id}/orders`),
+  getSummary: (id) => apiRequest(`/customers/${id}/summary`),
+  softDelete: (id) => apiRequest(`/customers/${id}`, { method: 'DELETE' }),
+};
+
+// Invoices API (Phase L)
+export const invoicesAPI = {
+  list: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return apiRequest(`/invoices${qs ? `?${qs}` : ''}`);
+  },
+  getById: (id) => apiRequest(`/invoices/${id}`),
+  issueForOrder: (orderId, body = {}) =>
+    apiRequest(`/orders/${orderId}/invoice`, { method: 'POST', body: JSON.stringify(body) }),
+  void: (id, reason) =>
+    apiRequest(`/invoices/${id}/void`, { method: 'POST', body: JSON.stringify({ reason }) }),
+  pdfUrl: (id, format = 'a4') =>
+    `${API_BASE_URL}/invoices/${id}/pdf?format=${format}`,
 };
 
 // Orders API
 export const ordersAPI = {
-  // Get all orders with optional filters
   getAll: (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     return apiRequest(`/orders${queryString ? `?${queryString}` : ''}`);
   },
 
-  // Get today's orders
   getToday: () => apiRequest('/orders?today=true'),
 
-  // Get recent orders (for dashboard)
   getRecent: (limit = 5) => apiRequest(`/orders?limit=${limit}`),
 
-  // Get orders by status
   getByStatus: (status) => apiRequest(`/orders?status=${status}`),
 
-  // Get specific order
+  getHistory: (phone) => apiRequest(`/orders/history?phone=${encodeURIComponent(phone)}`),
+
   getById: (id) => apiRequest(`/orders/${id}`),
 
-  // Update order status
   updateStatus: (id, status) => apiRequest(`/orders/${id}/status`, {
     method: 'PUT',
     body: JSON.stringify({ status }),
   }),
 
-  // Place new order
   create: (orderData) => apiRequest('/orders', {
     method: 'POST',
     body: JSON.stringify(orderData),
   }),
 };
 
-// Dashboard/Analytics API - Updated to use real endpoints
+// Tenants API (platform admin)
+export const tenantsAPI = {
+  getAll: () => apiRequest('/tenants'),
+  create: (data) => apiRequest('/tenants', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => apiRequest(`/tenants/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+};
+
+// Settings API
+export const settingsAPI = {
+  getPublic: () => apiRequest('/settings/public', { auth: false }),
+  get: () => apiRequest('/settings'),
+  update: (data) => apiRequest('/settings', { method: 'PUT', body: JSON.stringify(data) }),
+};
+
+// Dashboard/Analytics API — real /api/v1/analytics endpoints (no silent mocks)
 export const analyticsAPI = {
-  getDashboardStats: async () => {
-    try {
-      // Get data from multiple endpoints to build dashboard stats
-      const [todaysOrders, allMenuItems, todaysRevenue] = await Promise.all([
-        ordersAPI.getToday().catch(() => ({ data: [] })),
-        menuAPI.getAll().catch(() => ({ data: [] })),
-        // Calculate today's revenue from orders
-        ordersAPI.getToday().then(response => {
-          const orders = response.data || response || [];
-          const revenue = orders.reduce((total, order) => total + (order.totalAmount || 0), 0);
-          return revenue;
-        }).catch(() => 0)
-      ]);
+  getSummary: () => apiRequest('/analytics/summary'),
+  getSales: (period = '30d') => apiRequest(`/analytics/sales?period=${encodeURIComponent(period)}`),
+  getOrderStats: (period = '30d') => apiRequest(`/analytics/orders?period=${encodeURIComponent(period)}`),
+  getTopItems: (period = '30d', limit = 10) =>
+    apiRequest(`/analytics/top-items?period=${encodeURIComponent(period)}&limit=${limit}`),
+  getCategoryMix: (period = '30d') => apiRequest(`/analytics/category-mix?period=${encodeURIComponent(period)}`),
 
-      const orders = todaysOrders.data || todaysOrders || [];
-      const menuItems = allMenuItems.data || allMenuItems || [];
-
-      return {
-        totalRevenue: todaysRevenue,
-        ordersToday: orders.length,
-        menuItems: menuItems.length,
-        pendingOrders: orders.filter(order => order.status === 'pending').length,
-        revenueChange: 12.5, // This would need historical data to calculate
-        ordersChange: 8.2,   // This would need historical data to calculate
-      };
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-      // Fallback to mock data if endpoints fail
-      return {
-        totalRevenue: 0,
-        ordersToday: 0,
-        menuItems: 0,
-        pendingOrders: 0,
-        revenueChange: 0,
-        ordersChange: 0,
-      };
-    }
-  },
-    
-  getRevenueStats: (period = '30d') => 
-    apiRequest(`/analytics/revenue?period=${period}`).catch(() => {
-      // Mock data fallback
-      return {
-        total: 12426,
-        change: 12.5,
-        chartData: [],
-      };
-    }),
-    
-  getOrderStats: (period = '30d') => 
-    apiRequest(`/analytics/orders?period=${period}`).catch(() => {
-      // Mock data fallback
-      return {
-        total: 147,
-        change: 8.2,
-        chartData: [],
-      };
-    }),
-    
-  getInventoryAlerts: () => 
-    apiRequest('/analytics/inventory-alerts').catch(() => {
-      // Mock data fallback
-      return [
-        {
-          id: 1,
-          item: 'Coffee beans',
-          currentStock: 5,
-          minStock: 10,
-          unit: 'lbs',
-          severity: 'high',
-        },
-        {
-          id: 2,
-          item: 'Milk',
-          currentStock: 2,
-          minStock: 5,
-          unit: 'gallons',
-          severity: 'medium',
-        },
-      ];
-    }),
+  // Back-compat names used by existing admin pages
+  getDashboardStats: () => apiRequest('/analytics/summary'),
+  getRevenueStats: (period = '30d') => apiRequest(`/analytics/sales?period=${encodeURIComponent(period)}`),
 };
 
 // Health check
@@ -330,12 +263,18 @@ export const healthAPI = {
   check: () => apiRequest('/health', { auth: false }),
 };
 
-export default {
+const api = {
   auth: authAPI,
   menu: menuAPI,
   orders: ordersAPI,
   staff: staffAPI,
   customers: customersAPI,
+  invoices: invoicesAPI,
+  tenants: tenantsAPI,
+  settings: settingsAPI,
   analytics: analyticsAPI,
   health: healthAPI,
+  unwrap,
 };
+
+export default api;

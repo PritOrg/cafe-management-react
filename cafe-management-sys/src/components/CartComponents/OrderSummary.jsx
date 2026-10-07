@@ -89,7 +89,7 @@ const OrderSummary = ({
           </Grid>
           <Grid item>
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              ${total.toFixed(2)}
+              ₹{total.toFixed(2)}
             </Typography>
           </Grid>
         </SummaryRow>
@@ -97,15 +97,15 @@ const OrderSummary = ({
         <SummaryRow container justifyContent="space-between">
           <Grid item>
             <Box display="flex" alignItems="center">
-              <ShippingIcon fontSize="small" sx={{ color: 'success.main', mr: 1 }} />
-              <Typography variant="body2">Delivery</Typography>
+              <ShippingIcon fontSize="small" sx={{ color: 'text.secondary', mr: 1 }} />
+              <Typography variant="body2">Tax (GST)</Typography>
             </Box>
           </Grid>
           <Grid item>
             <Chip 
-              label="FREE" 
+              label="At checkout" 
               size="small" 
-              color="success" 
+              color="default" 
               sx={{ fontWeight: 600 }}
             />
           </Grid>
@@ -137,10 +137,10 @@ const OrderSummary = ({
       {/* Total Section */}
       <TotalSection>
         <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-          Total: ${total.toFixed(2)}
+          Total: ₹{total.toFixed(2)}
         </Typography>
         <Typography variant="body2" sx={{ opacity: 0.9 }}>
-          Including all fees and taxes
+          Tax added at checkout
         </Typography>
       </TotalSection>
       

@@ -42,7 +42,7 @@ const LoginRegisterPage = () => {
   const theme = useTheme();
   const { login } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
-  const [role, setRole] = useState('customer');
+  const [role, setRole] = useState('staff');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -96,7 +96,6 @@ const LoginRegisterPage = () => {
   };
 
   const showValidationErrorPopup = (errors) => {
-    const errorList = Object.values(errors).join('\n• ');
     Swal.fire({
       icon: 'warning',
       title: 'Please check your input',
@@ -233,8 +232,8 @@ const LoginRegisterPage = () => {
 
     // Phone validation (enhanced)
     if (registerData.phone && registerData.phone.trim()) {
-      const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-      const cleanPhone = registerData.phone.replace(/[\s\-\(\)]/g, '');
+      const phoneRegex = /^[+]?[1-9][\d]{0,15}$/;
+      const cleanPhone = registerData.phone.replace(/[\s\-()]/g, '');
       if (!phoneRegex.test(cleanPhone)) {
         errors.phone = 'Please enter a valid phone number (e.g., +1234567890)';
       }
@@ -276,14 +275,9 @@ const LoginRegisterPage = () => {
       showSuccessPopup(responseData.message || 'Login successful! Redirecting to your dashboard...');
       setLoginData({ email: '', password: '' });
 
-      // Redirect based on user type after a short delay
+      // Redirect staff/admin to dashboard after a short delay
       setTimeout(() => {
-        if (data.userType === 'customer') {
-          window.location.href = '/menu';
-        } else {
-          // Staff or Admin (userType is 'staffOrAdmin')
-          window.location.href = '/admin';
-        }
+        window.location.href = '/admin';
       }, 1500);
 
     } catch (error) {
@@ -315,14 +309,8 @@ const LoginRegisterPage = () => {
         formData.append('profilePhoto', registerData.profilePhoto);
       }
 
-      // Use the appropriate API service method
-      let responseData;
-      if (role === 'customer') {
-        responseData = await authAPI.registerCustomer(formData);
-      } else {
-        formData.append('role', role);
-        responseData = await authAPI.registerStaff(formData);
-      }
+      formData.append('role', role === 'admin' ? 'admin' : 'staff');
+      const responseData = await authAPI.registerStaff(formData);
 
       showSuccessPopup(responseData.message || 'Registration successful! You can now login with your new account.');
       setRegisterData({
@@ -365,9 +353,9 @@ const LoginRegisterPage = () => {
         };
       default:
         return {
-          color: theme.palette.primary.main,
-          label: 'Customer',
-          description: 'Browse menu and place orders'
+          color: theme.palette.info.main,
+          label: 'Staff Member',
+          description: 'Order management and customer service'
         };
     }
   };
@@ -492,17 +480,9 @@ const LoginRegisterPage = () => {
                     }
                   }}
                 >
-                  <MenuItem value="customer">
-                    <Box>
-                      <Typography variant="body1">Customer</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Browse menu and place orders
-                      </Typography>
-                    </Box>
-                  </MenuItem>
                   <MenuItem value="staff">
                     <Box>
-                      <Typography variant="body1">Staff Member</Typography>
+                      <Typography variant="body2" fontWeight={600}>Staff</Typography>
                       <Typography variant="caption" color="text.secondary">
                         Order management and customer service
                       </Typography>
@@ -510,9 +490,9 @@ const LoginRegisterPage = () => {
                   </MenuItem>
                   <MenuItem value="admin">
                     <Box>
-                      <Typography variant="body1">Administrator</Typography>
+                      <Typography variant="body2" fontWeight={600}>Admin</Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Full system access and management
+                        Full cafe management access
                       </Typography>
                     </Box>
                   </MenuItem>

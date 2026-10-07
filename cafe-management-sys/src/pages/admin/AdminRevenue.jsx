@@ -1,35 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Grid,
-  Button,
-  ButtonGroup,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  IconButton,
-  LinearProgress,
-} from '@mui/material';
-import {
-  TrendingUp,
-  TrendingDown,
-  AttachMoney,
-  DateRange,
-  Download,
-  Refresh,
-} from '@mui/icons-material';
-import { analyticsAPI } from '../../services/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Box, Typography, Card, CardContent, Grid, Button, ButtonGroup, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, LinearProgress, Alert } from '@mui/material';
+import { TrendingUp, TrendingDown, AttachMoney, DateRange, Download, Refresh } from '@mui/icons-material';
+import { analyticsAPI, unwrap } from '../../services/api';
+import { formatMoney } from '../../utils/formatMoney';
 
 const AdminRevenue = () => {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [period, setPeriod] = useState('30d');
   const [revenueData, setRevenueData] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(new Date());
@@ -41,41 +18,43 @@ const AdminRevenue = () => {
     { value: '1y', label: '1 Year' },
   ];
 
-  useEffect(() => {
-    fetchRevenueData();
-  }, [period]);
-
-  const fetchRevenueData = async () => {
+  const fetchRevenueData = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await analyticsAPI.getRevenueStats(period);
-      setRevenueData(data);
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error('Error fetching revenue data:', error);
-      // Mock data fallback
+      setError(null);
+      const body = await analyticsAPI.getRevenueStats(period);
+      const data = unwrap(body) || {};
       setRevenueData({
-        total: 12426,
-        change: 12.5,
-        chartData: [],
-        breakdown: [
-          { category: 'Coffee', amount: 7500, percentage: 60.4, change: 15.2 },
-          { category: 'Pastries', amount: 2800, percentage: 22.5, change: 8.7 },
-          { category: 'Sandwiches', amount: 1500, percentage: 12.1, change: -2.3 },
-          { category: 'Desserts', amount: 626, percentage: 5.0, change: 22.1 },
-        ],
-        dailyRevenue: [
-          { date: '2024-01-01', amount: 450 },
-          { date: '2024-01-02', amount: 520 },
-          { date: '2024-01-03', amount: 380 },
-          { date: '2024-01-04', amount: 610 },
-          { date: '2024-01-05', amount: 490 },
-        ],
+        total: Number(data.totalRevenue || 0),
+        change: Number(data.revenueChangePct || 0),
+        ordersChange: Number(data.ordersChangePct || 0),
+        totalOrders: Number(data.totalOrders || 0),
+        chartData: data.series || [],
+        breakdown: (data.breakdown || []).map((b) => ({
+          category: b.category,
+          amount: b.revenue,
+          percentage: b.shareBps != null ? b.shareBps / 100 : 0,
+          change: 0,
+        })),
+        dailyRevenue: (data.series || []).map((s) => ({
+          date: s.date,
+          amount: s.revenue,
+          ordersCount: s.ordersCount,
+        })),
       });
+      setLastUpdated(new Date());
+    } catch (err) {
+      console.error('Error fetching revenue data:', err);
+      setError(err.message || 'Failed to load revenue data');
+      setRevenueData({ total: 0, change: 0, chartData: [], breakdown: [], dailyRevenue: [] });
     } finally {
       setLoading(false);
     }
-  };
+  }, [period]);
+
+  useEffect(() => {
+    fetchRevenueData();
+  }, [fetchRevenueData]);
 
   const StatCard = ({ title, value, change, icon, color = 'primary' }) => (
     <Card sx={{ height: '100%' }}>
@@ -100,7 +79,7 @@ const AdminRevenue = () => {
           </Box>
         </Box>
         <Typography variant="h4" color={`${color}.main`} fontWeight={700} gutterBottom>
-          {typeof value === 'number' ? `$${value.toLocaleString()}` : value}
+          {typeof value === 'number' ? formatMoney(value) : value}
         </Typography>
         <Typography variant="body2" color="text.secondary">
           {title}
@@ -122,6 +101,13 @@ const AdminRevenue = () => {
 
   return (
     <Box sx={{ p: 3 }}>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} action={
+          <Button color="inherit" size="small" onClick={fetchRevenueData}>Retry</Button>
+        }>
+          {error}
+        </Alert>
+      )}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" sx={{ fontWeight: 600 }}>
           Revenue Analytics

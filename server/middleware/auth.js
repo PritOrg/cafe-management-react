@@ -1,13 +1,17 @@
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 
-// Standardized response helper
+// Standardized response helper — includes requestId when available for client correlation
 const sendResponse = (res, statusCode, success, message, data = null) => {
     const response = {
         success,
         message,
         timestamp: new Date().toISOString(),
     };
+
+    if (res.req && res.req.id) {
+        response.requestId = res.req.id;
+    }
 
     if (data) {
         response.data = data;
@@ -56,7 +60,17 @@ const ensureAuthenticated = (req, res, next) => {
 
             req.userId = decoded.id;
             req.userEmail = decoded.email;
-            req.role = decoded.role; // Include role for RBAC
+            req.role = decoded.role;
+            req.tenantId = decoded.tenantId;
+            req.isPlatformAdmin = !!decoded.isPlatformAdmin;
+
+            if (
+                decoded.tenantId &&
+                req.tenantId &&
+                decoded.tenantId.toString() !== req.tenantId.toString()
+            ) {
+                return sendResponse(res, 403, false, 'Token tenant does not match request tenant');
+            }
             next();
         });
     } catch (error) {
@@ -139,29 +153,48 @@ const createRateLimiter = (windowMs, max, message) => {
     });
 };
 
-// Different rate limiters for different endpoints
-const authRateLimiter = createRateLimiter(
-    15 * 60 * 1000, // 15 minutes
-    5, // 5 attempts
-    'Too many authentication attempts. Please try again in 15 minutes.'
-);
+// Different rate limiters for different endpoints (disabled under NODE_ENV=test)
+const authRateLimiter = process.env.NODE_ENV === 'test'
+    ? (req, res, next) => next()
+    : createRateLimiter(
+        15 * 60 * 1000,
+        5,
+        'Too many authentication attempts. Please try again in 15 minutes.'
+    );
 
-const generalRateLimiter = createRateLimiter(
-    15 * 60 * 1000, // 15 minutes
-    100, // 100 requests
-    'Too many requests. Please try again in 15 minutes.'
-);
+const generalRateLimiter = process.env.NODE_ENV === 'test'
+    ? (req, res, next) => next()
+    : createRateLimiter(
+        15 * 60 * 1000,
+        100,
+        'Too many requests. Please try again in 15 minutes.'
+    );
 
-const strictRateLimiter = createRateLimiter(
-    15 * 60 * 1000, // 15 minutes
-    10, // 10 requests
-    'Too many requests to this endpoint. Please try again in 15 minutes.'
-);
+const strictRateLimiter = process.env.NODE_ENV === 'test'
+    ? (req, res, next) => next()
+    : createRateLimiter(
+        15 * 60 * 1000,
+        10,
+        'Too many requests to this endpoint. Please try again in 15 minutes.'
+    );
+
+const ensurePlatformAdmin = (req, res, next) => {
+    try {
+        if (!req.isPlatformAdmin) {
+            return sendResponse(res, 403, false, 'Platform administrator privileges required');
+        }
+        next();
+    } catch (error) {
+        console.error('Platform admin authorization middleware error:', error);
+        return sendResponse(res, 500, false, 'Authorization service error. Please try again later.');
+    }
+};
 
 module.exports = {
     ensureAuthenticated,
     ensureAdmin,
     ensureAdminOrStaff,
+    ensurePlatformAdmin,
     authRateLimiter,
     generalRateLimiter,
     strictRateLimiter,

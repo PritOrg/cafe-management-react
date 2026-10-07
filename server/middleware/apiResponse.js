@@ -182,9 +182,11 @@ class ApiResponse {
  * Middleware to attach ApiResponse to request object
  */
 const attachApiResponse = (req, res, next) => {
-    // Generate unique request ID
-    req.id = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+    // Keep requestId middleware's X-Request-Id when already set
+    if (!req.id) {
+        req.id = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+
     // Attach ApiResponse instance
     req.apiResponse = new ApiResponse(res, req);
     

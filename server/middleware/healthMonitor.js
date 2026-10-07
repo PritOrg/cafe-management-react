@@ -1,5 +1,5 @@
 const os = require('os');
-const mongoose = require('mongoose');
+const { getDb } = require('../db/pool');
 const { logger, performanceLogger } = require('./logger');
 
 /**
@@ -33,6 +33,14 @@ class HealthMonitor {
         
         // Start monitoring
         this.startSystemMonitoring();
+        try {
+            this.updateSystemMetrics();
+        } catch (err) {
+            console.error('Initial system metrics failed:', err.message);
+        }
+        Promise.resolve()
+            .then(() => this.updateDatabaseMetrics())
+            .catch(() => {});
     }
 
     /**
@@ -102,35 +110,30 @@ class HealthMonitor {
     async updateDatabaseMetrics() {
         try {
             const startTime = Date.now();
-            
-            // Test database connection
-            await mongoose.connection.db.admin().ping();
-            
+            const db = getDb();
+            await db.raw('SELECT 1');
             const responseTime = Date.now() - startTime;
-            
+            const pool = db.client.pool;
             this.metrics.database = {
-                status: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-                connections: mongoose.connection.db?.serverConfig?.connections?.length || 0,
+                status: 'connected',
+                connections: pool && typeof pool.numUsed === 'number' ? pool.numUsed() : 0,
+                pending: pool && typeof pool.numPendingAcquires === 'number' ? pool.numPendingAcquires() : 0,
                 responseTime,
-                host: mongoose.connection.host,
-                port: mongoose.connection.port,
-                name: mongoose.connection.name
             };
 
-            // Log slow database responses
             if (responseTime > 100) {
-                performanceLogger.slowQuery({ operation: 'ping' }, responseTime, 100);
+                performanceLogger.slowQuery({ operation: 'SELECT 1' }, responseTime, 100);
             }
         } catch (error) {
             this.metrics.database = {
                 status: 'error',
                 error: error.message,
-                responseTime: -1
+                responseTime: -1,
             };
-            
+
             logger.error('Database health check failed', {
                 error: error.message,
-                type: 'HEALTH_CHECK'
+                type: 'HEALTH_CHECK',
             });
         }
     }

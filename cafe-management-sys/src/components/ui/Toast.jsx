@@ -1,13 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import {
-  Snackbar,
-  Alert,
-  AlertTitle,
-  IconButton,
-  Slide,
-  Grow,
-  Fade,
-} from '@mui/material';
+import { Snackbar, Alert, AlertTitle, IconButton, Slide } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 
 // Toast Context
@@ -16,6 +8,10 @@ const ToastContext = createContext();
 // Toast Provider Component
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
+
+  const removeToast = useCallback((id) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  }, []);
 
   const addToast = useCallback((message, options = {}) => {
     const id = Date.now() + Math.random();
@@ -40,11 +36,7 @@ export const ToastProvider = ({ children }) => {
     }
 
     return id;
-  }, []);
-
-  const removeToast = useCallback((id) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
-  }, []);
+  }, [removeToast]);
 
   const removeAllToasts = useCallback(() => {
     setToasts([]);

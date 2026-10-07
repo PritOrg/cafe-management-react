@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext } from 'react';
 import { Container, Typography, Box } from '@mui/material';
 import CartContext from '../../components/CartContext';
 import CheckoutStepper from '../../components/CartComponents/CheckoutStepper';

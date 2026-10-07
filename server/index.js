@@ -1,13 +1,17 @@
+require('node:dns').setDefaultResultOrder('ipv4first');
+const net = require('node:net');
+if (typeof net.setDefaultAutoSelectFamily === 'function') {
+    net.setDefaultAutoSelectFamily(false);
+}
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const mongoose = require('mongoose');
-const morgan = require('morgan'); // logging middleware
 const helmet = require('helmet'); // security headers
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const path = require('path');
 const compression = require('compression');
+const { getDb } = require('./db/pool');
 
 // Import middleware
 const { globalErrorHandler, handleNotFound, handleUncaughtException, handleUnhandledRejection, handleSigterm } = require('./middleware/errorHandler');
@@ -60,16 +64,39 @@ app.use(helmet({
   }
 }));
 
-// CORS configuration
-const corsOptions = {
-  origin: process.env.NODE_ENV === 'production'
-    ? process.env.FRONTEND_URL || 'http://localhost:3000'
-    : ['http://localhost:3000','http://localhost:3001', 'http://127.0.0.1:3000'],
-  credentials: true,
-  optionsSuccessStatus: 200,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+// CORS configuration — dynamic origins: configured + *.localhost + registered domain suffixes
+const corsAllowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+const publicDomain = (process.env.PUBLIC_DOMAIN || '').toLowerCase();
+
+const isAllowedOrigin = (origin) => {
+    if (!origin) return true;
+    if (corsAllowedOrigins.includes(origin)) return true;
+    try {
+        const url = new URL(origin);
+        const host = url.hostname.toLowerCase();
+        if (host === 'localhost' || host.endsWith('.localhost') || host === '127.0.0.1') return true;
+        if (publicDomain && (host === publicDomain || host.endsWith(`.${publicDomain}`))) return true;
+    } catch {
+        /* ignore malformed origin */
+    }
+    return false;
 };
+
+const corsOptions = {
+    origin: (origin, callback) => callback(null, isAllowedOrigin(origin)),
+    credentials: true,
+    optionsSuccessStatus: 200,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Tenant', 'X-Request-Id'],
+    exposedHeaders: ['X-Request-Id', 'X-Response-Time'],
+};
+
+// Request ID first — every response carries X-Request-Id for client/server correlation
+const { requestId } = require('./middleware/requestId');
+app.use(requestId);
 
 app.use(cors(corsOptions));
 app.use(compression()); // Compress responses
@@ -81,30 +108,43 @@ app.use(attachApiResponse); // Attach enhanced API response utilities
 app.use(responseTimeTracker); // Track response times
 app.use(trackRequestMetrics); // Track request metrics for health monitoring
 
-// Custom logging middleware
+// Structured access logs (request + response with requestId, user, tenant)
 app.use(requestLogger);
 
-// Morgan for additional HTTP logging in development
-if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
-} else {
-  app.use(morgan('combined'));
-}
+// API version prefix — all product endpoints live under /api/v1
+const API_PREFIX = '/api/v1';
 
 // Rate limiting for all API routes
-app.use('/api/', generalRateLimiter);
+app.use(API_PREFIX, generalRateLimiter);
+
+// Tenant resolution (subdomain slug → req.tenant / req.tenantId)
+const { resolveTenant } = require('./middleware/tenant');
+app.use(API_PREFIX, resolveTenant);
+
+// Local storage driver serves uploads statically
+if ((process.env.STORAGE_DRIVER || 'firebase') === 'local') {
+    app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+}
 
 // API Documentation
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerOptions));
+app.use(`${API_PREFIX}/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerOptions));
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/customers', customerRoutes);
-app.use('/api/staff-admin', staffAdminRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/menu', menuItemsRoutes);
+// API Routes (v1)
+const tenantRoutes = require('./routes/tenants');
+const settingsRoutes = require('./routes/settings');
+const analyticsRoutes = require('./routes/analytics');
+const invoicesRoutes = require('./routes/invoices');
+app.use(`${API_PREFIX}/tenants`, tenantRoutes);
+app.use(`${API_PREFIX}/settings`, settingsRoutes);
+app.use(`${API_PREFIX}/analytics`, analyticsRoutes);
+app.use(`${API_PREFIX}/invoices`, invoicesRoutes);
+app.use(`${API_PREFIX}/auth`, authRoutes);
+app.use(`${API_PREFIX}/customers`, customerRoutes);
+app.use(`${API_PREFIX}/staff-admin`, staffAdminRoutes);
+app.use(`${API_PREFIX}/orders`, orderRoutes);
+app.use(`${API_PREFIX}/menu`, menuItemsRoutes);
 
-// Enhanced health check endpoints
+// Enhanced health check endpoints (unversioned — infra)
 app.get('/health', healthCheckHandler);
 app.get('/metrics', metricsHandler);
 
@@ -112,10 +152,13 @@ app.get('/metrics', metricsHandler);
 app.get('/api', (req, res) => {
   res.json({
     message: 'Cafe Management System API',
-    version: '1.0.0',
-    documentation: '/api/docs',
-    health: '/health',
-    timestamp: new Date().toISOString()
+    apiVersion: 'v1',
+    endpoints: {
+      api: API_PREFIX,
+      docs: `${API_PREFIX}/docs`,
+      health: '/health',
+    },
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -125,73 +168,56 @@ app.all('*', handleNotFound);
 // Global error handling middleware (must be last)
 app.use(globalErrorHandler);
 
-// MongoDB connection & server start
+// Postgres (Knex) connection & server start
 const PORT = process.env.PORT || 4969;
 
-// Enhanced MongoDB connection with options
-const mongoOptions = {
-  maxPoolSize: 10, // Maintain up to 10 socket connections
-  serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
-  socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
-};
+getDb().raw('SELECT 1')
+  .then(async () => {
+    const pool = getDb().client.pool;
+    const dbLabel = process.env.NODE_ENV === 'production' ? 'production' : 'development';
+    console.log('');
+    console.log('──────────────────────────────────────────────');
+    console.log(' Cafe API — Postgres connected');
+    console.log(`   mode:  ${dbLabel}`);
+    console.log(`   pool:  ${pool && typeof pool.numUsed === 'function' ? pool.numUsed() : 0} active`);
+    console.log('──────────────────────────────────────────────');
 
-// Database connection with enhanced error handling
-mongoose.connect(process.env.MONGO_URI, mongoOptions)
-  .then(() => {
-    logger.info('MongoDB connected successfully', {
-      host: mongoose.connection.host,
-      port: mongoose.connection.port,
-      database: mongoose.connection.name
-    });
-
-    // Start server
     const server = app.listen(PORT, () => {
-      logger.info(`Server started successfully`, {
-        port: PORT,
+      const addr = server.address();
+      const boundPort = typeof addr === 'object' && addr ? addr.port : PORT;
+      console.log('');
+      console.log('══════════════════════════════════════════════');
+      console.log(` ✅  Cafe API listening on http://localhost:${boundPort}`);
+      console.log(`     Health:  http://localhost:${boundPort}/health`);
+      console.log(`     API v1:  http://localhost:${boundPort}${API_PREFIX}`);
+      console.log(`     Docs:    http://localhost:${boundPort}${API_PREFIX}/docs`);
+      console.log('══════════════════════════════════════════════');
+      console.log('');
+      logger.info('Server started successfully', {
+        port: boundPort,
+        apiPrefix: API_PREFIX,
         environment: process.env.NODE_ENV || 'development',
-        url: `http://localhost:${PORT}`,
-        docs: `http://localhost:${PORT}/api/docs`
       });
     });
 
-    // Handle server errors
     server.on('error', (error) => {
+      console.error('❌ Server error:', error.message);
       logger.error('Server error', { error: error.message, stack: error.stack });
     });
 
-    // Graceful shutdown handlers
     handleUnhandledRejection(server);
     handleSigterm(server);
 
-    // Export server for testing
     module.exports = { app, server };
   })
   .catch((err) => {
-    logger.error('MongoDB connection failed', {
+    console.error('');
+    console.error('❌ Postgres connection failed:', err.message);
+    console.error('   Check DATABASE_URL / DB_URI and that the database is reachable.');
+    console.error('');
+    logger.error('Postgres connection failed', {
       error: err.message,
-      stack: err.stack
+      stack: err.stack,
     });
-    console.error('MongoDB connection error:', err);
     process.exit(1);
   });
-
-// Handle MongoDB connection events
-mongoose.connection.on('connected', () => {
-  logger.info('Mongoose connected to MongoDB');
-});
-
-mongoose.connection.on('error', (err) => {
-  logger.error('Mongoose connection error', { error: err.message });
-});
-
-mongoose.connection.on('disconnected', () => {
-  logger.warn('Mongoose disconnected from MongoDB');
-});
-
-// If the Node process ends, close the Mongoose connection
-process.on('SIGINT', () => {
-  mongoose.connection.close(() => {
-    logger.info('Mongoose connection closed due to app termination');
-    process.exit(0);
-  });
-});

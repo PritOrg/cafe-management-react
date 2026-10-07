@@ -4,7 +4,6 @@ import {
   Box,
   CssBaseline,
   useTheme,
-  useMediaQuery,
   Paper,
   Breadcrumbs,
   Link,
@@ -19,7 +18,6 @@ import ErrorBoundary from '../common/ErrorBoundary';
 const AdminLayout = () => {
   const theme = useTheme();
   const location = useLocation();
-  const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
 

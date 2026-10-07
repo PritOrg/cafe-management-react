@@ -5,7 +5,6 @@ import {
   ListItemIcon,
   ListItemText,
   Chip,
-  useTheme,
   alpha,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
@@ -88,7 +87,6 @@ const StyledChip = styled(Chip)(({ theme, variant }) => ({
 }));
 
 export default function AdminSidebarItem({ item, currentPath }) {
-  const theme = useTheme();
   const isActive = currentPath === item.href;
   const Icon = item.icon;
 

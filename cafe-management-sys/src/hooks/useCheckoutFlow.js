@@ -4,7 +4,7 @@ import { useState } from 'react';
 export const useCheckoutFlow = (createOrder) => {
   const [activeStep, setActiveStep] = useState(0);
   const [openDialog, setOpenDialog] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('credit');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
   const [shippingInfo, setShippingInfo] = useState({
     address: '',
     city: '',

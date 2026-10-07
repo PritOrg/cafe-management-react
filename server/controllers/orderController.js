@@ -1,101 +1,54 @@
-// controllers/orderController.js
-const Order = require('../models/order');
-const MenuItem = require('../models/menuItem');
-const Discount = require('../models/discount');
-const mongoose = require('mongoose');
-
-const calculateDiscount = async (discountCode, items, totalAmount) => {
-    if (!discountCode) return { discountAmount: 0, discountId: null };
-    const discount = await Discount.findOne({ code: discountCode });
-    if (!discount || new Date() > discount.expiresAt) return { discountAmount: 0, discountId: null };
-
-    const applicableItemIds = discount.applicableItems.map(id => id.toString());
-    const eligibleAmount = items.reduce((sum, item) => {
-        return applicableItemIds.includes(item.menuItem.toString()) ? sum + item.itemPrice * item.quantity : sum;
-    }, 0);
-
-    if (totalAmount < discount.minOrderAmount) return { discountAmount: 0, discountId: null };
-    const discountAmount = Math.min((eligibleAmount * discount.discountPercentage / 100), discount.maxDiscountAmount);
-    return { discountAmount, discountId: discount._id };
-};
+const { sendResponse } = require('../middleware/auth');
+const { ORDER_STATUSES } = require('../constants/order');
+const orderService = require('../services/orderService');
+const orderRepo = require('../repositories/orderRepo');
+const customerRepo = require('../repositories/customerRepo');
+const tableRepo = require('../repositories/tableRepo');
+const activityRepo = require('../repositories/activityRepo');
 
 exports.placeOrder = async (req, res) => {
     try {
-        const {
-            tableNumber,
-            items,
-            placedByCustomer,
-            placedByStaff,
-            tipAmount,
-            discountCode,
-            paymentMethod
-        } = req.body;
-        console.log(req.body);
-        
-        if (paymentMethod !== 'cash') {
-            return res.status(400).json({ message: 'Online payments coming soon. Please pay with cash.' });
+        const result = await orderService.placeOrder(req);
+        return sendResponse(res, result.status, result.status < 400, result.message, result.data || null);
+    } catch (err) {
+        console.error('Error placing order:', err);
+        return sendResponse(res, 500, false, err.message || 'Failed to place order');
+    }
+};
+
+exports.getOrderHistory = async (req, res) => {
+    try {
+        const phone = String(req.query.phone || '').trim();
+        if (!phone) {
+            return sendResponse(res, 400, false, 'phone query parameter is required');
         }
-
-        let totalAmount = 0;
-        let totalPreparationTime = 0;
-
-        const populatedItems = await Promise.all(items.map(async (item) => {
-            const menu = await MenuItem.findById(item.menuItem);
-            const price = menu.price[item.size];
-            const itemTotal = price * item.quantity;
-            totalAmount += itemTotal;
-            totalPreparationTime += menu.preparationTime;
-            menu.orderCount++;
-            await menu.save();
-
-            return {
-                ...item,
-                itemPrice: price,
-                preparationTime: menu.preparationTime
-            };
-        }));
-
-        const { discountAmount, discountId } = await calculateDiscount(discountCode, populatedItems, totalAmount);
-
-        const TAX_RATE = 0.05;
-        const taxAmount = (totalAmount - discountAmount) * TAX_RATE;
-        const finalAmount = (totalAmount - discountAmount + taxAmount + (tipAmount || 0)).toFixed(2);
-
-        const order = new Order({
-            tableNumber,
-            placedByCustomer,
-            placedByStaff,
-            items: populatedItems,
-            tipAmount,
-            discountCode: discountId,
-            discountAmount,
-            paymentMethod,
-            paymentStatus: 'paid',
-            totalAmount,
-            finalAmount,
-        });
-
-        const savedOrder = await order.save();
-        res.status(201).json({
-            message: 'Order placed successfully',
-            order: savedOrder,
-            taxAmount: taxAmount.toFixed(2),
-            preparationTime: totalPreparationTime
+        const customers = await customerRepo.findByPhone(req.tenantId, phone);
+        if (!customers.length) {
+            return sendResponse(res, 200, true, 'Order history retrieved', { customer: null, orders: [] });
+        }
+        const ids = customers.map((c) => c._id);
+        const orders = await orderRepo.findForHistory(req.tenantId, ids);
+        return sendResponse(res, 200, true, 'Order history retrieved', {
+            customer: customers[0],
+            orders,
         });
     } catch (err) {
-        res.status(500).json({ message: err.message });
-        console.log(err.message)
+        console.error('Error fetching order history:', err);
+        return sendResponse(res, 500, false, err.message || 'Server error');
     }
 };
 
 exports.getOrdersByStatus = async (req, res) => {
     try {
         const { status } = req.query;
-        const query = status ? { status } : {};
-        const orders = await Order.find(query).populate('items.menuItem').sort({ placedAt: -1 });
-        res.json(orders);
+        if (status && !ORDER_STATUSES.includes(status)) {
+            return sendResponse(res, 400, false, `Invalid status. Allowed: ${ORDER_STATUSES.join(', ')}`);
+        }
+        const orders = await orderRepo.findMany(req.tenantId, status ? { status } : {});
+        return sendResponse(res, 200, true, 'Orders retrieved', orders);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error('Error fetching orders by status:', err);
+        return sendResponse(res, 500, false, err.message || 'Server error');
     }
 };
 
@@ -105,95 +58,72 @@ exports.getTodaysOrders = async (req, res) => {
         start.setHours(0, 0, 0, 0);
         const end = new Date();
         end.setHours(23, 59, 59, 999);
-
-        const orders = await Order.find({ placedAt: { $gte: start, $lte: end } })
-            .populate('items.menuItem')
-            .sort({ placedAt: -1 });
-
-        res.json(orders);
+        const orders = await orderRepo.findMany(req.tenantId, { placedAt: { $gte: start, $lte: end } });
+        return sendResponse(res, 200, true, "Today's orders retrieved", orders);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error('Error fetching todays orders:', err);
+        return sendResponse(res, 500, false, err.message || 'Server error');
     }
 };
 
 exports.getOrderById = async (req, res) => {
     try {
-        const order = await Order.findById(req.params.id)
-            .populate('items.menuItem', 'title imageUrl')
-            .populate('placedBy', 'firstName lastName role');
-
+        const order = await orderRepo.findByIdForOwner(req.tenantId, req.params.id);
         if (!order) {
-            return res.status(404).json({ message: 'Order not found' });
+            return sendResponse(res, 404, false, 'Order not found');
         }
-
-        // Ensure that customers only access their own orders
-        if (order.placedBy && order.placedBy._id.toString() !== req.userId && req.role === 'customer') {
-            return res.status(403).json({ message: 'Access denied' });
+        const isStaffOrAdmin = req.role === 'admin' || req.role === 'staff' || req.isPlatformAdmin;
+        if (!isStaffOrAdmin) {
+            const ownerId = order.placedByCustomer && (
+                order.placedByCustomer._id
+                    ? order.placedByCustomer._id.toString()
+                    : order.placedByCustomer.toString()
+            );
+            if (!ownerId || ownerId !== (req.userId && req.userId.toString())) {
+                return sendResponse(res, 403, false, 'Access denied');
+            }
         }
-
-        res.json(order);
+        return sendResponse(res, 200, true, 'Order retrieved', order);
     } catch (error) {
         console.error('Error fetching order:', error);
-        res.status(500).json({ message: 'Server error' });
+        return sendResponse(res, 500, false, 'Server error');
     }
 };
 
 exports.getOrders = async (req, res) => {
     try {
         const { status, today } = req.query;
-
-        let query = {};
-
-        if (status) {
-            query.status = status;
+        if (status && !ORDER_STATUSES.includes(status)) {
+            return sendResponse(res, 400, false, `Invalid status. Allowed: ${ORDER_STATUSES.join(', ')}`);
         }
-
+        const query = {};
+        if (status) query.status = status;
         if (today === 'true') {
             const start = new Date();
             start.setHours(0, 0, 0, 0);
-
             const end = new Date();
             end.setHours(23, 59, 59, 999);
-
             query.placedAt = { $gte: start, $lte: end };
         }
-
-        const orders = await Order.find(query)
-            .sort({ placedAt: -1 })
-            .populate('items.menuItem', 'title imageUrl category')
-            .populate('placedBy', 'firstName lastName role');
-
-        res.json(orders);
+        const orders = await orderRepo.findMany(req.tenantId, query);
+        return sendResponse(res, 200, true, 'Orders retrieved', orders);
     } catch (error) {
         console.error('Error fetching orders:', error);
-        res.status(500).json({ message: 'Server error' });
+        return sendResponse(res, 500, false, 'Server error');
     }
 };
 
 exports.updateOrderStatus = async (req, res) => {
-    const { id } = req.params;
-    const { status } = req.body;
-
-    const validStatuses = ['pending', 'in-progress', 'served', 'cancelled'];
-
-    if (!validStatuses.includes(status)) {
-        return res.status(400).json({ message: 'Invalid status' });
-    }
-
     try {
-        const order = await Order.findById(id);
-        if (!order) return res.status(404).json({ message: 'Order not found' });
+        const { status } = req.body;
+        if (!ORDER_STATUSES.includes(status)) {
+            return sendResponse(res, 400, false, `Invalid status. Allowed: ${ORDER_STATUSES.join(', ')}`);
+        }
+        const order = await orderRepo.updateStatus(req.tenantId, req.params.id, status);
+        if (!order) return sendResponse(res, 404, false, 'Order not found');
 
-        order.status = status;
-        order.updatedAt = new Date();
-
-        await order.save();
-
-        // Optionally update table status if served or cancelled
         if (order.tableNumber) {
-            const Table = require('../models/Table');
-            const table = await Table.findOne({ number: order.tableNumber });
-
+            const table = await tableRepo.findByNumber(req.tenantId, order.tableNumber);
             if (table) {
                 if (status === 'served' || status === 'cancelled') {
                     table.status = 'available';
@@ -202,40 +132,23 @@ exports.updateOrderStatus = async (req, res) => {
                     table.status = 'occupied';
                     table.currentOrder = order._id;
                 }
-
                 await table.save();
             }
         }
 
-        res.json({ message: 'Order status updated', status: order.status });
+        await activityRepo.log({
+            tenantId: req.tenantId,
+            actorId: req.userId,
+            actorType: req.role,
+            action: 'order.status',
+            entity: 'order',
+            entityId: order._id,
+            meta: { status },
+        });
+
+        return sendResponse(res, 200, true, 'Order status updated', { status: order.status });
     } catch (error) {
         console.error('Error updating order status:', error);
-        res.status(500).json({ message: 'Server error' });
-    }
-};
-
-
-exports.getMyOrders = async (req, res) => {
-    try {
-        const orders = await Order.find({
-            $or: [
-                { placedByCustomer: req.userId },
-                { placedByStaff: req.userId }
-            ]
-        })
-        .populate('placedByCustomer', 'firstName lastName role')
-        .populate('placedByStaff', 'firstName lastName role')
-        .populate({
-            path: 'items',
-            populate: {
-                path: 'menuItem',
-                select: 'title imageUrl category',
-            },
-        })
-        .populate('items.menuItem')
-        .sort({ placedAt: -1 });
-        res.json(orders);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+        return sendResponse(res, 500, false, 'Server error');
     }
 };

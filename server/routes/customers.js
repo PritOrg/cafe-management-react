@@ -2,19 +2,18 @@ const express = require('express');
 const router = express.Router();
 const {
   getAllCustomers,
-  getOwnProfile,
-  updateOwnProfile,
-  deleteOwnAccount,
-  uploadProfilePhoto
+  getCustomerById,
+  getCustomerOrders,
+  getCustomerSummary,
+  removeCustomer,
 } = require('../controllers/customerController');
-const { ensureAuthenticated, ensureAdmin } = require('../middleware/auth');
-const multer = require('multer');
-const upload = multer({ storage: multer.memoryStorage() });
+const { ensureAdmin } = require('../middleware/auth');
 
-router.get('/', ensureAdmin, getAllCustomers);
-router.get('/profile', ensureAuthenticated, getOwnProfile);
-router.put('/profile', ensureAuthenticated, updateOwnProfile);
-router.delete('/profile', ensureAuthenticated, deleteOwnAccount);
-router.post('/photo', ensureAuthenticated, upload.single('profilePhoto'), uploadProfilePhoto);
+router.use(ensureAdmin);
+router.get('/', getAllCustomers);
+router.get('/:id/orders', getCustomerOrders);
+router.get('/:id/summary', getCustomerSummary);
+router.get('/:id', getCustomerById);
+router.delete('/:id', removeCustomer);
 
 module.exports = router;

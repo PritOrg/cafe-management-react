@@ -1,31 +1,6 @@
 import React, { useState } from 'react';
-import {
-  Card,
-  CardActionArea,
-  CardMedia,
-  CardContent,
-  Typography,
-  CardActions,
-  IconButton,
-  Button,
-  Rating,
-  Chip,
-  Box,
-  Tooltip,
-  Zoom,
-  Stack,
-} from '@mui/material';
-import {
-  ShoppingCart as ShoppingCartIcon,
-  Info as InfoIcon,
-  Favorite as FavoriteIcon,
-  FavoriteBorder as FavoriteBorderIcon,
-  Share as ShareIcon,
-  AccessTime as TimeIcon,
-  Star as StarIcon,
-  RestaurantMenu as CategoryIcon,
-  TrendingUp as TrendingIcon,
-} from '@mui/icons-material';
+import { Card, CardActionArea, CardMedia, CardContent, Typography, CardActions, IconButton, Button, Chip, Box, Tooltip, Zoom, Stack } from '@mui/material';
+import { ShoppingCart as ShoppingCartIcon, Info as InfoIcon, Favorite as FavoriteIcon, FavoriteBorder as FavoriteBorderIcon, Share as ShareIcon, AccessTime as TimeIcon, Star as StarIcon, RestaurantMenu as CategoryIcon, TrendingUp as TrendingIcon } from '@mui/icons-material';
 import CustomizationDialog from './CustomizationDialog';
 import MenuItemInfoDialog from './MenuItemInfoDialog';
 
@@ -35,18 +10,7 @@ const MenuItemCard = ({ menuItem, addToCart }) => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   
-  const { 
-    title, 
-    subTitle, 
-    price, 
-    category, 
-    imageUrl, 
-    calories, 
-    preparationTime, 
-    rating, 
-    tags, 
-    allergens 
-  } = menuItem;
+  const { title, subTitle, price, category, imageUrl, preparationTime, rating, tags } = menuItem;
 
   const handleAddToCartClick = (e) => {
     e.stopPropagation();

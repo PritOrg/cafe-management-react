@@ -4,7 +4,6 @@ import {
   Typography,
   Button,
   Paper,
-  useTheme,
 } from '@mui/material';
 import {
   Inbox as InboxIcon,
@@ -65,7 +64,6 @@ const EmptyState = ({
   sx = {},
   ...props
 }) => {
-  const theme = useTheme();
   const IconComponent = CustomIcon || getIcon(type);
 
   const getDefaultContent = (type) => {

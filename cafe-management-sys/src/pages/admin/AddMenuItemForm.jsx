@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { menuAPI } from '../../services/api';
 import {
     Container,
     Typography,
@@ -151,11 +151,7 @@ const AddMenuItemForm = () => {
         if (file) submitData.append('file', file);
         
         try {
-            await axios.post('http://localhost:4969/menu', submitData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
+            await menuAPI.create(submitData);
             
             // Reset form
             setFormData({
@@ -400,6 +396,7 @@ const AddMenuItemForm = () => {
                                             renderTags={(value, getTagProps) =>
                                                 value.map((option, index) => (
                                                     <Chip 
+                                                        key={option}
                                                         variant="outlined" 
                                                         label={option} 
                                                         {...getTagProps({ index })} 
@@ -429,6 +426,7 @@ const AddMenuItemForm = () => {
                                             renderTags={(value, getTagProps) =>
                                                 value.map((option, index) => (
                                                     <Chip 
+                                                        key={option}
                                                         variant="outlined" 
                                                         label={option} 
                                                         {...getTagProps({ index })} 
@@ -457,6 +455,7 @@ const AddMenuItemForm = () => {
                                             renderTags={(value, getTagProps) =>
                                                 value.map((option, index) => (
                                                     <Chip 
+                                                        key={option}
                                                         variant="outlined" 
                                                         label={option} 
                                                         {...getTagProps({ index })} 

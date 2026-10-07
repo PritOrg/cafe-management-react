@@ -35,30 +35,30 @@ const PaymentForm = ({
               <Grid item xs={12}>
                 <Button
                   fullWidth
-                  variant={paymentMethod === 'credit' ? 'contained' : 'outlined'}
-                  onClick={() => onPaymentMethodChange('credit')}
-                  startIcon={<PaymentIcon />}
-                  sx={{ mb: 2, justifyContent: 'flex-start' }}
-                >
-                  Credit/Debit Card
-                </Button>
-                <Button
-                  fullWidth
-                  variant={paymentMethod === 'paypal' ? 'contained' : 'outlined'}
-                  onClick={() => onPaymentMethodChange('paypal')}
-                  startIcon={<PaymentIcon />}
-                  sx={{ mb: 2, justifyContent: 'flex-start' }}
-                >
-                  PayPal
-                </Button>
-                <Button
-                  fullWidth
                   variant={paymentMethod === 'cash' ? 'contained' : 'outlined'}
                   onClick={() => onPaymentMethodChange('cash')}
                   startIcon={<PaymentIcon />}
+                  sx={{ mb: 2, justifyContent: 'flex-start' }}
+                >
+                  Cash
+                </Button>
+                <Button
+                  fullWidth
+                  variant={paymentMethod === 'upi_manual' ? 'contained' : 'outlined'}
+                  onClick={() => onPaymentMethodChange('upi_manual')}
+                  startIcon={<PaymentIcon />}
+                  sx={{ mb: 2, justifyContent: 'flex-start' }}
+                >
+                  UPI (Manual Confirmation)
+                </Button>
+                <Button
+                  fullWidth
+                  variant={paymentMethod === 'card_manual' ? 'contained' : 'outlined'}
+                  onClick={() => onPaymentMethodChange('card_manual')}
+                  startIcon={<PaymentIcon />}
                   sx={{ justifyContent: 'flex-start' }}
                 >
-                  Cash on Delivery
+                  Card (Manual Confirmation)
                 </Button>
               </Grid>
             </Grid>
@@ -75,11 +75,11 @@ const PaymentForm = ({
           <Box mb={2}>
             <Grid container justifyContent="space-between">
               <Typography>Subtotal ({cartCount} items)</Typography>
-              <Typography>${total.toFixed(2)}</Typography>
+              <Typography>₹{total.toFixed(2)}</Typography>
             </Grid>
             <Grid container justifyContent="space-between">
-              <Typography>Delivery</Typography>
-              <Typography>FREE</Typography>
+              <Typography>Tax (GST)</Typography>
+              <Typography>Added at checkout</Typography>
             </Grid>
             <Grid container justifyContent="space-between">
               <Typography>Estimated Prep Time</Typography>
@@ -95,7 +95,7 @@ const PaymentForm = ({
           
           <Grid container justifyContent="space-between" mb={3}>
             <Typography variant="h6">Total</Typography>
-            <Typography variant="h6">${total.toFixed(2)}</Typography>
+            <Typography variant="h6">₹{total.toFixed(2)}</Typography>
           </Grid>
           
           <Box display="flex" justifyContent="space-between" gap={2}>

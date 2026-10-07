@@ -23,9 +23,9 @@ const OrderReview = ({
 }) => {
   const getPaymentMethodLabel = (method) => {
     switch (method) {
-      case 'credit': return 'Credit/Debit Card';
-      case 'paypal': return 'PayPal';  
-      case 'cash': return 'Cash on Delivery';
+      case 'upi_manual': return 'UPI (Manual Confirmation)';
+      case 'card_manual': return 'Card (Manual Confirmation)';
+      case 'cash': return 'Cash';
       default: return method;
     }
   };
@@ -64,7 +64,7 @@ const OrderReview = ({
                   <strong>{item.quantity} × {item.name}</strong> ({item.selectedSize})
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  ${(item.price[item.selectedSize?.toLowerCase() || 'regular'] * item.quantity).toFixed(2)}
+                  ₹{((item.price?.[item.selectedSize?.toLowerCase() || 'medium'] || 0) * item.quantity).toFixed(2)}
                 </Typography>
                 {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 && (
                   <Typography variant="body2" color="text.secondary">
@@ -88,11 +88,11 @@ const OrderReview = ({
           <Box mb={2}>
             <Grid container justifyContent="space-between">
               <Typography>Subtotal ({cartCount} items)</Typography>
-              <Typography>${total.toFixed(2)}</Typography>
+              <Typography>₹{total.toFixed(2)}</Typography>
             </Grid>
             <Grid container justifyContent="space-between">
-              <Typography>Delivery</Typography>
-              <Typography>FREE</Typography>
+              <Typography>Tax (GST)</Typography>
+              <Typography>Added at checkout</Typography>
             </Grid>
             <Grid container justifyContent="space-between">
               <Typography>Estimated Prep Time</Typography>
@@ -108,7 +108,7 @@ const OrderReview = ({
           
           <Grid container justifyContent="space-between" mb={3}>
             <Typography variant="h6">Total</Typography>
-            <Typography variant="h6">${total.toFixed(2)}</Typography>
+            <Typography variant="h6">₹{total.toFixed(2)}</Typography>
           </Grid>
           
           <Box display="flex" justifyContent="space-between" gap={2}>

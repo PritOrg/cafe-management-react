@@ -1,41 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Grid,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Chip,
-  Paper,
-  Avatar,
-  IconButton,
-  LinearProgress,
-  Fade,
-  Grow,
-  useTheme,
-  alpha,
-} from '@mui/material';
-import {
-  TrendingUp,
-  TrendingDown,
-  ShoppingCart,
-  People,
-  AttachMoney,
-  Inventory,
-  Add,
-  Coffee,
-  PersonAdd,
-  BarChart,
-  Schedule,
-  Warning,
-  CheckCircle,
-  Info,
-  MoreVert,
-} from '@mui/icons-material';
+import { Box, Grid, Card, CardContent, Typography, Button, Chip, Paper, LinearProgress, Fade, Grow, alpha, Alert } from '@mui/material';
+import { TrendingUp, TrendingDown, ShoppingCart, AttachMoney, Inventory, Add, Coffee, BarChart, Schedule, Warning, CheckCircle, Info } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
-import AdminLayout from '../../components/layout/AdminLayout';
-import { analyticsAPI, ordersAPI, menuAPI } from '../../services/api';
+
+import { analyticsAPI, ordersAPI, unwrap } from '../../services/api';
+import { formatMoney } from '../../utils/formatMoney';
+import { adaptOrder } from '../../adapters';
 
 // Styled components for enhanced UI
 const StatsCard = styled(Card)(({ theme, color = 'primary' }) => ({
@@ -110,46 +80,6 @@ const AlertCard = styled(Paper)(({ theme, severity = 'info' }) => {
   };
 });
 
-// Mock data
-const statsData = [
-  {
-    title: 'Total Revenue',
-    value: '$12,426',
-    change: '+12.5%',
-    trend: 'up',
-    icon: AttachMoney,
-    color: 'success',
-    subtitle: 'vs last month',
-  },
-  {
-    title: 'Orders Today',
-    value: '147',
-    change: '+8.2%',
-    trend: 'up',
-    icon: ShoppingCart,
-    color: 'primary',
-    subtitle: '12 pending',
-  },
-  {
-    title: 'Menu Items',
-    value: '42',
-    change: '+3 new',
-    trend: 'up',
-    icon: Coffee,
-    color: 'info',
-    subtitle: 'active items',
-  },
-  {
-    title: 'Inventory Items',
-    value: '156',
-    change: '3 low stock',
-    trend: 'warning',
-    icon: Inventory,
-    color: 'error',
-    subtitle: 'needs attention',
-  },
-];
-
 const quickActions = [
   { title: 'Add Menu Item', icon: Coffee, color: 'primary' },
   { title: 'Process Orders', icon: ShoppingCart, color: 'secondary' },
@@ -157,84 +87,95 @@ const quickActions = [
   { title: 'Manage Inventory', icon: Inventory, color: 'warning' },
 ];
 
-const alerts = [
-  {
-    id: 1,
-    title: 'Low Stock Alert',
-    message: 'Coffee beans running low (5 lbs left)',
-    severity: 'error',
-    time: '5 min ago',
-    action: 'Reorder',
-  },
-  {
-    id: 2,
-    title: 'New Orders',
-    message: '3 new orders waiting for confirmation',
-    severity: 'warning',
-    time: '10 min ago',
-    action: 'View Orders',
-  },
-  {
-    id: 3,
-    title: 'Equipment Maintenance',
-    message: 'Espresso machine maintenance scheduled',
-    severity: 'info',
-    time: '1 hour ago',
-    action: 'Schedule',
-  },
-];
-
-
-
 export default function AdminDashboard() {
-  const theme = useTheme();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
+  const [topItems, setTopItems] = useState([]);
   const [recentOrders, setRecentOrders] = useState([]);
-  const [lastUpdated, setLastUpdated] = useState(new Date());
-
-  useEffect(() => {
-    fetchDashboardData();
-    // Set up auto-refresh every 30 seconds
-    const interval = setInterval(fetchDashboardData, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  const [, setLastUpdated] = useState(new Date());
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [stats, ordersResponse] = await Promise.all([
-        analyticsAPI.getDashboardStats(),
+      setError(null);
+      const [summaryBody, topBody, ordersResponse] = await Promise.all([
+        analyticsAPI.getSummary(),
+        analyticsAPI.getTopItems('7d', 5).catch(() => null),
         ordersAPI.getRecent(5),
       ]);
 
-      setDashboardData(stats);
-      // Handle different response formats
-      const orders = ordersResponse?.data || ordersResponse || [];
-      setRecentOrders(Array.isArray(orders) ? orders : []);
+      const summary = unwrap(summaryBody);
+      setDashboardData(summary);
+      const top = topBody ? unwrap(topBody) : [];
+      setTopItems(Array.isArray(top) ? top : []);
+
+      const orders = unwrap(ordersResponse) || [];
+      setRecentOrders((Array.isArray(orders) ? orders : []).map(adaptOrder));
       setLastUpdated(new Date());
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      // Set empty data on error
-      setDashboardData({
-        totalRevenue: 0,
-        ordersToday: 0,
-        menuItems: 0,
-        pendingOrders: 0,
-        revenueChange: 0,
-        ordersChange: 0,
-      });
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError(err.message || 'Failed to load dashboard');
+      setDashboardData(null);
+      setTopItems([]);
       setRecentOrders([]);
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchDashboardData();
+    const interval = setInterval(fetchDashboardData, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const statsCards = dashboardData ? [
+    {
+      title: 'Revenue Today',
+      value: formatMoney(dashboardData.revenue),
+      change: `${dashboardData.prevDayDeltaBps >= 0 ? '+' : ''}${((dashboardData.prevDayDeltaBps || 0) / 100).toFixed(1)}% vs yesterday`,
+      trend: (dashboardData.prevDayDeltaBps || 0) >= 0 ? 'up' : 'down',
+      icon: AttachMoney,
+      color: 'success',
+      subtitle: 'business day',
+    },
+    {
+      title: 'Orders Today',
+      value: String(dashboardData.ordersCount || 0),
+      change: `${dashboardData.pendingOrders || 0} pending`,
+      trend: (dashboardData.pendingOrders || 0) > 0 ? 'warning' : 'up',
+      icon: ShoppingCart,
+      color: 'primary',
+      subtitle: `AOV ${formatMoney(dashboardData.aov)}`,
+    },
+    {
+      title: 'Pending',
+      value: String(dashboardData.pendingOrders || 0),
+      change: dashboardData.pendingOrders > 0 ? 'Need attention' : 'All clear',
+      trend: dashboardData.pendingOrders > 0 ? 'warning' : 'up',
+      icon: Schedule,
+      color: dashboardData.pendingOrders > 0 ? 'warning' : 'success',
+      subtitle: 'in queue',
+    },
+    {
+      title: 'Served Today',
+      value: String(dashboardData.servedCount || 0),
+      change: `${dashboardData.cancelledCount || 0} cancelled`,
+      trend: 'up',
+      icon: CheckCircle,
+      color: 'info',
+      subtitle: 'completed',
+    },
+  ] : [];
+
   const getStatusColor = (status) => {
     switch (status) {
-      case 'completed': return 'success';
-      case 'preparing': return 'warning';
-      case 'pending': return 'error';
+      case 'served': return 'success';
+      case 'ready': return 'success';
+      case 'preparing': return 'info';
+      case 'pending': return 'warning';
+      case 'cancelled': return 'error';
       default: return 'default';
     }
   };
@@ -248,7 +189,7 @@ export default function AdminDashboard() {
     }
   };
 
-  if (loading) {
+  if (loading && !dashboardData) {
     return (
         <Box sx={{ width: '100%', mt: 2 }}>
           <LinearProgress />
@@ -258,46 +199,17 @@ export default function AdminDashboard() {
 
   return (
       <Box sx={{ flexGrow: 1 }}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }} action={
+            <Button color="inherit" size="small" onClick={fetchDashboardData}>Retry</Button>
+          }>
+            {error}
+          </Alert>
+        )}
+
         {/* Stats Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          {(dashboardData ? [
-            {
-              title: 'Today\'s Revenue',
-              value: `₹${dashboardData.totalRevenue?.toLocaleString() || '0'}`,
-              change: `${dashboardData.revenueChange >= 0 ? '+' : ''}${dashboardData.revenueChange || 0}%`,
-              trend: dashboardData.revenueChange >= 0 ? 'up' : 'down',
-              icon: AttachMoney,
-              color: 'success',
-              subtitle: 'vs yesterday'
-            },
-            {
-              title: 'Orders Today',
-              value: dashboardData.ordersToday?.toLocaleString() || '0',
-              change: `${dashboardData.pendingOrders || 0} pending`,
-              trend: 'up',
-              icon: ShoppingCart,
-              color: 'primary',
-              subtitle: 'total orders'
-            },
-            {
-              title: 'Menu Items',
-              value: dashboardData.menuItems?.toLocaleString() || '0',
-              change: 'Active items',
-              trend: 'up',
-              icon: Coffee,
-              color: 'info',
-              subtitle: 'available'
-            },
-            {
-              title: 'Pending Orders',
-              value: dashboardData.pendingOrders?.toLocaleString() || '0',
-              change: dashboardData.pendingOrders > 0 ? 'Need attention' : 'All clear',
-              trend: dashboardData.pendingOrders > 0 ? 'warning' : 'up',
-              icon: Schedule,
-              color: dashboardData.pendingOrders > 0 ? 'warning' : 'success',
-              subtitle: 'awaiting preparation'
-            }
-          ] : statsData).map((stat, index) => (
+          {statsCards.map((stat, index) => (
             <Grid item xs={12} sm={6} lg={3} key={stat.title}>
               <Grow in={!loading} timeout={500 + index * 100}>
                 <div>
@@ -359,10 +271,12 @@ export default function AdminDashboard() {
                     </Button>
                   </Box>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    {(recentOrders.length > 0 ? recentOrders : [
-                      { _id: '1', orderNumber: '#1234', customer: { name: 'John Doe' }, items: [{ name: 'Latte' }, { name: 'Croissant' }], total: 12.50, status: 'completed', createdAt: new Date(Date.now() - 120000).toISOString() },
-                      { _id: '2', orderNumber: '#1235', customer: { name: 'Jane Smith' }, items: [{ name: 'Cappuccino' }, { name: 'Muffin' }], total: 8.75, status: 'preparing', createdAt: new Date(Date.now() - 300000).toISOString() },
-                    ]).map((order, index) => (
+                    {recentOrders.length === 0 && (
+                      <Typography variant="body2" color="text.secondary">
+                        No recent orders
+                      </Typography>
+                    )}
+                    {recentOrders.map((order, index) => (
                       <Grow in={!loading} timeout={1000 + index * 100} key={order._id || order.id}>
                         <Paper
                           sx={{
@@ -381,12 +295,10 @@ export default function AdminDashboard() {
                           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <Box sx={{ flex: 1 }}>
                               <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                                Order #{order._id?.slice(-6) || order.orderNumber || order.id}
+                                {order.orderNumber || `#${String(order._id || '').slice(-6)}`}
                               </Typography>
                               <Typography variant="body2" color="text.secondary">
-                                {order.items?.map(item =>
-                                  item.menuItem?.title || item.name || item
-                                ).join(', ') || 'No items'}
+                                {order.customer?.name || 'Walk-in'}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
                                 {order.placedAt || order.createdAt ?
@@ -396,7 +308,7 @@ export default function AdminDashboard() {
                             </Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                               <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                                ₹{(order.totalAmount || order.total || 0).toFixed(2)}
+                                {formatMoney(order.total || order.totalAmount)}
                               </Typography>
                               <Chip
                                 label={order.status}
@@ -448,38 +360,35 @@ export default function AdminDashboard() {
                 </Card>
               </Fade>
 
-              {/* Alerts */}
+              {/* Top items (7d) */}
               <Fade in={!loading} timeout={1400}>
                 <Card sx={{ flex: 1 }}>
                   <CardContent sx={{ p: 3 }}>
                     <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center' }}>
-                      <Warning sx={{ mr: 1, color: 'warning.main' }} />
-                      Alerts
+                      <BarChart sx={{ mr: 1, color: 'primary.main' }} />
+                      Top Items (7 days)
                     </Typography>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      {alerts.map((alert, index) => (
-                        <Grow in={!loading} timeout={1600 + index * 100} key={alert.id}>
-                          <AlertCard severity={alert.severity}>
-                            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, flex: 1 }}>
-                                {getSeverityIcon(alert.severity)}
-                                <Box>
-                                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                                    {alert.title}
-                                  </Typography>
-                                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                                    {alert.message}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {alert.time}
-                                  </Typography>
-                                </Box>
-                              </Box>
-                              <Button size="small" variant="outlined">
-                                {alert.action}
-                              </Button>
+                      {topItems.length === 0 && (
+                        <Typography variant="body2" color="text.secondary">
+                          No sales in the last 7 days
+                        </Typography>
+                      )}
+                      {topItems.map((item, index) => (
+                        <Grow in={!loading} timeout={1600 + index * 100} key={item.menuItemId || item.title}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Box>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                                {item.title}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {item.qty} sold
+                              </Typography>
                             </Box>
-                          </AlertCard>
+                            <Typography variant="subtitle2" fontWeight={600}>
+                              {formatMoney(item.revenue)}
+                            </Typography>
+                          </Box>
                         </Grow>
                       ))}
                     </Box>

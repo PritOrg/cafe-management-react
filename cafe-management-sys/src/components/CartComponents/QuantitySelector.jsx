@@ -1,6 +1,6 @@
 // components/QuantitySelector.jsx
 import React from 'react';
-import { Box, IconButton, TextField, Typography } from '@mui/material';
+import { Box, IconButton, TextField } from '@mui/material';
 import { Add as AddIcon, Remove as RemoveIcon } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 

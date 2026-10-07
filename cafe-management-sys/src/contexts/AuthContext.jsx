@@ -10,60 +10,55 @@ export const useAuth = () => {
   return context;
 };
 
+const readStored = () => {
+  const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+  const rawUser = sessionStorage.getItem('user') || localStorage.getItem('user');
+  const userType = sessionStorage.getItem('userType') || localStorage.getItem('userType');
+  return { token, rawUser, userType };
+};
+
+const clearStored = () => {
+  ['token', 'user', 'userType'].forEach((key) => {
+    sessionStorage.removeItem(key);
+    localStorage.removeItem(key);
+  });
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Check for stored authentication data on app load
     const checkAuthStatus = () => {
       try {
-        // Check both sessionStorage (preferred) and localStorage for compatibility
-        const token = sessionStorage.getItem('token') || localStorage.getItem('authToken');
-        const userData = sessionStorage.getItem('user') || localStorage.getItem('userData');
-        const userType = sessionStorage.getItem('userType');
-
-        if (token && userData) {
-          const parsedUser = JSON.parse(userData);
-          // Add userType to user object if available
-          if (userType) {
-            parsedUser.userType = userType;
-          }
+        const { token, rawUser, userType } = readStored();
+        if (token && rawUser) {
+          const parsedUser = JSON.parse(rawUser);
+          if (userType) parsedUser.userType = userType;
           setUser(parsedUser);
           setIsAuthenticated(true);
         }
       } catch (error) {
         console.error('Error checking auth status:', error);
-        // Clear invalid data from both storages
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('user');
-        sessionStorage.removeItem('userType');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userData');
+        clearStored();
       } finally {
         setLoading(false);
       }
     };
-
     checkAuthStatus();
   }, []);
 
   const login = (userData, token, userType) => {
     try {
-      // Store in sessionStorage (preferred) and localStorage (fallback)
+      const nextUser = { ...userData, userType: userType || userData?.userType || 'staffOrAdmin' };
       sessionStorage.setItem('token', token);
-      sessionStorage.setItem('user', JSON.stringify(userData));
-      if (userType) {
-        sessionStorage.setItem('userType', userType);
-        userData.userType = userType;
-      }
-
-      // Also store in localStorage for compatibility
-      localStorage.setItem('authToken', token);
-      localStorage.setItem('userData', JSON.stringify(userData));
-
-      setUser(userData);
+      sessionStorage.setItem('user', JSON.stringify(nextUser));
+      sessionStorage.setItem('userType', nextUser.userType);
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(nextUser));
+      localStorage.setItem('userType', nextUser.userType);
+      setUser(nextUser);
       setIsAuthenticated(true);
       return true;
     } catch (error) {
@@ -74,12 +69,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     try {
-      // Clear both sessionStorage and localStorage
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('user');
-      sessionStorage.removeItem('userType');
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userData');
+      clearStored();
       setUser(null);
       setIsAuthenticated(false);
       return true;
@@ -92,9 +82,8 @@ export const AuthProvider = ({ children }) => {
   const updateUser = (updatedUserData) => {
     try {
       const newUserData = { ...user, ...updatedUserData };
-      // Update both storages
       sessionStorage.setItem('user', JSON.stringify(newUserData));
-      localStorage.setItem('userData', JSON.stringify(newUserData));
+      localStorage.setItem('user', JSON.stringify(newUserData));
       setUser(newUserData);
       return true;
     } catch (error) {
@@ -103,32 +92,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const getAuthToken = () => {
-    return sessionStorage.getItem('token') || localStorage.getItem('authToken');
-  };
+  const getAuthToken = () => sessionStorage.getItem('token') || localStorage.getItem('token');
+
+  const isPlatformAdmin = () => !!(user && user.isPlatformAdmin);
 
   const isAdmin = () => {
-    // Check for admin role or staffOrAdmin userType
     if (!user) return false;
-
-    // Check userType first (this is set during login)
-    if (user.userType === 'staffOrAdmin') return true;
-
-    // Also check role for backward compatibility
-    return user.role === 'admin' || user.role === 'manager';
+    return user.role === 'admin' || user.isPlatformAdmin === true;
   };
 
   const isStaff = () => {
-    return user && (
-      user.role === 'admin' ||
-      user.role === 'manager' ||
-      user.role === 'waiter' ||
-      user.userType === 'staffOrAdmin'
-    );
-  };
-
-  const isCustomer = () => {
-    return user && user.role === 'customer';
+    if (!user) return false;
+    return user.role === 'admin' || user.role === 'staff' || user.isPlatformAdmin === true;
   };
 
   const value = {
@@ -141,7 +116,7 @@ export const AuthProvider = ({ children }) => {
     getAuthToken,
     isAdmin,
     isStaff,
-    isCustomer,
+    isPlatformAdmin,
   };
 
   return (

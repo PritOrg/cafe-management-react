@@ -46,7 +46,7 @@ const AdminInventory = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
