@@ -150,28 +150,30 @@ const   CustomizationDialog = ({ open, onClose, menuItem }) => {
                             value={selectedSize}
                             onChange={handleSizeChange}
                         >
-                            <FormControlLabel
-                                value="medium"
-                                control={<Radio sx={{ color: '#222', '&.Mui-checked': { color: '#222' } }} />}
-                                label={
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                                        <Typography variant="body1">Medium</Typography>
-                                        <Typography variant="body1" sx={{ fontWeight: 600 }}>₹{menuItem.price.medium}</Typography>
-                                    </Box>
-                                }
-                                sx={{ width: '100%', margin: 0, marginBottom: 1 }}
-                            />
-                            <FormControlLabel
-                                value="large"
-                                control={<Radio sx={{ color: '#222', '&.Mui-checked': { color: '#222' } }} />}
-                                label={
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                                        <Typography variant="body1">Large</Typography>
-                                        <Typography variant="body1" sx={{ fontWeight: 600 }}>₹{menuItem.price.large}</Typography>
-                                    </Box>
-                                }
-                                sx={{ width: '100%', margin: 0 }}
-                            />
+                            {(menuItem?.sizes?.length
+                                ? menuItem.sizes.map((s) => ({
+                                    value: s.label,
+                                    label: s.label,
+                                    price: s.price,
+                                }))
+                                : [
+                                    { value: 'medium', label: 'Medium', price: menuItem?.price?.medium || 0 },
+                                    { value: 'large', label: 'Large', price: menuItem?.price?.large || 0 },
+                                ]
+                            ).map((opt, idx, arr) => (
+                                <FormControlLabel
+                                    key={opt.value}
+                                    value={opt.value}
+                                    control={<Radio sx={{ color: '#222', '&.Mui-checked': { color: '#222' } }} />}
+                                    label={
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                                            <Typography variant="body1">{opt.label}</Typography>
+                                            <Typography variant="body1" sx={{ fontWeight: 600 }}>₹{opt.price}</Typography>
+                                        </Box>
+                                    }
+                                    sx={{ width: '100%', margin: 0, marginBottom: idx === arr.length - 1 ? 0 : 1 }}
+                                />
+                            ))}
                         </RadioGroup>
                     </Paper>
 

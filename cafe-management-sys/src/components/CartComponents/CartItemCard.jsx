@@ -66,8 +66,18 @@ const CartItemCard = ({ item, onQuantityChange, onRemoveItem, onUpdateCustomizat
     return null;
   }
 
-  const selectedSize = item.selectedSize?.toLowerCase() || 'medium';
-  const price = item.price[selectedSize] || item.price.medium || 0;
+  const selectedSize = item.selectedSize || 'medium';
+  const sizePrice = () => {
+    const sizes = item?.sizes || [];
+    if (sizes.length) {
+        const match = sizes.find((s) => s.label === item.selectedSize)
+            || sizes.find((s) => s.isDefault)
+            || sizes[0];
+        return Number(match?.price || 0);
+    }
+    return Number(item.price?.[String(selectedSize).toLowerCase()] || item.price?.medium || 0);
+  };
+  const price = sizePrice();
   const itemTotal = (price * item.quantity).toFixed(2);
 
   const handleEditCustomization = () => {
@@ -193,7 +203,7 @@ const CartItemCard = ({ item, onQuantityChange, onRemoveItem, onUpdateCustomizat
                     mt: 0.5
                   }}
                 >
-                  ₹{item.price[item.selectedSize?.toLowerCase() || 'medium'] || 0} each
+                  ₹{price} each
                 </Typography>
               </Box>
             </Grid>
