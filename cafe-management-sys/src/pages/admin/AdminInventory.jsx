@@ -33,8 +33,9 @@ import {
   CheckCircle,
   Refresh,
   Inventory2,
+  MenuBook,
 } from '@mui/icons-material';
-import { inventoryAPI, unwrap } from '../../services/api';
+import { inventoryAPI, menuAPI, unwrap } from '../../services/api';
 import { formatMoney } from '../../utils/formatMoney';
 
 const MOVEMENT_TYPES = [
@@ -55,6 +56,65 @@ const AdminInventory = () => {
   const [moveTarget, setMoveTarget] = useState(null);
   const [moveForm, setMoveForm] = useState({ type: 'purchase', delta: 10, note: '' });
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [recipeTarget, setRecipeTarget] = useState(null);
+  const [recipes, setRecipes] = useState([]);
+  const [menuItems, setMenuItems] = useState([]);
+  const [recipeForm, setRecipeForm] = useState({ menuItemId: '', qty: 0.25, unit: 'kg' });
+  const [recipeError, setRecipeError] = useState('');
+
+  const loadRecipes = useCallback(async (inventoryId) => {
+    try {
+      const body = await inventoryAPI.listRecipesForItem(inventoryId);
+      setRecipes(unwrap(body) || []);
+    } catch (err) {
+      console.error('Error loading recipes:', err);
+      setRecipes([]);
+    }
+  }, []);
+
+  const openRecipes = async (item) => {
+    setRecipeTarget(item);
+    setRecipeError('');
+    setRecipeForm({ menuItemId: '', qty: 0.25, unit: 'kg' });
+    await loadRecipes(item._id);
+    try {
+      const body = await menuAPI.getAll();
+      const data = unwrap(body);
+      setMenuItems(Array.isArray(data) ? data : []);
+    } catch {
+      setMenuItems([]);
+    }
+  };
+
+  const handleAddRecipe = async () => {
+    if (!recipeTarget) return;
+    const { menuItemId, qty, unit } = recipeForm;
+    if (!menuItemId || !unit || !(Number(qty) > 0)) {
+      setRecipeError('Select a menu item, qty > 0, and unit');
+      return;
+    }
+    try {
+      setRecipeError('');
+      await inventoryAPI.addRecipe({
+        menuItemId,
+        inventoryItemId: recipeTarget._id,
+        qty: Number(qty),
+        unit,
+      });
+      await loadRecipes(recipeTarget._id);
+    } catch (err) {
+      setRecipeError(err.message || 'Failed to add recipe line');
+    }
+  };
+
+  const handleRemoveRecipe = async (recipeId) => {
+    try {
+      await inventoryAPI.removeRecipe(recipeId);
+      if (recipeTarget) await loadRecipes(recipeTarget._id);
+    } catch (err) {
+      setRecipeError(err.message || 'Failed to remove recipe line');
+    }
+  };
 
   const fetchItems = useCallback(async () => {
     try {
@@ -223,6 +283,9 @@ const AdminInventory = () => {
                         <Button size="small" onClick={() => { setMoveTarget(item); setMoveForm({ type: 'purchase', delta: 10, note: '' }); }}>
                           Move
                         </Button>
+                        <Button size="small" startIcon={<MenuBook />} onClick={() => openRecipes(item)}>
+                          Recipes
+                        </Button>
                         <IconButton size="small" color="error" onClick={() => setDeleteTarget(item)}>
                           <Delete />
                         </IconButton>
@@ -310,6 +373,87 @@ const AdminInventory = () => {
         <DialogActions>
           <Button onClick={() => setDeleteTarget(null)}>Cancel</Button>
           <Button color="error" variant="contained" onClick={handleDelete}>Deactivate</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!recipeTarget} onClose={() => setRecipeTarget(null)} maxWidth="md" fullWidth>
+        <DialogTitle>Recipe (BOM) — {recipeTarget?.itemName}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Qty of this inventory item consumed per menu item sold. Orders auto-deduct stock.
+          </Typography>
+          <Table size="small" sx={{ mb: 2 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell>Menu item</TableCell>
+                <TableCell>Qty / unit</TableCell>
+                <TableCell align="right">Remove</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {recipes.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={3} align="center">No recipe lines yet</TableCell>
+                </TableRow>
+              )}
+              {recipes.map((r) => (
+                <TableRow key={r._id}>
+                  <TableCell>{r.menuItemTitle || r.menuItemId}</TableCell>
+                  <TableCell>{r.qty} {r.unit}</TableCell>
+                  <TableCell align="right">
+                    <IconButton size="small" color="error" onClick={() => handleRemoveRecipe(r._id)}>
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <Grid container spacing={1} alignItems="center">
+            <Grid item xs={12} sm={5}>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                label="Menu item"
+                value={recipeForm.menuItemId}
+                onChange={(e) => setRecipeForm({ ...recipeForm, menuItemId: e.target.value })}
+              >
+                <MenuItem value="">Select…</MenuItem>
+                {menuItems.map((m) => (
+                  <MenuItem key={m._id} value={m._id}>{m.title}</MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <TextField
+                fullWidth
+                size="small"
+                type="number"
+                label="Qty"
+                value={recipeForm.qty}
+                onChange={(e) => setRecipeForm({ ...recipeForm, qty: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={6} sm={2}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Unit"
+                value={recipeForm.unit}
+                onChange={(e) => setRecipeForm({ ...recipeForm, unit: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={2}>
+              <Button fullWidth variant="contained" onClick={handleAddRecipe}>Add</Button>
+            </Grid>
+          </Grid>
+          {recipeError && (
+            <Alert severity="error" sx={{ mt: 1 }}>{recipeError}</Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRecipeTarget(null)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Box>
