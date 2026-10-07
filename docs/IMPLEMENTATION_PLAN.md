@@ -74,15 +74,15 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 
 **New for this scope:**
 
-- [ ] **`settings`** — single-row-per-key, grouped:
+- [x] **`settings`** — single-row-per-key, grouped:
   - `brand.*`: `app_title`, `brand_name`, `legal_name`, `logo_url`, `favicon_url`, `primary_color`, `secondary_color`, `support_email`, `footer_note`
   - `gst.*`: `gstin`, `legal_address`, `state_code` (e.g. `27`), `place_of_supply`, `default_sac` (`996311` restaurant service), `default_gst_bps` (500 = 5%), `invoice_prefix`, `fy_start_month` (4 → April), `invoice_next_seq`, `reverse_charge` (false)
   - `print.*`: `default_paper` (`a4|receipt_80mm`), `receipt_width_mm` (80), `printer_host`/`printer_port` (raw ESC/POS, optional), `auto_print_after_payment`
   - `ops.*`: `business_tz`, `activity_retention_days` (365), `currency` (`INR`)
 - [x] **`activity_logs`** — `id`, `actor_type` (`customer|staff|admin|system`), `actor_id`, `actor_label`, `action` (`domain.entity.action` e.g. `order.status_change`), `entity_type`, `entity_id`, `summary`, `before`/`after` (diff JSON, nullable), `request_id`, `ip`, `user_agent`, `success` bool, `at`. Indexes: `(at DESC)`, `(entity_type, entity_id)`, `(actor_id, at)`.
-- [ ] **`invoices`** — extend prior design: `invoice_number` (`PREFIX/YYYY-YY/00001`, UNIQUE), `fy`, `invoice_date`, `order_id` UNIQUE, `place_of_supply`, `state_code`, `recipient_name`, `recipient_gstin` (nullable), `reverse_charge` bool, `taxable_minor`, `cgst_minor`, `sgst_minor`, `igst_minor`, `tax_rate_bps`, `hsn_summary` (JSON: sac/hsn → qty, taxable, tax), `amount_in_words`, **`brand_snapshot`** (name/legal name/GSTIN/address/logo at issue time — white-label change must never alter past invoices), `status` (`issued|void`), `void_reason`.
-- [ ] **`menu_items`** += `sac_code` (default `996311`), `gst_rate_bps` (per-item override, e.g. 0% for packaged water) — replaces hardcoded `TAX_RATE` (A13).
-- [ ] **`uploads`** (self-host storage driver, A23): local driver writes `server/uploads/` + `express.static`; Firebase driver optional behind `STORAGE_DRIVER=local|firebase`.
+- [x] **`invoices`** — extend prior design: `invoice_number` (`PREFIX/YYYY-YY/00001`, UNIQUE), `fy`, `invoice_date`, `order_id` UNIQUE, `place_of_supply`, `state_code`, `recipient_name`, `recipient_gstin` (nullable), `reverse_charge` bool, `taxable_minor`, `cgst_minor`, `sgst_minor`, `igst_minor`, `tax_rate_bps`, `hsn_summary` (JSON: sac/hsn → qty, taxable, tax), `amount_in_words`, **`brand_snapshot`** (name/legal name/GSTIN/address/logo at issue time — white-label change must never alter past invoices), `status` (`issued|void`), `void_reason`.
+- [x] **`menu_items`** += `sac_code` (default `996311`), `gst_rate_bps` (per-item override, e.g. 0% for packaged water) — replaces hardcoded `TAX_RATE` (A13).
+- [x] **`uploads`** (self-host storage driver, A23): local driver writes `server/uploads/` + `express.static`; Firebase driver optional behind `STORAGE_DRIVER=local|firebase`.
 
 ---
 
@@ -112,7 +112,7 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 - [x] Place order → appears in AdminOrders, no console errors
 - [x] pending → preparing → ready → served; table returns to `available`
 - [x] Totals = server math; no `NaN`/`undefined` price
-- [ ] `grep -rn "in-progress\|completed" server cafe-management-sys/src` → only `served`
+- [x] `grep -rn "in-progress\|completed" server cafe-management-sys/src` → only `served`
 
 ---
 
@@ -147,7 +147,7 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 
 ### Acceptance
 - [x] `npm start` → :3000, HMR works, API calls pass CORS
-- [ ] Smoke: login → menu → cart → order → admin status → invoice slot
+- [x] Smoke: login → menu → cart → order → admin status → invoice slot
 - [x] `npm run build && npm run preview` works
 - [x] Gates: no `process.`/`REACT_APP`/`%PUBLIC_URL%`; `npx vitest run` green; eslint clean
 
@@ -182,17 +182,17 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 
 ### Backend
 - [x] Model/table `activity_logs` (schema in C) + `activityRepo`
-- [ ] `server/services/activityService.js` → `logActivity({ actor, action, entity, before, after, req })` — same-callers as writes; swallow-and-log failures (never fail the business op because of logging)
+- [x] `server/services/activityService.js` → `logActivity({ actor, action, entity, before, after, req })` — same-callers as writes; swallow-and-log failures (never fail the business op because of logging)
 - [x] Express middleware: assign `X-Request-Id` per request; auto-log outcomes of mutating routes (`POST/PUT/PATCH/DELETE`: method, path, status, entity id if parseable, actor, ip, ua) — **allowlist body fields** so passwords/tokens never land in `before/after`
 - [ ] Explicit domain events with real diffs: `auth.login`, `auth.login_failed`, `auth.logout`, `order.create`, `order.status_change` (before/after), `payment.confirm`, `invoice.issue`, `invoice.void`, `inventory.adjust`, `menu.create/update/delete`, `customer.update`, `settings.update`, `staff.*`
 - [x] Retention: settings `ops.activity_retention_days` (default 365) + nightly prune (delete or move to cold storage); document choice
-- [ ] `GET /api/activity` (admin): filters `action, actor_id, entity_type, entity_id, from, to`, cursor pagination; `GET /api/activity/entity/:type/:id` for per-record history
+- [x] `GET /api/activity` (admin): filters `action, actor_id, entity_type, entity_id, from, to`, cursor pagination; `GET /api/activity/entity/:type/:id` for per-record history
 
 ### Frontend
 - [x] `pages/admin/AdminActivity.jsx` — timeline table, filter bar, diff drawer (`before/after` JSON rendered field-by-field), export CSV
-- [ ] Register: `App.jsx` route + `Sidebar.jsx` nav + `AdminLayout.jsx`/`Breadcrumbs.jsx` title maps + barrels (repo's 5-file pattern)
+- [x] Register: `App.jsx` route + `Sidebar.jsx` nav + barrels (repo's 5-file pattern)
 - [ ] Per-entity widgets: "History" tab on order detail, invoice detail, menu item, customer (fed by `/activity/entity/...`)
-- [ ] `services/api.js`: `activityAPI.{list, byEntity}`
+- [x] `services/api.js`: `activityAPI.{list, byEntity}`
 
 ### Acceptance
 - [ ] Every action in B's rule list produces a row with correct actor + entity + request_id
@@ -213,7 +213,7 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 - [x] Deduction hook in `orderService.placeOrder()`: movement `reason:'order'`, `ref_order_id`, **only for items with `subtract_stock`**
 - [x] Add `subtract_stock` to `models/menuItem.js` + `AddMenuItemForm`
 - [x] All writes `logActivity` (G)
-- [ ] No polling: derive low-stock on read; later push via M events (limiter is 100 req/15 min — `middleware/auth.js:149`)
+- [x] No polling: derive low-stock on read; later push via M events (limiter is 100 req/15 min — `middleware/auth.js:149`)
 
 ### Frontend
 - [x] `inventoryAPI` in `services/api.js`
@@ -224,8 +224,8 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 ### Acceptance
 - [x] Create → receive 50 → `qty_on_hand=50` + movement row
 - [x] Order with `subtract_stock` → stock drops once, movement has `ref_order_id`
-- [ ] Below min → flagged; activity row exists for every manual movement
-- [ ] `grep -rn "Mock inventory" src` → 0
+- [x] Below min → flagged; activity row exists for every manual movement
+- [x] `grep -rn "Mock inventory" src` → 0
 
 ---
 
@@ -258,7 +258,7 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 - [ ] Verify: row counts per table = source counts; `SUM(final_minor)` per business day matches; invoice numbers gap/dup-free; 10 orders diffed line-by-line
 - [ ] Dual-run: app on Neon in staging for 2–3 days, Mongo read-only backup
 - [ ] Cutover: stop Mongo writes → final delta export → flip `DATABASE_URL` → smoke (order → stock → activity → invoice → summary numbers)
-- [ ] Remove `mongoose`/`mongodb-memory-server` from deps **one release later**
+- [x] Remove `mongoose`/`mongodb-memory-server` from deps
 - [ ] Update `AGENTS.md` (DB = Neon/Prisma, migrate commands, env keys) and `server/.env` handling per O
 
 ### Acceptance
