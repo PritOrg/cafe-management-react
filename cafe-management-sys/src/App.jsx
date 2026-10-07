@@ -24,6 +24,7 @@ const AdminTenants = lazy(() => import('./pages/admin/AdminTenants.jsx').then((m
 const AdminCustomers = lazy(() => import('./pages/admin/AdminCustomers.jsx').then((m) => ({ default: m.AdminCustomers || m.default })));
 const AdminKitchen = lazy(() => import('./pages/admin/AdminKitchen.jsx').then((m) => ({ default: m.AdminKitchen || m.default })));
 const AdminActivity = lazy(() => import('./pages/admin/AdminActivity.jsx').then((m) => ({ default: m.AdminActivity || m.default })));
+const AdminInvoices = lazy(() => import('./pages/admin/AdminInvoices.jsx').then((m) => ({ default: m.AdminInvoices || m.default })));
 
 const App = () => {
   return (
@@ -65,6 +66,7 @@ const App = () => {
                   <Route path="customers" element={<AdminCustomers />} />
                   <Route path="kitchen" element={<AdminKitchen />} />
                   <Route path="activity" element={<AdminActivity />} />
+                  <Route path="invoices" element={<AdminInvoices />} />
                 </Route>
 
                 <Route

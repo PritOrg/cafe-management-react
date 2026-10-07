@@ -22,8 +22,9 @@ import {
   DialogContent,
   DialogActions,
 } from '@mui/material';
-import { Refresh, Search, History } from '@mui/icons-material';
+import { Refresh, Search, History, Download } from '@mui/icons-material';
 import { activityAPI, unwrap } from '../../services/api';
+import { activityToCsv, downloadCsv } from '../../utils/orderCsv';
 
 const AdminActivity = () => {
   const [items, setItems] = useState([]);
@@ -60,13 +61,30 @@ const AdminActivity = () => {
     fetchActivities();
   }, [fetchActivities]);
 
+  const handleExport = async () => {
+    try {
+      const params = { limit: 200 };
+      if (action) params.action = action;
+      if (entityType) params.entityType = entityType;
+      const body = await activityAPI.list(params);
+      const data = unwrap(body) || {};
+      const rows = data.items || items;
+      downloadCsv(`activity-${new Date().toISOString().slice(0, 10)}`, activityToCsv(rows));
+    } catch (err) {
+      setError(err.message || 'Export failed');
+    }
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
           <History /> Activity Log
         </Typography>
-        <Button variant="outlined" startIcon={<Refresh />} onClick={fetchActivities}>Refresh</Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button variant="outlined" startIcon={<Download />} onClick={handleExport}>Export CSV</Button>
+          <Button variant="outlined" startIcon={<Refresh />} onClick={fetchActivities}>Refresh</Button>
+        </Box>
       </Box>
 
       {error && (
