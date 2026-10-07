@@ -19,6 +19,7 @@ import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import LoginIcon from '@mui/icons-material/Login';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import InfoIcon from '@mui/icons-material/Info';
+import { useBrand } from '../../contexts/BrandContext';
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -97,6 +98,8 @@ export default function Navbar() {
   const [showSearch, setShowSearch] = React.useState(false);
   const theme = useTheme();
   const location = useLocation();
+  const { brand } = useBrand();
+  const brandTitle = brand?.title || 'Cafe';
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const cartCount = 2; // This would come from your state management
 
@@ -124,7 +127,7 @@ export default function Navbar() {
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 4 }}>
         <LocalCafeIcon sx={{ mr: 1, color: 'primary.main' }} />
         <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
-          Bug Latte
+          {brandTitle}
         </Typography>
       </Box>
       <List>
@@ -212,7 +215,7 @@ export default function Navbar() {
                 fontSize: { xs: '1.3rem', sm: '1.5rem' }
               }}
             >
-              Bug Latte
+              {brandTitle}
             </Typography>
           </Box>
 
