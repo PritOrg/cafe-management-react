@@ -43,3 +43,21 @@ export const downloadCsv = (filename, csv) => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 };
+
+export const activityToCsv = (rows = []) => {
+    const header = ['createdAt', 'action', 'entity', 'entityId', 'actorType', 'actorId', 'requestId', 'meta'];
+    const lines = [header.join(',')];
+    for (const r of rows) {
+        lines.push([
+            r.createdAt,
+            r.action,
+            r.entity,
+            r.entityId || '',
+            r.actorType || '',
+            r.actorId || '',
+            r.requestId || '',
+            r.meta ? JSON.stringify(r.meta) : '',
+        ].map(escapeCsv).join(','));
+    }
+    return lines.join('\n');
+};

@@ -13,3 +13,4 @@ export { default as AdminTenants } from './AdminTenants';
 export { default as AdminCustomers } from './AdminCustomers';
 export { default as AdminKitchen } from './AdminKitchen';
 export { default as AdminActivity } from './AdminActivity';
+export { default as AdminInvoices } from './AdminInvoices';
