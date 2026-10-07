@@ -130,7 +130,7 @@ const baseSidebarItems = [
 
 const platformItem = { title: 'Tenants', href: '/admin/tenants', icon: Business, badge: null };
 
-const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
+const Sidebar = ({ mobileOpen, handleDrawerToggle, rail = false }) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -350,8 +350,38 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
   return (
     <Box
       component="nav"
-      sx={{ width: { lg: drawerWidth }, flexShrink: { lg: 0 } }}
+      sx={{ width: { lg: rail ? 72 : drawerWidth, md: rail ? 72 : undefined }, flexShrink: { md: rail ? 0 : undefined, lg: 0 } }}
     >
+      {/* Tablet icon mini-rail (sm–lg) */}
+      {rail && (
+        <Drawer
+          variant="permanent"
+          sx={{
+            display: { xs: 'none', sm: 'block', lg: 'none' },
+            width: 72,
+            '& .MuiDrawer-paper': {
+              width: 72,
+              overflowX: 'hidden',
+              borderRight: `1px solid ${theme.palette.divider}`,
+            },
+          }}
+          open
+        >
+          <List sx={{ pt: 1 }}>
+            {sidebarItems.map((item) => (
+              <ListItemButton
+                key={item.href}
+                onClick={() => navigate(item.href)}
+                selected={location.pathname === item.href}
+                sx={{ justifyContent: 'center', minHeight: 48, mx: 1, borderRadius: 2 }}
+              >
+                <ListItemIcon sx={{ minWidth: 0 }}>{item.icon}</ListItemIcon>
+              </ListItemButton>
+            ))}
+          </List>
+        </Drawer>
+      )}
+
       {/* Mobile drawer */}
       <StyledDrawer
         variant="temporary"
@@ -370,7 +400,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
         {drawer}
       </StyledDrawer>
       
-      {/* Desktop drawer */}
+      {/* Desktop full drawer */}
       <StyledDrawer
         variant="permanent"
         sx={{
