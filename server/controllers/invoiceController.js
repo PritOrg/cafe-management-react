@@ -78,6 +78,29 @@ exports.getInvoicePrint = async (req, res) => {
     }
 };
 
+exports.printEscPos = async (req, res) => {
+    try {
+        const invoice = await invoiceService.getInvoice(req.tenantId, req.params.id);
+        if (!invoice) return sendResponse(res, 404, false, 'Invoice not found');
+        const settingsRepo = require('../repositories/settingsRepo');
+        const settings = await settingsRepo.getPublic(req.tenantId);
+        const host = req.body?.host || settings?.ops?.printer_host;
+        const { printEscPos } = require('../services/escPos');
+        const brand = invoice.brandSnapshot?.brand?.title || 'Cafe';
+        const lines = [
+            brand,
+            `Invoice ${invoice.invoiceNumber}`,
+            `Total ${Number(invoice.grandTotal).toFixed(2)}`,
+            'Thank you!',
+        ];
+        const result = await printEscPos({ host, lines, cut: true });
+        return sendResponse(res, 200, true, 'ESC/POS job sent', result);
+    } catch (err) {
+        console.error('ESC/POS print failed:', err);
+        return sendResponse(res, err.statusCode || 500, false, err.message || 'Print failed');
+    }
+};
+
 exports.voidInvoice = async (req, res) => {
     try {
         const { reason } = req.body || {};

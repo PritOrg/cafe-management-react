@@ -64,6 +64,8 @@ const mapMenuItem = (row) => row && ({
     allergens: row.allergens || [],
     orderCount: row.order_count,
     subtractStock: row.subtract_stock === true,
+    sacCode: row.sac_code || '996311',
+    gstRateBps: row.gst_rate_bps != null ? Number(row.gst_rate_bps) : null,
     sizes: [],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
