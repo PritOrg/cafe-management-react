@@ -1,0 +1,67 @@
+const { getDb } = require('../db/pool');
+const { mapMenuItem } = require('../db/mappers');
+
+const findAll = async (tenantId) => {
+    const rows = await getDb()('menu_items').where({ tenant_id: tenantId }).orderBy('title');
+    return rows.map(mapMenuItem);
+};
+
+const findById = async (tenantId, id) => {
+    const row = await getDb()('menu_items').where({ id, tenant_id: tenantId }).first();
+    return row ? mapMenuItem(row) : null;
+};
+
+const findByIdLean = async (tenantId, id) => {
+    const row = await getDb()('menu_items').where({ id, tenant_id: tenantId }).first();
+    return row ? mapMenuItem(row) : null;
+};
+
+const create = async (tenantId, data) => {
+    const [row] = await getDb()('menu_items').insert({
+        tenant_id: tenantId,
+        title: data.title,
+        sub_title: data.subTitle,
+        price_medium: data.price?.medium ?? data.priceMedium ?? 0,
+        price_large: data.price?.large ?? data.priceLarge ?? 0,
+        category: data.category,
+        image_url: data.imageUrl || '',
+        availability: data.availability !== false,
+        calories: data.calories || 0,
+        customization_options: data.customizationOptions || [],
+        preparation_time: data.preparationTime || 0,
+        rating: data.rating || 0,
+        tags: data.tags || [],
+        allergens: data.allergens || [],
+        order_count: data.orderCount || 0,
+    }).returning('*');
+    return mapMenuItem(row);
+};
+
+const updateById = async (tenantId, id, data) => {
+    const patch = { updated_at: new Date() };
+    if (data.title !== undefined) patch.title = data.title;
+    if (data.subTitle !== undefined) patch.sub_title = data.subTitle;
+    if (data.price?.medium !== undefined || data.priceMedium !== undefined) {
+        patch.price_medium = data.price?.medium ?? data.priceMedium;
+    }
+    if (data.price?.large !== undefined || data.priceLarge !== undefined) {
+        patch.price_large = data.price?.large ?? data.priceLarge;
+    }
+    if (data.category !== undefined) patch.category = data.category;
+    if (data.imageUrl !== undefined) patch.image_url = data.imageUrl;
+    if (data.availability !== undefined) patch.availability = data.availability;
+    if (data.calories !== undefined) patch.calories = data.calories;
+    if (data.customizationOptions !== undefined) patch.customization_options = data.customizationOptions;
+    if (data.preparationTime !== undefined) patch.preparation_time = data.preparationTime;
+    if (data.tags !== undefined) patch.tags = data.tags;
+    if (data.allergens !== undefined) patch.allergens = data.allergens;
+    const [row] = await getDb()('menu_items').where({ id, tenant_id: tenantId }).update(patch).returning('*');
+    return row ? mapMenuItem(row) : null;
+};
+
+const deleteById = async (tenantId, id) => {
+    const [row] = await getDb()('menu_items').where({ id, tenant_id: tenantId }).del().returning('*');
+    return row ? mapMenuItem(row) : null;
+};
+
+module.exports = { findAll, findById, findByIdLean, create, updateById, deleteById };

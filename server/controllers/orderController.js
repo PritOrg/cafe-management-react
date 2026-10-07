@@ -1,0 +1,154 @@
+const { sendResponse } = require('../middleware/auth');
+const { ORDER_STATUSES } = require('../constants/order');
+const orderService = require('../services/orderService');
+const orderRepo = require('../repositories/orderRepo');
+const customerRepo = require('../repositories/customerRepo');
+const tableRepo = require('../repositories/tableRepo');
+const activityRepo = require('../repositories/activityRepo');
+
+exports.placeOrder = async (req, res) => {
+    try {
+        const result = await orderService.placeOrder(req);
+        return sendResponse(res, result.status, result.status < 400, result.message, result.data || null);
+    } catch (err) {
+        console.error('Error placing order:', err);
+        return sendResponse(res, 500, false, err.message || 'Failed to place order');
+    }
+};
+
+exports.getOrderHistory = async (req, res) => {
+    try {
+        const phone = String(req.query.phone || '').trim();
+        if (!phone) {
+            return sendResponse(res, 400, false, 'phone query parameter is required');
+        }
+        const customers = await customerRepo.findByPhone(req.tenantId, phone);
+        if (!customers.length) {
+            return sendResponse(res, 200, true, 'Order history retrieved', { customer: null, orders: [] });
+        }
+        const ids = customers.map((c) => c._id);
+        const orders = await orderRepo.findForHistory(req.tenantId, ids);
+        return sendResponse(res, 200, true, 'Order history retrieved', {
+            customer: customers[0],
+            orders,
+        });
+    } catch (err) {
+        console.error('Error fetching order history:', err);
+        return sendResponse(res, 500, false, err.message || 'Server error');
+    }
+};
+
+exports.getOrdersByStatus = async (req, res) => {
+    try {
+        const { status } = req.query;
+        if (status && !ORDER_STATUSES.includes(status)) {
+            return sendResponse(res, 400, false, `Invalid status. Allowed: ${ORDER_STATUSES.join(', ')}`);
+        }
+        const orders = await orderRepo.findMany(req.tenantId, status ? { status } : {});
+        return sendResponse(res, 200, true, 'Orders retrieved', orders);
+    } catch (err) {
+        console.error('Error fetching orders by status:', err);
+        return sendResponse(res, 500, false, err.message || 'Server error');
+    }
+};
+
+exports.getTodaysOrders = async (req, res) => {
+    try {
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
+        const end = new Date();
+        end.setHours(23, 59, 59, 999);
+        const orders = await orderRepo.findMany(req.tenantId, { placedAt: { $gte: start, $lte: end } });
+        return sendResponse(res, 200, true, "Today's orders retrieved", orders);
+    } catch (err) {
+        console.error('Error fetching todays orders:', err);
+        return sendResponse(res, 500, false, err.message || 'Server error');
+    }
+};
+
+exports.getOrderById = async (req, res) => {
+    try {
+        const order = await orderRepo.findByIdForOwner(req.tenantId, req.params.id);
+        if (!order) {
+            return sendResponse(res, 404, false, 'Order not found');
+        }
+        const isStaffOrAdmin = req.role === 'admin' || req.role === 'staff' || req.isPlatformAdmin;
+        if (!isStaffOrAdmin) {
+            const ownerId = order.placedByCustomer && (
+                order.placedByCustomer._id
+                    ? order.placedByCustomer._id.toString()
+                    : order.placedByCustomer.toString()
+            );
+            if (!ownerId || ownerId !== (req.userId && req.userId.toString())) {
+                return sendResponse(res, 403, false, 'Access denied');
+            }
+        }
+        return sendResponse(res, 200, true, 'Order retrieved', order);
+    } catch (error) {
+        console.error('Error fetching order:', error);
+        return sendResponse(res, 500, false, 'Server error');
+    }
+};
+
+exports.getOrders = async (req, res) => {
+    try {
+        const { status, today } = req.query;
+        if (status && !ORDER_STATUSES.includes(status)) {
+            return sendResponse(res, 400, false, `Invalid status. Allowed: ${ORDER_STATUSES.join(', ')}`);
+        }
+        const query = {};
+        if (status) query.status = status;
+        if (today === 'true') {
+            const start = new Date();
+            start.setHours(0, 0, 0, 0);
+            const end = new Date();
+            end.setHours(23, 59, 59, 999);
+            query.placedAt = { $gte: start, $lte: end };
+        }
+        const orders = await orderRepo.findMany(req.tenantId, query);
+        return sendResponse(res, 200, true, 'Orders retrieved', orders);
+    } catch (error) {
+        console.error('Error fetching orders:', error);
+        return sendResponse(res, 500, false, 'Server error');
+    }
+};
+
+exports.updateOrderStatus = async (req, res) => {
+    try {
+        const { status } = req.body;
+        if (!ORDER_STATUSES.includes(status)) {
+            return sendResponse(res, 400, false, `Invalid status. Allowed: ${ORDER_STATUSES.join(', ')}`);
+        }
+        const order = await orderRepo.updateStatus(req.tenantId, req.params.id, status);
+        if (!order) return sendResponse(res, 404, false, 'Order not found');
+
+        if (order.tableNumber) {
+            const table = await tableRepo.findByNumber(req.tenantId, order.tableNumber);
+            if (table) {
+                if (status === 'served' || status === 'cancelled') {
+                    table.status = 'available';
+                    table.currentOrder = null;
+                } else {
+                    table.status = 'occupied';
+                    table.currentOrder = order._id;
+                }
+                await table.save();
+            }
+        }
+
+        await activityRepo.log({
+            tenantId: req.tenantId,
+            actorId: req.userId,
+            actorType: req.role,
+            action: 'order.status',
+            entity: 'order',
+            entityId: order._id,
+            meta: { status },
+        });
+
+        return sendResponse(res, 200, true, 'Order status updated', { status: order.status });
+    } catch (error) {
+        console.error('Error updating order status:', error);
+        return sendResponse(res, 500, false, 'Server error');
+    }
+};

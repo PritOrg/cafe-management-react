@@ -1,29 +1,27 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { LandingPage } from './pages/LandingPage';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import LoginRegisterPage from './pages/LoginRegisterPage';
-import MenuPage from './pages/MenuPage';
-import Layout from './components/Layout';
-import AddMenuItemForm from './pages/admin/AddMenuItemForm';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
 import { CartProvider } from './components/CartContext';
-import CartPage from './pages/CartPage';
+import { AuthProvider, ThemeContextProvider, BrandProvider } from './contexts';
+import { ThemeProvider } from './components';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
+
 root.render(
-  <>
+  <React.StrictMode>
     <BrowserRouter>
-      <CartProvider>
-        <Routes>
-          <Route path="/" element={<Layout />} >
-            <Route index element={<LandingPage />} />
-            <Route path="/login-register" element={<LoginRegisterPage />} />
-            <Route path='/menu' element={<MenuPage />} />
-            <Route path='/menu/add' element={<AddMenuItemForm />} />
-            <Route path='/cart' element={<CartPage />} />
-          </Route>
-        </Routes>
-      </CartProvider>
+      <AuthProvider>
+        <BrandProvider>
+          <ThemeContextProvider>
+            <ThemeProvider>
+              <CartProvider>
+                <App />
+              </CartProvider>
+            </ThemeProvider>
+          </ThemeContextProvider>
+        </BrandProvider>
+      </AuthProvider>
     </BrowserRouter>
-  </>
+  </React.StrictMode>
 );

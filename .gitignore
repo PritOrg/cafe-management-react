@@ -1,0 +1,21 @@
+# environment
+.env
+.env.*
+!.env.example
+
+# dependencies
+node_modules/
+
+# uploads (local storage driver)
+server/uploads/
+
+# logs
+server/logs/
+
+# build
+cafe-management-sys/build/
+cafe-management-sys/dist/
+
+# test coverage
+server/coverage/
+cafe-management-sys/coverage/
