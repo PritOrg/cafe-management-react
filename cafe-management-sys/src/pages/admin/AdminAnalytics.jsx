@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Card, CardContent, Grid, Button, ButtonGroup, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, LinearProgress, IconButton, Alert } from '@mui/material';
-import { TrendingUp, TrendingDown, BarChart, AttachMoney, CheckCircle, Download, Refresh } from '@mui/icons-material';
+import { TrendingUp, TrendingDown, BarChart, AttachMoney, CheckCircle, Download, Refresh, PieChart } from '@mui/icons-material';
 import { analyticsAPI, unwrap } from '../../services/api';
 import { formatMoney } from '../../utils/formatMoney';
 
@@ -186,11 +186,20 @@ const AdminAnalytics = () => {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <MetricCard
-            title="Served"
-            value={analyticsData?.dashboard?.servedCount?.toLocaleString() || '0'}
+            title="Taxable (today)"
+            value={formatMoney(analyticsData?.dashboard?.taxable)}
             change={0}
-            icon={<CheckCircle fontSize="large" />}
-            color="success"
+            icon={<BarChart fontSize="large" />}
+            color="info"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <MetricCard
+            title="CGST + SGST"
+            value={formatMoney((analyticsData?.dashboard?.cgstMinor || 0) / 100 + (analyticsData?.dashboard?.sgstMinor || 0) / 100)}
+            change={0}
+            icon={<PieChart fontSize="large" />}
+            color="warning"
           />
         </Grid>
       </Grid>

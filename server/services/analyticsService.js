@@ -35,7 +35,7 @@ const summary = async (tenantId) => {
     const yEnd = today.start;
 
     const db = getDb();
-    const [todayOrders, yOrders, statusCounts, topItems] = await Promise.all([
+    const [todayOrders, yOrders, statusCounts, topItems, taxAgg] = await Promise.all([
         db('orders')
             .where({ tenant_id: tenantId })
             .whereBetween('placed_at', [today.start, today.end])
@@ -68,7 +68,31 @@ const summary = async (tenantId) => {
             .select('mi.title', db.raw('sum(oi.quantity)::int as qty'), db.raw('sum(oi.item_price * oi.quantity)::numeric as revenue'))
             .orderBy('qty', 'desc')
             .limit(5),
+        db('order_items as oi')
+            .join('orders as o', 'o.id', 'oi.order_id')
+            .where('o.tenant_id', tenantId)
+            .whereBetween('o.placed_at', [today.start, today.end])
+            .select(
+                db.raw('coalesce(sum(oi.item_price * oi.quantity),0)::numeric as taxable_items'),
+                // tax = final - taxable base (orders store final including tax+tip); approximate via order totals
+                db.raw('0::numeric as _unused')
+            )
+            .first(),
     ]);
+
+    // GST split from orders: taxable (total-discount), tax = final - taxable - tip
+    const taxRows = await db('orders')
+        .where({ tenant_id: tenantId })
+        .whereBetween('placed_at', [today.start, today.end])
+        .select(
+            db.raw('coalesce(sum(total_amount - discount_amount),0)::numeric as taxable'),
+            db.raw('coalesce(sum(final_amount - (total_amount - discount_amount) - tip_amount),0)::numeric as tax')
+        )
+        .first();
+    const taxableMinor = money.toMinor(Number(taxRows?.taxable || 0));
+    const taxMinor = money.toMinor(Number(taxRows?.tax || 0));
+    const cgstMinor = Math.round(taxMinor / 2);
+    const sgstMinor = taxMinor - cgstMinor;
 
     const ordersCount = todayOrders?.orders_count || 0;
     const revenueMinor = money.toMinor(Number(todayOrders?.revenue || 0));
@@ -90,7 +114,12 @@ const summary = async (tenantId) => {
         preparingCount: byStatus.preparing || 0,
         readyCount: byStatus.ready || 0,
         covers: ordersCount,
-        taxableMinor: money.toMinor(Number(todayOrders?.taxable || 0)),
+        taxableMinor,
+        taxable: money.fromMinor(taxableMinor),
+        taxMinor,
+        tax: money.fromMinor(taxMinor),
+        cgstMinor,
+        sgstMinor,
         prevDayRevenueMinor: prevRevenueMinor,
         prevDayOrdersCount: prevOrders,
         prevDayDeltaBps: prevRevenueMinor
@@ -120,7 +149,7 @@ const salesSeries = async (tenantId, period = '30d') => {
 
     const db = getDb();
     const offset = `${tz} minutes`;
-    const [series, breakdown, prevAgg] = await Promise.all([
+    const [series, breakdown, prevAgg, taxAgg] = await Promise.all([
         db('orders')
             .where({ tenant_id: tenantId })
             .whereBetween('placed_at', [startBound.start, startBound.end])
@@ -147,7 +176,20 @@ const salesSeries = async (tenantId, period = '30d') => {
                 db.raw('count(*)::int as orders_count')
             )
             .first(),
+        db('orders')
+            .where({ tenant_id: tenantId })
+            .whereBetween('placed_at', [startBound.start, startBound.end])
+            .select(
+                db.raw('coalesce(sum(total_amount - discount_amount),0)::numeric as taxable'),
+                db.raw('coalesce(sum(final_amount - (total_amount - discount_amount) - tip_amount),0)::numeric as tax')
+            )
+            .first(),
     ]);
+
+    const taxableMinor = money.toMinor(Number(taxAgg?.taxable || 0));
+    const taxMinor = money.toMinor(Number(taxAgg?.tax || 0));
+    const cgstMinor = Math.round(taxMinor / 2);
+    const sgstMinor = taxMinor - cgstMinor;
 
     const periodRevenue = sum(series, 'revenue');
     const periodOrders = sum(series, 'orders_count');
@@ -175,6 +217,10 @@ const salesSeries = async (tenantId, period = '30d') => {
         totalRevenue: periodRevenue,
         totalRevenueMinor: money.toMinor(periodRevenue),
         totalOrders: periodOrders,
+        taxableMinor,
+        taxMinor,
+        cgstMinor,
+        sgstMinor,
         revenueChangePct: prevRevenue ? Math.round(((periodRevenue - prevRevenue) / prevRevenue) * 10000) / 100 : 0,
         ordersChangePct: prevOrders ? Math.round(((periodOrders - prevOrders) / prevOrders) * 10000) / 100 : 0,
     };
