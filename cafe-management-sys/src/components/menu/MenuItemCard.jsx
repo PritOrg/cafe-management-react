@@ -298,9 +298,12 @@ const MenuItemCard = ({ menuItem, addToCart }) => {
                       lineHeight: 1,
                     }}
                   >
-                    {(menuItem?.sizes?.length
-                        ? `${formatPrice(menuItem.sizes[0].price)} onwards`
-                        : `${formatPrice(price.medium)} - ${formatPrice(price.large)}`}
+                    {(() => {
+                        if (menuItem?.sizes?.length) {
+                            return `${formatPrice(menuItem.sizes[0].price)} onwards`;
+                        }
+                        return `${formatPrice(price.medium)} - ${formatPrice(price.large)}`;
+                    })()}
                   </Typography>
                   <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.7rem' }}>
                     {menuItem?.sizes?.length
