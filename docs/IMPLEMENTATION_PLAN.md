@@ -184,14 +184,14 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 - [x] Model/table `activity_logs` (schema in C) + `activityRepo`
 - [x] `server/services/activityService.js` → `logActivity({ actor, action, entity, before, after, req })` — same-callers as writes; swallow-and-log failures (never fail the business op because of logging)
 - [x] Express middleware: assign `X-Request-Id` per request; auto-log outcomes of mutating routes (`POST/PUT/PATCH/DELETE`: method, path, status, entity id if parseable, actor, ip, ua) — **allowlist body fields** so passwords/tokens never land in `before/after`
-- [ ] Explicit domain events with real diffs: `auth.login`, `auth.login_failed`, `auth.logout`, `order.create`, `order.status_change` (before/after), `payment.confirm`, `invoice.issue`, `invoice.void`, `inventory.adjust`, `menu.create/update/delete`, `customer.update`, `settings.update`, `staff.*`
+- [x] Domain events: `order.place`, `order.status` with before/after diff (activity), `auth.login_failed`, `auth.logout`, `order.create`, `order.status_change` (before/after), `payment.confirm`, `invoice.issue`, `invoice.void`, `inventory.adjust`, `menu.create/update/delete`, `customer.update`, `settings.update`, `staff.*`
 - [x] Retention: settings `ops.activity_retention_days` (default 365) + nightly prune (delete or move to cold storage); document choice
 - [x] `GET /api/activity` (admin): filters `action, actor_id, entity_type, entity_id, from, to`, cursor pagination; `GET /api/activity/entity/:type/:id` for per-record history
 
 ### Frontend
 - [x] `pages/admin/AdminActivity.jsx` — timeline table, filter bar, diff drawer (`before/after` JSON rendered field-by-field), export CSV
 - [x] Register: `App.jsx` route + `Sidebar.jsx` nav + barrels (repo's 5-file pattern)
-- [ ] Per-entity widgets: "History" tab on order detail, invoice detail, menu item, customer (fed by `/activity/entity/...`)
+- [x] Per-entity widgets: "History" tab on order detail, invoice detail, menu item (customer pending) (fed by `/activity/entity/...`)
 - [x] `services/api.js`: `activityAPI.{list, byEntity}`
 
 ### Acceptance

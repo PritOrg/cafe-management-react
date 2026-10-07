@@ -189,6 +189,12 @@ const AdminActivity = () => {
               <Typography><strong>Request ID:</strong> {selected.requestId || '—'}</Typography>
               <Typography><strong>Time:</strong> {selected.createdAt ? new Date(selected.createdAt).toLocaleString() : '—'}</Typography>
               <Typography variant="body2" sx={{ mt: 2, mb: 1 }}><strong>Meta</strong></Typography>
+              {selected.meta && (selected.meta.before !== undefined || selected.meta.after !== undefined) && (
+                <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+                  <Chip size="small" label={`before: ${JSON.stringify(selected.meta.before)}`} variant="outlined" />
+                  <Chip size="small" label={`after: ${JSON.stringify(selected.meta.after)}`} color="primary" />
+                </Box>
+              )}
               <Box component="pre" sx={{ bgcolor: 'grey.100', p: 1, borderRadius: 1, fontSize: 12, overflow: 'auto' }}>
                 {JSON.stringify(selected.meta || {}, null, 2)}
               </Box>
