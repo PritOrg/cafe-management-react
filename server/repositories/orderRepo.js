@@ -149,16 +149,13 @@ const incrementMenuItemOrderCount = async (tenantId, menuItemId, trx = getDb()) 
 
 const nextOrderNumber = async (tenantId, prefix, trx = getDb()) => {
     const name = `order:${prefix}`;
-    const row = await trx('counters')
-        .where({ tenant_id: tenantId, name })
-        .forUpdate()
-        .first();
-    const next = row ? Number(row.value) + 1 : 1;
-    if (row) {
-        await trx('counters').where({ id: row.id }).update({ value: next, updated_at: new Date() });
-    } else {
-        await trx('counters').insert({ tenant_id: tenantId, name, value: next });
-    }
+    // Atomic upsert — safe under concurrent orders (forUpdate doesn't lock missing rows)
+    const [row] = await trx('counters')
+        .insert({ tenant_id: tenantId, name, value: 1 })
+        .onConflict(['tenant_id', 'name'])
+        .merge({ value: trx.raw('counters.value + 1'), updated_at: new Date() })
+        .returning('value');
+    const next = Number(row.value);
     return `${prefix}-${String(next).padStart(4, '0')}`;
 };
 
