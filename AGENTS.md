@@ -87,10 +87,11 @@
 - PWA `manifest.json` name → Cafe POS / Cafe Management System.
 
 ## Tests / verification
-- Backend: `cd server && npm test` → Vitest (82 tests). Coverage ~60% statements on core modules (utils/services/middleware/constants/mappers + integration controllers). `npm run test:coverage` needs Docker PG (`DATABASE_URL` → :5433).
-- Frontend: `CI=true npx vitest run --coverage` in `cafe-management-sys` — ~68% on utils/services/adapters/hooks/contexts.
+- Backend: `cd server && npm test` → Vitest (97 tests). Coverage ~60% on core modules. `npm run test:coverage` needs Docker PG (`DATABASE_URL` → :5433). `npm run lint` → ESLint 8 (0 errors).
+- Frontend: `CI=true npx vitest run --coverage` in `cafe-management-sys` — ~68% on utils/services/adapters/hooks. `npm run lint` → 0 errors. `npm run build` → Vite.
 - Invoice PDF formats: `a4`, `a5`, `thermal80`, `thermal58` (readability-first type scales).
-- Lint: `npx eslint src --ext .js,.jsx` — 0 errors expected.
+- **CI (GitHub Actions):** `.github/workflows/ci.yml` on PR/push to main — backend (postgres service, migrate+seed, lint, test) + frontend (lint, test, build, artifact upload). `deploy.yml` on main — packages frontend dist + server tarball as artifacts (SSH deploy stub commented).
+- Lint gate: `npx eslint src --ext .js,.jsx` — 0 errors expected.
 
 ## Secrets / git
 - `.env` files are **not tracked** (untracked 2026-10-06; see root `.gitignore` + `server/.env.example`). Still tracked and sensitive: Firebase service-account JSON (`server/firebase/*.json`), Google OAuth client-secret JSON (`server/mail/*.json`), `server/logs/*.log`. Never echo secrets, never add new credentials, keep `logs/` out of commits unless asked.
