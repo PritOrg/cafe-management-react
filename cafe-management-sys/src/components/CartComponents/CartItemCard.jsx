@@ -150,23 +150,26 @@ const CartItemCard = ({ item, onQuantityChange, onRemoveItem, onUpdateCustomizat
 
                 {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 ? (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {Object.entries(item.selectedOptions).map(([key, value]) => (
-                      <Chip
-                        key={key}
-                        label={`${key}: ${value}`}
-                        size="small"
-                        variant="outlined"
-                        sx={{
-                          fontSize: '0.7rem',
-                          backgroundColor: 'primary.light',
-                          color: 'primary.contrastText',
-                          border: 'none',
-                          '&:hover': {
-                            backgroundColor: 'primary.main',
-                          }
-                        }}
-                      />
-                    ))}
+                    {Object.entries(item.selectedOptions).map(([key, value]) => {
+                      const delta = Number(value) || 0;
+                      return (
+                        <Chip
+                          key={key}
+                          label={delta > 0 ? `${key} +₹${delta}` : key}
+                          size="small"
+                          variant="outlined"
+                          sx={{
+                            fontSize: '0.7rem',
+                            backgroundColor: 'primary.light',
+                            color: 'primary.contrastText',
+                            border: 'none',
+                            '&:hover': {
+                              backgroundColor: 'primary.main',
+                            }
+                          }}
+                        />
+                      );
+                    })}
                   </Box>
                 ) : (
                   <Typography variant="caption" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
