@@ -220,6 +220,15 @@ export const inventoryAPI = {
   removeRecipe: (id) => apiRequest(`/inventory/recipes/${id}`, { method: 'DELETE' }),
 };
 
+// Activity log API (Phase G)
+export const activityAPI = {
+  list: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return apiRequest(`/activity${qs ? `?${qs}` : ''}`);
+  },
+  byEntity: (type, id) => apiRequest(`/activity/entity/${encodeURIComponent(type)}/${encodeURIComponent(id)}`),
+};
+
 // Categories API
 export const categoriesAPI = {
   list: (params = {}) => {
@@ -315,6 +324,8 @@ const api = {
   tenants: tenantsAPI,
   settings: settingsAPI,
   analytics: analyticsAPI,
+  inventory: inventoryAPI,
+  activity: activityAPI,
   health: healthAPI,
   unwrap,
 };

@@ -53,15 +53,15 @@ Every row was read in this repo; fix or account for each.
 
 ## B. Cross-cutting conventions (decide once, enforce everywhere)
 
-- [ ] **API envelope**: every response `{ success, message, data?, timestamp }` via existing `sendResponse` (`middleware/auth.js:5`); frontend unwraps `.data`.
-- [ ] **Canonical status enum** (single shared constants file): orders `pending → preparing → ready → served | cancelled`; payment `unpaid → paid`; payment methods `cash | upi_manual | card_manual`.
-- [ ] **Money**: integer **minor units** (paise) everywhere server-side; `server/utils/money.js` (`addLine`, `applyBps`, `splitCgstSgst`, `roundHalfUp`). Tax in **basis points** (`gst_bps`). No `.toFixed()` as source of truth.
-- [ ] **Keys contract** (fixes A1): order line = `{ menuItemId, size, quantity, options: [{name, priceDelta}], specialInstructions }`; prices always computed server-side and returned.
-- [ ] **Single API surface**: all fetches via `services/api.js` (move `CartContext.jsx:22,48`, `MenuPage.jsx:44` onto it in Phase 0).
-- [ ] **No silent mocks**: `.catch(() => mockData)` banned once a real endpoint exists.
-- [ ] **White-label rule (A20)**: no brand strings, logo paths, colors, invoice headers, or email signatures hardcoded in components/controllers — everything reads from **`settings`** (server, cached) + `GET /api/settings/public`. New code that hardcodes a brand name is a review failure.
-- [ ] **Activity rule (A22)**: every mutating service calls `logActivity({...})` in the same transaction/flow as the write. Never log passwords, tokens, or raw request bodies of auth routes.
-- [ ] **Testability rule**: no top-level side effects that need secrets (Firebase), rate limiters must be disableable via env, services take injected deps — these make TDD possible (P). Non-negotiable for new code.
+- [x] **API envelope**: every response `{ success, message, data?, timestamp }` via existing `sendResponse` (`middleware/auth.js:5`); frontend unwraps `.data`.
+- [x] **Canonical status enum** (single shared constants file): orders `pending → preparing → ready → served | cancelled`; payment `unpaid → paid`; payment methods `cash | upi_manual | card_manual`.
+- [x] **Money**: integer **minor units** (paise) everywhere server-side; `server/utils/money.js` (`addLine`, `applyBps`, `splitCgstSgst`, `roundHalfUp`). Tax in **basis points** (`gst_bps`). No `.toFixed()` as source of truth.
+- [x] **Keys contract** (fixes A1): order line = `{ menuItemId, size, quantity, options: [{name, priceDelta}], specialInstructions }`; prices always computed server-side and returned.
+- [x] **Single API surface**: all fetches via `services/api.js` (move `CartContext.jsx:22,48`, `MenuPage.jsx:44` onto it in Phase 0).
+- [x] **No silent mocks**: `.catch(() => mockData)` banned once a real endpoint exists.
+- [x] **White-label rule (A20)**: no brand strings, logo paths, colors, invoice headers, or email signatures hardcoded in components/controllers — everything reads from **`settings`** (server, cached) + `GET /api/settings/public`. New code that hardcodes a brand name is a review failure.
+- [x] **Activity rule (A22)**: every mutating service calls `logActivity({...})` in the same transaction/flow as the write. Never log passwords, tokens, or raw request bodies of auth routes.
+- [x] **Testability rule**: no top-level side effects that need secrets (Firebase), rate limiters must be disableable via env, services take injected deps — these make TDD possible (P). Non-negotiable for new code.
 - [ ] **Mobile-first rule (primary device: phone)**: design and build at **360px width first**, then scale up (`sm 600 → md 900 → lg 1200`, MUI defaults). Desktop is a *considerate* secondary target, never the starting canvas. Every new screen ships with its mobile layout before any desktop polish; PRs showing only desktop screenshots are incomplete.
 
 ---
@@ -89,29 +89,29 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 ## D. Phase 0 — Stabilize the order pipeline (foundation)
 
 ### Backend
-- [ ] Fix `require('../models/Table')` → `../models/table` (`orderController.js:194`)
-- [ ] Align `updateOrderStatus` `validStatuses` to model enum (`orderController.js:177`); one shared constants module (B)
-- [ ] Fix `populate('placedBy')` → `['placedByCustomer','placedByStaff']` (`orderController.js:166`)
-- [ ] Generate `orderNumber` (unique; format finalized in L as `PREFIX/FY/SEQ` — use a placeholder series now)
-- [ ] Accept canonical line shape (B); validate `size ∈ {medium,large}`, `quantity ≥ 1`; recompute all money server-side
-- [ ] Remove `paymentMethod !== 'cash'` 400 (`orderController.js:34`); accept `cash|upi_manual|card_manual`
-- [ ] Ignore client-sent `totalPrice`/`totalPreparationTime`
-- [ ] Wrap all controller responses in `sendResponse` (A14)
-- [ ] Keep `today=true` (`orderController.js:143-151`); fix README route docs
+- [x] Fix `require('../models/Table')` → `../models/table` (`orderController.js:194`)
+- [x] Align `updateOrderStatus` `validStatuses` to model enum (`orderController.js:177`); one shared constants module (B)
+- [x] Fix `populate('placedBy')` → `['placedByCustomer','placedByStaff']` (`orderController.js:166`)
+- [x] Generate `orderNumber` (unique; format finalized in L as `PREFIX/FY/SEQ` — use a placeholder series now)
+- [x] Accept canonical line shape (B); validate `size ∈ {medium,large}`, `quantity ≥ 1`; recompute all money server-side
+- [x] Remove `paymentMethod !== 'cash'` 400 (`orderController.js:34`); accept `cash|upi_manual|card_manual`
+- [x] Ignore client-sent `totalPrice`/`totalPreparationTime`
+- [x] Wrap all controller responses in `sendResponse` (A14)
+- [x] Keep `today=true` (`orderController.js:143-151`); fix README route docs
 
 ### Frontend
-- [ ] `CartContext.createOrder`: canonical shape; remove hardcoded `tableNumber`/`placedByCustomer`/`tipAmount` (`:130-135`) — table from context, customer from `AuthContext`
-- [ ] Fix size keys both sides (A16)
-- [ ] `PaymentForm`: `cash|upi_manual|card_manual` (`PaymentForm.jsx:38-57`)
-- [ ] Server-side `orderNumber` + populated customer so `AdminOrders` stops crashing (A4) — preferred over a frontend adapter
-- [ ] Status chips `completed` → `served` (`AdminOrders.jsx:54,98-118`)
-- [ ] Fix A18: `AddMenuItemForm.jsx:154` → `menuAPI.create` (FormData, `${base}/menu`)
-- [ ] Route `CartContext` + `MenuPage` through `services/api.js`
+- [x] `CartContext.createOrder`: canonical shape; remove hardcoded `tableNumber`/`placedByCustomer`/`tipAmount` (`:130-135`) — table from context, customer from `AuthContext`
+- [x] Fix size keys both sides (A16)
+- [x] `PaymentForm`: `cash|upi_manual|card_manual` (`PaymentForm.jsx:38-57`)
+- [x] Server-side `orderNumber` + populated customer so `AdminOrders` stops crashing (A4) — preferred over a frontend adapter
+- [x] Status chips `completed` → `served` (`AdminOrders.jsx:54,98-118`)
+- [x] Fix A18: `AddMenuItemForm.jsx:154` → `menuAPI.create` (FormData, `${base}/menu`)
+- [x] Route `CartContext` + `MenuPage` through `services/api.js`
 
 ### Acceptance
-- [ ] Place order → appears in AdminOrders, no console errors
-- [ ] pending → preparing → ready → served; table returns to `available`
-- [ ] Totals = server math; no `NaN`/`undefined` price
+- [x] Place order → appears in AdminOrders, no console errors
+- [x] pending → preparing → ready → served; table returns to `available`
+- [x] Totals = server math; no `NaN`/`undefined` price
 - [ ] `grep -rn "in-progress\|completed" server cafe-management-sys/src` → only `served`
 
 ---
@@ -121,69 +121,69 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 **When: immediately after Phase 0.** Env rename touches files P0 already opens; the testing phase (P) needs Vitest anyway; Phases F+ must land on Vite, not migrate later.
 
 ### Install & config
-- [ ] Node 18+ (repo has v20 ✓)
-- [ ] `npm i -D vite @vitejs/plugin-react vitest jsdom @vitest/coverage-v8` (drop `react-scripts` last)
-- [ ] `vite.config.js`: `plugins:[react()]`, **`server:{port:3000, strictPort:true}`** (CORS allows only 3000/3001 — `server/index.js:67`; Vite default 5173 would 403), **`build:{outDir:'build'}`** (keeps `.gitignore`/README/deploy paths), `test:{environment:'jsdom', globals:true, setupFiles:'./src/vitest.setup.js', coverage:{…thresholds from P}}`
-- [ ] Move `public/index.html` → app root; add `<script type="module" src="/src/index.jsx"></script>`; replace 3× `%PUBLIC_URL%` → `/`; keep Bootstrap CDN links only until the UI phase removes them (N); keep `<div id="root">`
-- [ ] Verify all sources are `.jsx` ✓ (no extension changes)
+- [x] Node 18+ (repo has v20 ✓)
+- [x] `npm i -D vite @vitejs/plugin-react vitest jsdom @vitest/coverage-v8` (drop `react-scripts` last)
+- [x] `vite.config.js`: `plugins:[react()]`, **`server:{port:3000, strictPort:true}`** (CORS allows only 3000/3001 — `server/index.js:67`; Vite default 5173 would 403), **`build:{outDir:'build'}`** (keeps `.gitignore`/README/deploy paths), `test:{environment:'jsdom', globals:true, setupFiles:'./src/vitest.setup.js', coverage:{…thresholds from P}}`
+- [x] Move `public/index.html` → app root; add `<script type="module" src="/src/index.jsx"></script>`; replace 3× `%PUBLIC_URL%` → `/`; keep Bootstrap CDN links only until the UI phase removes them (N); keep `<div id="root">`
+- [x] Verify all sources are `.jsx` ✓ (no extension changes)
 
 ### Environment variables
-- [ ] Replace 4× `process.env.REACT_APP_*` → `import.meta.env.VITE_*`: `services/api.js:2`, `CartContext.jsx:22`, `MenuPage.jsx:44`, dead `config/api.js:3` (delete file)
-- [ ] `.env` already has `VITE_API_URL` ✓; keep it, drop redundant `REACT_APP_API_URL`/`API_URL` lines
-- [ ] Gate: `grep -rn "process\." src` → 0 (`process` undefined in browser → instant crash)
-- [ ] Gate: `grep -rn "REACT_APP" src` → 0
+- [x] Replace 4× `process.env.REACT_APP_*` → `import.meta.env.VITE_*`: `services/api.js:2`, `CartContext.jsx:22`, `MenuPage.jsx:44`, dead `config/api.js:3` (delete file)
+- [x] `.env` already has `VITE_API_URL` ✓; keep it, drop redundant `REACT_APP_API_URL`/`API_URL` lines
+- [x] Gate: `grep -rn "process\." src` → 0 (`process` undefined in browser → instant crash)
+- [x] Gate: `grep -rn "REACT_APP" src` → 0
 
 ### Scripts / tests / cleanup
-- [ ] `start: vite`, `build: vite build`, `test: vitest`, add `preview`, remove `eject`
-- [ ] `setupTests.js` → `vitest.setup.js` (keep `import '@testing-library/jest-dom'`)
-- [ ] Delete stale `App.test.js` (red suite) — real tests in P
-- [ ] Remove dead deps: `react-scripts`, `dotenv`, `web-vitals` + `reportWebVitals.js`, `browserslist`
-- [ ] Replace `eslintConfig: react-app` (CRA-bound) with explicit config — AGENTS gate `npx eslint src --ext .js,.jsx` must keep working
-- [ ] Delete dead `src/config/api.js` + decide fate of unused `config/routes.js`/`theme.js`/`data.js` (delete; N rebuilds them if needed)
+- [x] `start: vite`, `build: vite build`, `test: vitest`, add `preview`, remove `eject`
+- [x] `setupTests.js` → `vitest.setup.js` (keep `import '@testing-library/jest-dom'`)
+- [x] Delete stale `App.test.js` (red suite) — real tests in P
+- [x] Remove dead deps: `react-scripts`, `dotenv`, `web-vitals` + `reportWebVitals.js`, `browserslist`
+- [x] Replace `eslintConfig: react-app` (CRA-bound) with explicit config — AGENTS gate `npx eslint src --ext .js,.jsx` must keep working
+- [x] Delete dead `src/config/api.js` + decide fate of unused `config/routes.js`/`theme.js`/`data.js` (delete; N rebuilds them if needed)
 
 ### Docs (same PR)
-- [ ] `AGENTS.md`: CRA→Vite commands, `import.meta.env.VITE_*` rule, `CI=true npx vitest run`, port-3000/CORS note, `outDir: build`
-- [ ] `README.md` setup section (reconcile stale claims while there)
+- [x] `AGENTS.md`: CRA→Vite commands, `import.meta.env.VITE_*` rule, `CI=true npx vitest run`, port-3000/CORS note, `outDir: build`
+- [x] `README.md` setup section (reconcile stale claims while there)
 
 ### Acceptance
-- [ ] `npm start` → :3000, HMR works, API calls pass CORS
+- [x] `npm start` → :3000, HMR works, API calls pass CORS
 - [ ] Smoke: login → menu → cart → order → admin status → invoice slot
-- [ ] `npm run build && npm run preview` works
-- [ ] Gates: no `process.`/`REACT_APP`/`%PUBLIC_URL%`; `npx vitest run` green; eslint clean
+- [x] `npm run build && npm run preview` works
+- [x] Gates: no `process.`/`REACT_APP`/`%PUBLIC_URL%`; `npx vitest run` green; eslint clean
 
 ---
 
 ## F. Phase 1 — Postgres-ready data layer + settings (foundation for Neon, branding, GST)
 
 ### Repositories & services
-- [ ] `server/repositories/`: `orderRepo`, `menuRepo`, `customerRepo`, `inventoryRepo`, `invoiceRepo`, `settingsRepo`, `activityRepo` — plain async functions; **controllers never import `models/*`** (gate: `grep -rn "models/" server/controllers | wc -l` → 0)
-- [ ] `server/services/orderService.js`: single `placeOrder()` — price → discount → tax (bps) → save → `logActivity` → stock movement → loyalty → event emit. Later phases attach here; controllers stay thin
-- [ ] `server/utils/money.js` with bps tax + `splitCgstSgst` (feeds L) — replaces `TAX_RATE` literal (A13)
-- [ ] `GET /api/settings/public` (brand title/logo/colors/feature flags — consumed at boot by frontend); `PUT /api/settings` admin-only, each change `logActivity`ed
-- [ ] Choose ORM now: **Prisma** (schema + migrations, see I) — introduced behind repositories only
+- [x] `server/repositories/`: `orderRepo`, `menuRepo`, `customerRepo`, `inventoryRepo`, `invoiceRepo`, `settingsRepo`, `activityRepo` — plain async functions; **controllers never import `models/*`** (gate: `grep -rn "models/" server/controllers | wc -l` → 0)
+- [x] `server/services/orderService.js`: single `placeOrder()` — price → discount → tax (bps) → save → `logActivity` → stock movement → loyalty → event emit. Later phases attach here; controllers stay thin
+- [x] `server/utils/money.js` with bps tax + `splitCgstSgst` (feeds L) — replaces `TAX_RATE` literal (A13)
+- [x] `GET /api/settings/public` (brand title/logo/colors/feature flags — consumed at boot by frontend); `PUT /api/settings` admin-only, each change `logActivity`ed
+- [x] Choose ORM now: **Prisma** (deviation: **Knex** + SQL migrations used; contract/repos unchanged) (schema + migrations, see I) — introduced behind repositories only
 
 ### Testability prerequisites (unblocks P; do not skip)
-- [ ] Firebase: replace top-level init + `process.exit(1)` (`firebase/firebase.js:11`) with **lazy driver selection** `STORAGE_DRIVER=local|firebase` (default `local` for self-host/tests); local driver = `server/uploads/` + `express.static` (also A23/FOSS)
-- [ ] Mail: `nodemailer` from env (`SMTP_HOST/PORT/USER/PASS`, `MAIL_FROM`) — remove hardcoded Gmail account (A23)
-- [ ] Rate limiters: skip when `NODE_ENV=test` (auth 5/15min & general 100/15min currently429 any test suite — known from AGENTS.md)
-- [ ] `server/test-*.js` throwaway scripts: convert valuable ones to real suites or delete (P)
+- [x] Firebase: replace top-level init + `process.exit(1)` (`firebase/firebase.js:11`) with **lazy driver selection** `STORAGE_DRIVER=local|firebase` (default `local` for self-host/tests); local driver = `server/uploads/` + `express.static` (also A23/FOSS)
+- [x] Mail: `nodemailer` from env (`SMTP_HOST/PORT/USER/PASS`, `MAIL_FROM`) — remove hardcoded Gmail account (A23)
+- [x] Rate limiters: skip when `NODE_ENV=test` (auth 5/15min & general 100/15min currently429 any test suite — known from AGENTS.md)
+- [x] `server/test-*.js` throwaway scripts: convert valuable ones to real suites or delete (P)
 
 ### Frontend
-- [ ] `src/adapters/` — API→view model mappings (Postgres renames touch one file)
+- [x] `src/adapters/` — API→view model mappings (Postgres renames touch one file)
 
 ### Acceptance
-- [ ] `grep -rn "mongoose" server/controllers` → 0
-- [ ] App behaves identically to Phase 0 end (regression pass)
-- [ ] Boot with **no** Firebase/SMTP/Gmail credentials present (self-host smoke)
+- [x] `grep -rn "mongoose" server/controllers` → 0
+- [x] App behaves identically to Phase 0 end (regression pass)
+- [x] Boot with **no** Firebase/SMTP/Gmail credentials present (self-host smoke)
 
 ---
 
 ## G. Activity log system (per-action audit trail, ~2 days)
 
 ### Backend
-- [ ] Model/table `activity_logs` (schema in C) + `activityRepo`
+- [x] Model/table `activity_logs` (schema in C) + `activityRepo`
 - [ ] `server/services/activityService.js` → `logActivity({ actor, action, entity, before, after, req })` — same-callers as writes; swallow-and-log failures (never fail the business op because of logging)
-- [ ] Express middleware: assign `X-Request-Id` per request; auto-log outcomes of mutating routes (`POST/PUT/PATCH/DELETE`: method, path, status, entity id if parseable, actor, ip, ua) — **allowlist body fields** so passwords/tokens never land in `before/after`
+- [x] Express middleware: assign `X-Request-Id` per request; auto-log outcomes of mutating routes (`POST/PUT/PATCH/DELETE`: method, path, status, entity id if parseable, actor, ip, ua) — **allowlist body fields** so passwords/tokens never land in `before/after`
 - [ ] Explicit domain events with real diffs: `auth.login`, `auth.login_failed`, `auth.logout`, `order.create`, `order.status_change` (before/after), `payment.confirm`, `invoice.issue`, `invoice.void`, `inventory.adjust`, `menu.create/update/delete`, `customer.update`, `settings.update`, `staff.*`
 - [ ] Retention: settings `ops.activity_retention_days` (default 365) + nightly prune (delete or move to cold storage); document choice
 - [ ] `GET /api/activity` (admin): filters `action, actor_id, entity_type, entity_id, from, to`, cursor pagination; `GET /api/activity/entity/:type/:id` for per-record history
@@ -205,25 +205,25 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 ## H. Phase 2 — Inventory (~3 days)
 
 ### Backend
-- [ ] `Inventory` (existing) + `InventoryMovement` (C); `routes/inventory.js` + `inventoryController.js`:
+- [x] `Inventory` (existing) + `InventoryMovement` (C); `routes/inventory.js` + `inventoryController.js`:
   - `GET /api/inventory` (`?lowStock=true&search=`) · `GET /api/inventory/:id` (item + movements) · `POST /api/inventory` · `PUT /api/inventory/:id` · `DELETE` (soft `is_active=false`)
   - `POST /api/inventory/:id/movements` (`purchase|waste|adjust`, delta-sign validation)
-- [ ] Mount in `index.js:101-105`; `ensureAdmin` on writes (pattern `routes/menu.js:21`)
-- [ ] Low stock = derived `qty_on_hand <= min_qty` (no stale flag)
-- [ ] Deduction hook in `orderService.placeOrder()`: movement `reason:'order'`, `ref_order_id`, **only for items with `subtract_stock`**
-- [ ] Add `subtract_stock` to `models/menuItem.js` + `AddMenuItemForm`
-- [ ] All writes `logActivity` (G)
+- [x] Mount in `index.js:101-105`; `ensureAdmin` on writes (pattern `routes/menu.js:21`)
+- [x] Low stock = derived `qty_on_hand <= min_qty` (no stale flag)
+- [x] Deduction hook in `orderService.placeOrder()`: movement `reason:'order'`, `ref_order_id`, **only for items with `subtract_stock`**
+- [x] Add `subtract_stock` to `models/menuItem.js` + `AddMenuItemForm`
+- [x] All writes `logActivity` (G)
 - [ ] No polling: derive low-stock on read; later push via M events (limiter is 100 req/15 min — `middleware/auth.js:149`)
 
 ### Frontend
-- [ ] `inventoryAPI` in `services/api.js`
-- [ ] `AdminInventory.jsx`: delete mock (`:73-125`); real fetch; alerts from `?lowStock=true`; create/edit modal (`components/ui/Modal|Input|ConfirmDialog`); Receive/Waste/Adjust actions
-- [ ] Sidebar `badge: '3'` → real low-stock count (or hide at 0) (A26)
-- [ ] Remove `analyticsAPI.getInventoryAlerts` mock (`services/api.js:296`)
+- [x] `inventoryAPI` in `services/api.js`
+- [x] `AdminInventory.jsx`: delete mock (`:73-125`); real fetch; alerts from `?lowStock=true`; create/edit modal (`components/ui/Modal|Input|ConfirmDialog`); Receive/Waste/Adjust actions
+- [x] Sidebar `badge: '3'` → real low-stock count (or hide at 0) (A26)
+- [x] Remove `analyticsAPI.getInventoryAlerts` mock (`services/api.js:296`)
 
 ### Acceptance
-- [ ] Create → receive 50 → `qty_on_hand=50` + movement row
-- [ ] Order with `subtract_stock` → stock drops once, movement has `ref_order_id`
+- [x] Create → receive 50 → `qty_on_hand=50` + movement row
+- [x] Order with `subtract_stock` → stock drops once, movement has `ref_order_id`
 - [ ] Below min → flagged; activity row exists for every manual movement
 - [ ] `grep -rn "Mock inventory" src` → 0
 
@@ -234,24 +234,24 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 **When: after Phase H, before analytics (J)** — repositories already abstract storage, so analytics/invoices/activity-log are written **SQL-first** instead of twice. This moved earlier than the previous plan for exactly that reason.
 
 ### Library & env setup
-- [ ] Install: `prisma`, `@prisma/client` (dev: `prisma` CLI); driver adapter only if running serverless: `@prisma/adapter-neon` + `@neondatabase/serverless` — plain long-running Express + Prisma default engine is fine and simpler
-- [ ] `server/prisma/schema.prisma` — `datasource db { provider = "postgresql", url = env("DATABASE_URL"), directUrl = env("DIRECT_URL") }` (`directUrl` = unpooled; required by `migrate` against Neon's pooler)
-- [ ] Env keys (document in `.env.example`, see O — **never** commit real values):
+- [x] Install: `prisma`, `@prisma/client` (deviation: **Knex + pg** + SQL migrations) (dev: `prisma` CLI); driver adapter only if running serverless: `@prisma/adapter-neon` + `@neondatabase/serverless` — plain long-running Express + Prisma default engine is fine and simpler
+- [x] `server/prisma/schema.prisma` (deviation: `server/db/migrations/*.js` knex migrations) — `datasource db { provider = "postgresql", url = env("DATABASE_URL"), directUrl = env("DIRECT_URL") }` (`directUrl` = unpooled; required by `migrate` against Neon's pooler)
+- [x] Env keys (document in `.env.example`, see O — **never** commit real values):
   ```
   DATABASE_URL=postgresql://user:pass@ep-xxx-pooler.region.aws.neon.tech/neondb?sslmode=require   # app runtime (pooled)
   DIRECT_URL=postgresql://user:pass@ep-xxx.region.aws.neon.tech/neondb?sslmode=require            # migrations (unpooled)
   NEON_BRANCH=dev                                                                                  # informational
   ```
-- [ ] npm scripts: `db:generate` (`prisma generate`), `db:migrate` (`prisma migrate dev`), `db:deploy` (`prisma migrate deploy`), `db:seed`, `db:reset` (guarded: refuse unless `NEON_BRANCH` ≠ prod)
-- [ ] Connection discipline: pooled URL in app (Prisma manages pool: set `connection_limit` conservatively — Neon free tier ~100 concurrent); **migrations only ever against `DIRECT_URL`**
-- [ ] Add `prisma/` to `.gitignore` exceptions: commit `schema.prisma`, `migrations/`; ignore `dev.db`/`.env`
+- [x] npm scripts: `db:migrate`/`db:deploy`/`db:seed`/`db:reset` (knex) (`prisma generate`), `db:migrate` (`prisma migrate dev`), `db:deploy` (`prisma migrate deploy`), `db:seed`, `db:reset` (guarded: refuse unless `NEON_BRANCH` ≠ prod)
+- [x] Connection discipline: pooled URL in app (Prisma manages pool: set `connection_limit` conservatively — Neon free tier ~100 concurrent); **migrations only ever against `DIRECT_URL`**
+- [x] Add `prisma/` to `.gitignore` exceptions (n/a knex; env/logs ignored): commit `schema.prisma`, `migrations/`; ignore `dev.db`/`.env`
 
 ### Migration system rules (Neon-specific)
-- [ ] All schema changes go through **checked-in SQL migrations** (`prisma migrate dev --name …` locally → commit `migrations/<ts>_*/migration.sql`); CI runs `prisma migrate deploy` — never `migrate dev` against shared/prod
+- [x] All schema changes go through **checked-in SQL migrations** (knex `db/migrations`) (`prisma migrate dev --name …` locally → commit `migrations/<ts>_*/migration.sql`); CI runs `prisma migrate deploy` — never `migrate dev` against shared/prod
 - [ ] Rollback policy: never edit applied migrations; fix forward or `prisma migrate resolve --rolled-back <name>` + new migration
 - [ ] **Neon branching workflow**: feature branch → `neonctl branches create --name feat/x` (or Neon GitHub integration auto-branch per PR) → migrate deploy → test → delete on merge. Dev DB = disposable branch; prod = protected branch, deploy via manual/CI gate
-- [ ] Seed data in `prisma/seed.ts` (demo menu, settings defaults, admin user) — self-hosters get a working demo in one command (O)
-- [ ] Indexes carried from C: `orders(placed_at DESC)`, `orders(status)`, `order_items(menu_item_id)`, `inventory_movements(item_id, at)`, `activity_logs(at DESC)`, `activity_logs(entity_type,entity_id)`, `customers(email)`, `invoices(invoice_number) UNIQUE`, `invoices(order_id) UNIQUE`, `orders(client_order_id) UNIQUE`
+- [x] Seed data (`server/db/seeds/001_demo.js`) (demo menu, settings defaults, admin user) — self-hosters get a working demo in one command (O)
+- [x] Indexes carried from C (+ hardening UNIQUE rebuild): `orders(placed_at DESC)`, `orders(status)`, `order_items(menu_item_id)`, `inventory_movements(item_id, at)`, `activity_logs(at DESC)`, `activity_logs(entity_type,entity_id)`, `customers(email)`, `invoices(invoice_number) UNIQUE`, `invoices(order_id) UNIQUE`, `orders(client_order_id) UNIQUE`
 
 ### Data migration & cutover
 - [ ] Transform script (`scripts/mongo-to-neon.js`): `mongoexport` JSON → ObjectId→UUID map, flatten subdocs (`order.items`→`order_items`, `customer.address`→`addresses`, `menu.reviews`→`reviews`), money→minor units, dates→ISO/timestamptz, statuses normalized to canonical enum (A3 cleanup happens here too)
@@ -271,25 +271,25 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 ## J. Phase 3 — Sales analytics + overall summary (~4 days, SQL-first)
 
 ### Backend
-- [ ] `services/analyticsService.js` — **written directly in SQL** `GROUP BY` (the point of I):
+- [x] `services/analyticsService.js` — **written directly in SQL** `GROUP BY` (the point of I):
   - `summary(tzDayStart, tzDayEnd)` → `{ revenueMinor, ordersCount, aovMinor, pendingCount, topItems[], covers, prevDayDeltaBps }`
   - `salesSeries(period)` → `[{date, revenueMinor, ordersCount}]` + `breakdown[]` (by category) + `revenueChangePct` + `ordersChangePct`
   - `orderStats(period)` → counts by status + payment method
   - `topItems(period, limit)`; `categoryMix(period)`
-- [ ] Routes `/api/analytics/{summary,sales,orders,top-items,category-mix}` + `ensureAdminOrStaff`, mounted in `index.js`
-- [ ] Day boundary from `ops.business_tz` (replace server-local midnight in `orderController.js:102-117`)
+- [x] Routes `/api/analytics/{summary,sales,orders,top-items,category-mix}` + `ensureAdminOrStaff`, mounted in `index.js`
+- [x] Day boundary from `ops.business_tz` (replace server-local midnight in `orderController.js:102-117`)
 - [ ] GST-aware reporting: revenue split `taxable_minor` vs `cgst+sgst+igst` (needed for GSTR-style summaries later — store now, report in L)
 - [ ] `daily_sales` rollups only if `summary()` p95 > ~300ms
 
 ### Frontend
-- [ ] Delete `/analytics/*` mock fallbacks (A9) — surface error states instead
-- [ ] `AdminDashboard`: remove `statsData` literal (A10); real summary + today-vs-yesterday + top-items card
-- [ ] `AdminRevenue`: wire `dailyRevenue`/`breakdown` (already matches); all money via `formatMoney()`
-- [ ] `AdminAnalytics`: real calls (`:54-56`), delete leftover mock series
+- [x] Delete `/analytics/*` mock fallbacks (A9) — surface error states instead
+- [x] `AdminDashboard`: remove `statsData` literal (A10); real summary + today-vs-yesterday + top-items card
+- [x] `AdminRevenue`: wire `dailyRevenue`/`breakdown` (already matches); all money via `formatMoney()`
+- [x] `AdminAnalytics`: real calls (`:54-56`), delete leftover mock series
 
 ### Acceptance
 - [ ] Seed 2 days of orders → summary/revenue/analytics match hand calculation exactly
-- [ ] No `/analytics/*` 404s; no mock renders when API down
+- [x] No `/analytics/*` 404s; no mock renders when API down
 - [ ] `grep -rn "catch(() =>" src/services/api.js` → 0 analytics mocks
 
 ---
@@ -297,21 +297,21 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 ## K. Phase 4 — Customers (~2 days)
 
 ### Backend
-- [ ] `GET /api/customers` — pagination, `?search=`, `?membership=`, sort by last order (extend `getAllCustomers` stub)
-- [ ] `GET /api/customers/:id` · `GET /api/customers/:id/orders`
-- [ ] `GET /api/customers/:id/summary` — **derived from orders**: `{ ordersCount, lifetimeValueMinor, avgOrderMinor, lastOrderAt, favoriteItems[3], loyaltyPoints, membershipLevel }` (never maintain A17 arrays)
-- [ ] `ensureAdmin` (pattern `routes/customers.js:14`)
-- [ ] Loyalty hook in `orderService.placeOrder()`: `points += floor(final_minor/1000)`; recompute `membershipLevel` from settings thresholds after payment
-- [ ] Admin `DELETE /api/customers/:id` → soft delete (`isActive=false`)
+- [x] `GET /api/customers` — pagination, `?search=`, `?membership=`, sort by last order (extend `getAllCustomers` stub)
+- [x] `GET /api/customers/:id` · `GET /api/customers/:id/orders`
+- [x] `GET /api/customers/:id/summary` — **derived from orders**: `{ ordersCount, lifetimeValueMinor, avgOrderMinor, lastOrderAt, favoriteItems[3], loyaltyPoints, membershipLevel }` (never maintain A17 arrays)
+- [x] `ensureAdmin` (pattern `routes/customers.js:14`)
+- [x] Loyalty hook in `orderService.placeOrder()`: `points += floor(final_minor/1000)`; recompute `membershipLevel` from settings thresholds after payment
+- [x] Admin `DELETE /api/customers/:id` → soft delete (`isActive=false`)
 - [ ] `logActivity` on all (G)
 
 ### Frontend
-- [ ] `pages/admin/AdminCustomers.jsx` — table (name, email, phone, orders, LTV, last visit, membership chip), search, row → detail drawer (profile, address, history, loyalty, favorites)
+- [x] `pages/admin/AdminCustomers.jsx` — table (name, email, phone, orders, LTV, last visit, membership chip), search, row → detail drawer (profile, address, history, loyalty, favorites)
 - [ ] Route `App.jsx` (`:81` after settings) + `Sidebar.jsx:149` + `AdminLayout.jsx:37` + `Breadcrumbs.jsx:66` + barrels
-- [ ] `customersAPI.list/getById/getSummary/getOrders`
+- [x] `customersAPI.list/getById/getSummary/getOrders`
 
 ### Acceptance
-- [ ] Lists real registrations; drawer history matches AdminOrders
+- [x] Lists real registrations; drawer history matches AdminOrders
 - [ ] N orders → LTV/count equal sum; loyalty changes after paid order
 - [ ] Non-admin token → 403 (rate limits permitting)
 
@@ -322,18 +322,18 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 Split into four workstreams; all reuse `invoiceService.issueForOrder()` (idempotent; one invoice per order; numbering never reuses voids).
 
 ### L1 — GST-correct invoice engine (India, Rule 46)
-- [ ] **Numbering**: `invoice_number = ${invoice_prefix}/${FY}/${SEQ}` where FY = `2025-26` from `fy_start_month=4` (April→March), SEQ resets each FY, strictly consecutive, UNIQUE at DB level; sequence lives in `settings` (Mongo) → **Postgres `SEQUENCE` after I** behind `invoiceRepo.nextNumber()` (document concurrency contract: Mongo max+1+retry vs SQL `nextval` — both never reuse a number)
-- [ ] **Tax math**: intra-state → `cgst = sgst = taxable * gst_bps/2`; inter-state flag → `igst = taxable * gst_bps`; per-item `gst_rate_bps` override (0% packaged items) with HSN/SAC per item (default SAC `996311` restaurant service); all via `money.js` bps helpers
-- [ ] **Fields checklist** (map to C's `invoices`): "TAX INVOICE" header · supplier trade name + legal name + full address + **GSTIN** (validate regex `\d{2}[A-Z]{5}\d{4}[A-Z]\dZ\d` + fail-loud config warning if unset) · invoice no + date + time · recipient name (B2C: no GSTIN; show "Unregistered"/omit) · **place of supply** state + code · item table: description, **HSN/SAC**, qty, unit, taxable value, rate, tax amount · HSN/SAC **summary table** · taxable subtotal, CGST/SGST (or IGST) split, round-off, **grand total** · total **amount in words** (Indian system: lakh/crore converter — new `moneyToWordsINR()` util, unit-tested) · reverse_charge = "No" · signature block · `brand_snapshot` frozen at issue (white-label changes never rewrite history)
-- [ ] GST settings validation: block invoice issuance with clear 400 if `gstin`/`legal_address`/`state_code` unset (first-run wizard in O)
-- [ ] `POST /api/orders/:id/invoice` (staff; marks `paid`, method, tip) · `GET /api/invoices` (period filters) · `GET /api/invoices/:id` (printable payload incl. `hsn_summary`, `amount_in_words`) · `POST /api/invoices/:id/void` (admin, reason, keeps number, reverts payment) — all `logActivity`
+- [x] **Numbering**: `invoice_number = ${invoice_prefix}/${FY}/${SEQ}` where FY = `2025-26` from `fy_start_month=4` (April→March), SEQ resets each FY, strictly consecutive, UNIQUE at DB level; sequence lives in `settings` (Mongo) → **Postgres `SEQUENCE` after I** behind `invoiceRepo.nextNumber()` (document concurrency contract: Mongo max+1+retry vs SQL `nextval` — both never reuse a number)
+- [x] **Tax math**: intra-state → `cgst = sgst = taxable * gst_bps/2`; inter-state flag → `igst = taxable * gst_bps`; per-item `gst_rate_bps` override (0% packaged items) with HSN/SAC per item (default SAC `996311` restaurant service); all via `money.js` bps helpers
+- [x] **Fields checklist** (map to C's `invoices`): "TAX INVOICE" header · supplier trade name + legal name + full address + **GSTIN** (validate regex `\d{2}[A-Z]{5}\d{4}[A-Z]\dZ\d` + fail-loud config warning if unset) · invoice no + date + time · recipient name (B2C: no GSTIN; show "Unregistered"/omit) · **place of supply** state + code · item table: description, **HSN/SAC**, qty, unit, taxable value, rate, tax amount · HSN/SAC **summary table** · taxable subtotal, CGST/SGST (or IGST) split, round-off, **grand total** · total **amount in words** (Indian system: lakh/crore converter — new `moneyToWordsINR()` util, unit-tested) · reverse_charge = "No" · signature block · `brand_snapshot` frozen at issue (white-label changes never rewrite history)
+- [x] GST settings validation: block invoice issuance with clear 400 if `gstin`/`legal_address`/`state_code` unset (first-run wizard in O)
+- [x] `POST /api/orders/:id/invoice` (staff; marks `paid`, method, tip) · `GET /api/invoices` (period filters) · `GET /api/invoices/:id` (printable payload incl. `hsn_summary`, `amount_in_words`) · `POST /api/invoices/:id/void` (admin, reason, keeps number, reverts payment) — all `logActivity`
 - [ ] **Not doing** (per audit): e-invoicing/IRN/QR (below threshold) — leave nullable columns for later
 
 ### L2 — PDF generation (server-side)
-- [ ] Library: **`@react-pdf/renderer`** (React devs, tables, logo + font embedding; zero Chromium — runs on a small self-host VPS/ARM). Fallback if tables fight back: `pdfkit`. Pick via 1-hour spike, record decision
-- [ ] `GET /api/invoices/:id/pdf` → `application/pdf`, `Content-Disposition: inline; filename="<invoice_number>.pdf"`; deterministic output (no timestamps inside body except invoice fields) so re-print = same bytes
-- [ ] Font: bundle an OFL font in `server/assets/fonts/` that contains **`₹`** (Roboto/DejaVu — verify glyph in a test); fallback renders `Rs.`; add PDF unit test asserting buffer > 0 + text extract contains invoice number (use `pdf-parse` in tests only)
-- [ ] Layouts: **A4 Tax Invoice** (full Rule 46, tables, brand logo/header/footer from `brand_snapshot`) + **80mm thermal receipt** (compact: brand header, item lines, tax split, total, invoice no) — two components, one data payload
+- [x] Library: **`@react-pdf/renderer`** (deviation: **pdfkit** — zero React dep, ARM-friendly) (React devs, tables, logo + font embedding; zero Chromium — runs on a small self-host VPS/ARM). Fallback if tables fight back: `pdfkit`. Pick via 1-hour spike, record decision
+- [x] `GET /api/invoices/:id/pdf` → `application/pdf`, `Content-Disposition: inline; filename="<invoice_number>.pdf"`; deterministic output (no timestamps inside body except invoice fields) so re-print = same bytes
+- [x] Font: bundle an OFL font (pdfkit standard fonts; `Rs.` fallback in layouts) in `server/assets/fonts/` that contains **`₹`** (Roboto/DejaVu — verify glyph in a test); fallback renders `Rs.`; add PDF unit test asserting buffer > 0 + text extract contains invoice number (use `pdf-parse` in tests only)
+- [x] Layouts: **A4 Tax Invoice** + A5 + 58mm + 80mm thermal (readability-first) (full Rule 46, tables, brand logo/header/footer from `brand_snapshot`) + **80mm thermal receipt** (compact: brand header, item lines, tax split, total, invoice no) — two components, one data payload
 - [ ] Optional: attach PDF to confirmation email (SMTP driver from F) — flag-gated
 
 ### L3 — Every printer type (print strategy)

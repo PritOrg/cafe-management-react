@@ -63,6 +63,21 @@ exports.getInvoicePdf = async (req, res) => {
     }
 };
 
+exports.getInvoicePrint = async (req, res) => {
+    try {
+        const invoice = await invoiceService.getInvoice(req.tenantId, req.params.id);
+        if (!invoice) return sendResponse(res, 404, false, 'Invoice not found');
+        const mode = req.query.mode === 'thermal' ? 'thermal' : 'a4';
+        const { renderInvoiceHtml } = require('../services/invoicePrintHtml');
+        const html = renderInvoiceHtml(invoice, { mode });
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        return res.send(html);
+    } catch (err) {
+        console.error('Error rendering invoice HTML:', err);
+        return sendResponse(res, 500, false, err.message || 'Server error');
+    }
+};
+
 exports.voidInvoice = async (req, res) => {
     try {
         const { reason } = req.body || {};
