@@ -15,7 +15,8 @@ const DEFAULTS = {
         invoicePrefix: 'INV',
         fyStartMonth: 4,
     },
-    ops: { currency: 'INR', timezone: 'Asia/Kolkata' },
+    ops: { currency: 'INR', timezone: 'Asia/Kolkata', activity_retention_days: 365, printer_host: '' },
+    print: { default_paper: 'a4' }, // a4 | thermal80 | thermal58
 };
 
 const getOrCreate = async (tenantId) => {
@@ -35,6 +36,7 @@ const getPublic = async (tenantId) => {
         brand: { ...DEFAULTS.brand, ...(doc.data.brand || {}) },
         gst: { ...DEFAULTS.gst, ...(doc.data.gst || {}) },
         ops: { ...DEFAULTS.ops, ...(doc.data.ops || {}) },
+        print: { ...DEFAULTS.print, ...(doc.data.print || {}) },
     };
 };
 
@@ -44,6 +46,7 @@ const update = async (tenantId, patch) => {
         brand: { ...doc.data.brand, ...(patch.brand || {}) },
         gst: { ...doc.data.gst, ...(patch.gst || {}) },
         ops: { ...doc.data.ops, ...(patch.ops || {}) },
+        print: { ...DEFAULTS.print, ...(doc.data.print || {}), ...(patch.print || {}) },
     };
     const [row] = await getDb()('settings')
         .where({ tenant_id: tenantId })
