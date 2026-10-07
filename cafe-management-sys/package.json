@@ -22,7 +22,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "lint": "eslint src --ext .js,.jsx"
   },
   "eslintConfig": {
     "root": true,
