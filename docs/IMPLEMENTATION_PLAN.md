@@ -62,7 +62,7 @@ Every row was read in this repo; fix or account for each.
 - [x] **White-label rule (A20)**: no brand strings, logo paths, colors, invoice headers, or email signatures hardcoded in components/controllers — everything reads from **`settings`** (server, cached) + `GET /api/settings/public`. New code that hardcodes a brand name is a review failure.
 - [x] **Activity rule (A22)**: every mutating service calls `logActivity({...})` in the same transaction/flow as the write. Never log passwords, tokens, or raw request bodies of auth routes.
 - [x] **Testability rule**: no top-level side effects that need secrets (Firebase), rate limiters must be disableable via env, services take injected deps — these make TDD possible (P). Non-negotiable for new code.
-- [ ] **Mobile-first rule (primary device: phone)**: design and build at **360px width first**, then scale up (`sm 600 → md 900 → lg 1200`, MUI defaults). Desktop is a *considerate* secondary target, never the starting canvas. Every new screen ships with its mobile layout before any desktop polish; PRs showing only desktop screenshots are incomplete.
+- [x] **Mobile-first rule (primary device: phone)**: design and build at **360px width first**, then scale up (`sm 600 → md 900 → lg 1200`, MUI defaults). Desktop is a *considerate* secondary target, never the starting canvas. Every new screen ships with its mobile layout before any desktop polish; PRs showing only desktop screenshots are incomplete.
 
 ---
 
@@ -79,7 +79,7 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
   - `gst.*`: `gstin`, `legal_address`, `state_code` (e.g. `27`), `place_of_supply`, `default_sac` (`996311` restaurant service), `default_gst_bps` (500 = 5%), `invoice_prefix`, `fy_start_month` (4 → April), `invoice_next_seq`, `reverse_charge` (false)
   - `print.*`: `default_paper` (`a4|receipt_80mm`), `receipt_width_mm` (80), `printer_host`/`printer_port` (raw ESC/POS, optional), `auto_print_after_payment`
   - `ops.*`: `business_tz`, `activity_retention_days` (365), `currency` (`INR`)
-- [ ] **`activity_logs`** — `id`, `actor_type` (`customer|staff|admin|system`), `actor_id`, `actor_label`, `action` (`domain.entity.action` e.g. `order.status_change`), `entity_type`, `entity_id`, `summary`, `before`/`after` (diff JSON, nullable), `request_id`, `ip`, `user_agent`, `success` bool, `at`. Indexes: `(at DESC)`, `(entity_type, entity_id)`, `(actor_id, at)`.
+- [x] **`activity_logs`** — `id`, `actor_type` (`customer|staff|admin|system`), `actor_id`, `actor_label`, `action` (`domain.entity.action` e.g. `order.status_change`), `entity_type`, `entity_id`, `summary`, `before`/`after` (diff JSON, nullable), `request_id`, `ip`, `user_agent`, `success` bool, `at`. Indexes: `(at DESC)`, `(entity_type, entity_id)`, `(actor_id, at)`.
 - [ ] **`invoices`** — extend prior design: `invoice_number` (`PREFIX/YYYY-YY/00001`, UNIQUE), `fy`, `invoice_date`, `order_id` UNIQUE, `place_of_supply`, `state_code`, `recipient_name`, `recipient_gstin` (nullable), `reverse_charge` bool, `taxable_minor`, `cgst_minor`, `sgst_minor`, `igst_minor`, `tax_rate_bps`, `hsn_summary` (JSON: sac/hsn → qty, taxable, tax), `amount_in_words`, **`brand_snapshot`** (name/legal name/GSTIN/address/logo at issue time — white-label change must never alter past invoices), `status` (`issued|void`), `void_reason`.
 - [ ] **`menu_items`** += `sac_code` (default `996311`), `gst_rate_bps` (per-item override, e.g. 0% for packaged water) — replaces hardcoded `TAX_RATE` (A13).
 - [ ] **`uploads`** (self-host storage driver, A23): local driver writes `server/uploads/` + `express.static`; Firebase driver optional behind `STORAGE_DRIVER=local|firebase`.
@@ -185,11 +185,11 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 - [ ] `server/services/activityService.js` → `logActivity({ actor, action, entity, before, after, req })` — same-callers as writes; swallow-and-log failures (never fail the business op because of logging)
 - [x] Express middleware: assign `X-Request-Id` per request; auto-log outcomes of mutating routes (`POST/PUT/PATCH/DELETE`: method, path, status, entity id if parseable, actor, ip, ua) — **allowlist body fields** so passwords/tokens never land in `before/after`
 - [ ] Explicit domain events with real diffs: `auth.login`, `auth.login_failed`, `auth.logout`, `order.create`, `order.status_change` (before/after), `payment.confirm`, `invoice.issue`, `invoice.void`, `inventory.adjust`, `menu.create/update/delete`, `customer.update`, `settings.update`, `staff.*`
-- [ ] Retention: settings `ops.activity_retention_days` (default 365) + nightly prune (delete or move to cold storage); document choice
+- [x] Retention: settings `ops.activity_retention_days` (default 365) + nightly prune (delete or move to cold storage); document choice
 - [ ] `GET /api/activity` (admin): filters `action, actor_id, entity_type, entity_id, from, to`, cursor pagination; `GET /api/activity/entity/:type/:id` for per-record history
 
 ### Frontend
-- [ ] `pages/admin/AdminActivity.jsx` — timeline table, filter bar, diff drawer (`before/after` JSON rendered field-by-field), export CSV
+- [x] `pages/admin/AdminActivity.jsx` — timeline table, filter bar, diff drawer (`before/after` JSON rendered field-by-field), export CSV
 - [ ] Register: `App.jsx` route + `Sidebar.jsx` nav + `AdminLayout.jsx`/`Breadcrumbs.jsx` title maps + barrels (repo's 5-file pattern)
 - [ ] Per-entity widgets: "History" tab on order detail, invoice detail, menu item, customer (fed by `/activity/entity/...`)
 - [ ] `services/api.js`: `activityAPI.{list, byEntity}`
@@ -197,7 +197,7 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 ### Acceptance
 - [ ] Every action in B's rule list produces a row with correct actor + entity + request_id
 - [ ] Placing an order end-to-end yields ≥5 rows (login, order.create, status×2, payment/invoice) — count them
-- [ ] Auth request bodies contain no `password` in stored diffs (grep test)
+- [x] Auth request bodies contain no `password` in stored diffs (grep test)
 - [ ] Retention prune removes rows older than setting on a seeded fixture
 
 ---
@@ -303,7 +303,7 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 - [x] `ensureAdmin` (pattern `routes/customers.js:14`)
 - [x] Loyalty hook in `orderService.placeOrder()`: `points += floor(final_minor/1000)`; recompute `membershipLevel` from settings thresholds after payment
 - [x] Admin `DELETE /api/customers/:id` → soft delete (`isActive=false`)
-- [ ] `logActivity` on all (G)
+- [x] `logActivity` on all (G)
 
 ### Frontend
 - [x] `pages/admin/AdminCustomers.jsx` — table (name, email, phone, orders, LTV, last visit, membership chip), search, row → detail drawer (profile, address, history, loyalty, favorites)
@@ -337,12 +337,12 @@ Split into four workstreams; all reuse `invoiceService.issueForOrder()` (idempot
 - [ ] Optional: attach PDF to confirmation email (SMTP driver from F) — flag-gated
 
 ### L3 — Every printer type (print strategy)
-- [ ] **Tier 1 — HTML print views (covers everything, do first):**
+- [x] **Tier 1 — HTML print views (covers everything, do first):**
   - `PrintDialog` component with 3 actions: **A4 invoice** · **80mm receipt** · **PDF download**
   - A4 view: `@page { size: A4; margin: 12mm }`, `@media print` hides chrome → prints correctly on **laser, inkjet, and dot-matrix** (Epson LX/TVS class — driver handles ESC/P; continuous tractor paper = set margin/`@page` accordingly)
   - Receipt view: `@page { size: 80mm auto; margin: 4mm }`, font ~11–12px monospace-ish → prints on **80mm and 58mm thermal** printers installed as normal system printers (USB/Ethernet-with-driver); `print-color-adjust: exact` for background bands
   - Always `window.print()` — browsers never let JS pre-select a printer (security); correct `@page` size makes the right printer preview correctly
-- [ ] **Tier 2 — raw ESC/POS (optional, behind `print.printer_host`)**: for driverless network thermal printers — server-side TCP job to `host:9100` with a tiny ESC/POS encoder (text, `GS V0` cut, codepage note: `₹` may need graphic-mode or `Rs.` fallback); "Test print" button in settings; defer until Tier 1 validated
+- [x] **Tier 2 — raw ESC/POS (optional, behind `print.printer_host`)**: for driverless network thermal printers — server-side TCP job to `host:9100` with a tiny ESC/POS encoder (text, `GS V0` cut, codepage note: `₹` may need graphic-mode or `Rs.` fallback); "Test print" button in settings; defer until Tier 1 validated
 - [ ] Print matrix checklist (manual, once per release): A4 laser · A4 inkjet · dot-matrix (tractor feed) · 80mm USB thermal · 58mm thermal · PDF opened on mobile → print — all 6 must show correct page size, no clipped totals, brand header present
 - [ ] `print.default_paper` setting: which sheet `PrintDialog` opens by default per device (store per-browser in `localStorage` + global default in settings)
 
@@ -398,31 +398,31 @@ Breakpoint contract (MUI defaults, `theme.breakpoints`):
 Foundations start right after V (framework cleanup is build-adjacent); flow polish runs continuously through J–L.
 
 ### Foundations
-- [ ] **Kill the double framework (A24)**: remove Bootstrap CSS+JS from `index.html` (`:15,21`) after grepping pages for Bootstrap classes (`container|row|col-|btn|card|d-flex`) and replacing with MUI Box/Grid — **MUI v5 is already mobile-first** (its default API is `up()`-based); hand-rolled Bootstrap rows are where the mobile bugs live
+- [x] **Kill the double framework (A24)**: remove Bootstrap CSS+JS from `index.html` (`:15,21`) after grepping pages for Bootstrap classes (`container|row|col-|btn|card|d-flex`) and replacing with MUI Box/Grid — **MUI v5 is already mobile-first** (its default API is `up()`-based); hand-rolled Bootstrap rows are where the mobile bugs live
 - [ ] **One typography set**: drop Lobster/Pacifico/Merriweather/... from `index.html`; keep Inter + one display font, **self-hosted** (O); body text ≥16px on `xs` (iOS zooms inputs below 16px — set `font-size: 16px` on all inputs to kill the focus-zoom jump)
-- [ ] **Design tokens**: brand colors → `/api/settings/public` → runtime `createTheme` (O); define spacing/radii/type scale with **mobile density defaults** (base spacing 8, generous 44px+ hit areas); status colors single map front+back
+- [x] **Design tokens**: brand colors → `/api/settings/public` → runtime `createTheme` (O); define spacing/radii/type scale with **mobile density defaults** (base spacing 8, generous 44px+ hit areas); status colors single map front+back
 - [ ] **Consolidate component layer**: MUI primitive + `components/ui/*` thin wrappers documented in `docs/ui-patterns.md`; every wrapper specifies its **mobile behavior** (Modal → bottom sheet on `xs`, Drawer → full-screen, Dialog → swipe-dismissible); delete loader duplicates (`HamsterLoader`/`LoadingSpinner`/`GlobalLoading` → one pattern)
 - [ ] **Standardize 4 states per page**: loading (skeletons over spinners where layout is known), empty, error (+retry, works offline-tolerant), success (toast) — checklist across every admin + customer page
-- [ ] **Mobile shell (customer)**: bottom `BottomNavigation` (Menu · Cart · Orders · Account) with badge count on Cart; sticky **cart summary bar** (item count + total + "Checkout") pinned above it; top app bar minimal (brand + search)
-- [ ] **Mobile shell (admin)**: hamburger → `Drawer` nav under `lg`; tablet `md` can show persistent mini-rail; page headers collapse to icon+title
+- [x] **Mobile shell (customer)**: bottom `BottomNavigation` (Menu · Cart · Orders · Account) with badge count on Cart; sticky **cart summary bar** (item count + total + "Checkout") pinned above it; top app bar minimal (brand + search)
+- [x] **Mobile shell (admin)**: hamburger → `Drawer` nav under `lg`; tablet `md` can show persistent mini-rail; page headers collapse to icon+title
 
 ### Flow fixes (each verified against current code)
 - [ ] **Checkout (A25)**: remove `ShippingForm`/shipping steps for dine-in; segmented control `Dine-in (table #) | Takeaway`; single-column stepper on `xs` (steps collapse to a labeled progress bar, one screen per step, primary action pinned bottom), 2-column only at `md+`; no address capture in v1
-- [ ] **Cart & customization (A15/A16)**: modifier dialog → **bottom sheet on mobile** (full-width, drag handle, sticky "Add to cart ₹X" button), real modifier groups from API (TastyIgniter model), real `price_delta_minor`, sizes from item data; options are large tap rows, not tiny chips
+- [x] **Cart & customization (A15/A16)**: modifier dialog → **bottom sheet on mobile** (full-width, drag handle, sticky "Add to cart ₹X" button), real modifier groups from API (TastyIgniter model), real `price_delta_minor`, sizes from item data; options are large tap rows, not tiny chips
 - [ ] **Menu browsing**: image cards with quick-add FAB; category chips horizontally scrollable with edge fade; sold-out overlay; `loading="lazy"` + `sizes/srcset`-friendly image component (webp already used); search sticky under app bar
 - [ ] **Admin on touch**: **tables → card lists under `sm`** (order cards: status band, table #, items, one primary action — not a shrunken table); at `md`+ real tables with sticky headers, pagination (25), filter chips with live counts, bulk status change; every action row tap target ≥44px; swipe-to-change-status is a stretch goal, not v1
 - [ ] **Dashboard**: stat cards 2-up on `xs`, 4-up on `md`; charts in a horizontally-scrollable container (never desktop-width charts overflowing the viewport); remove `statsData` (A10)
-- [ ] **Auth**: full-screen mobile layout, inputs ≥16px, `autocomplete` attributes, OTP/inline errors that don't shift the button under the keyboard (`visualViewport`-safe layout)
+- [x] **Auth**: full-screen mobile layout, inputs ≥16px, `autocomplete` attributes, OTP/inline errors that don't shift the button under the keyboard (`visualViewport`-safe layout)
 - [ ] **Remove fake data (A26)**: sidebar badge, placeholder images, mock stats — real or hidden
 
 ### Accessibility, touch & thumb-zone
 - [ ] Contrast audit: `#ff6b35` on white ≈ **3.1:1 — fails AA for text**; darker text token, keep bright fill; all chips/badges ≥4.5:1 (3:1 large)
 - [ ] Touch targets ≥44×44px (qty steppers, checkout, status actions); primary actions in the **bottom thumb zone** on `xs`; no hover-only affordances (hover states must have tap equivalents)
 - [ ] Focus-visible rings; dialogs trap focus + Esc; `aria-label` on icon-only buttons; `prefers-reduced-motion`; screen-reader pass on add-to-cart, cart live region, status confirmations
-- [ ] Viewport hygiene: `theme-color` meta for Android chrome; `100dvh` not `100vh` for full-screen sheets (mobile URL bar); safe-area `env(safe-area-inset-*)` padding for notched phones (esp. bottom nav + sticky bars)
+- [x] Viewport hygiene: `theme-color` meta for Android chrome; `100dvh` not `100vh` for full-screen sheets (mobile URL bar); safe-area `env(safe-area-inset-*)` padding for notched phones (esp. bottom nav + sticky bars)
 
 ### Performance & installability (mobile network is the constraint)
-- [ ] Route-level `React.lazy` + `Suspense` per page; drop dead `data.js`/`config/*` from bundle; budget: **first JS ≤ 170KB gz** on customer routes (mobile Lighthouse depends on it)
+- [x] Route-level `React.lazy` + `Suspense` per page; drop dead `data.js`/`config/*` from bundle; budget: **first JS ≤ 170KB gz** on customer routes (mobile Lighthouse depends on it)
 - [ ] Image component with placeholder → fade-in, `loading="lazy"`; never load admin bundles on customer routes (and vice versa)
 - [ ] **PWA-lite**: real `manifest.json` (name/icons/colors from settings), `display: standalone`, apple-touch-icon — so staff can "Add to Home Screen" and run it app-like; full offline shell is M's job, manifest/theme-color ship here
 - [ ] Slow-network UX: skeletons on first paint, request timeout + retry already in `services/api.js` — surface them as states, not dead spinners
@@ -495,7 +495,7 @@ Foundations start right after V (framework cleanup is build-adjacent); flow poli
 **What to test first (highest leverage)**
 - [ ] Unit: `money.js` (bps tax, CGST/SGST split, rounding, `moneyToWordsINR` lakh/crore edge cases), FY invoice numbering + concurrency (parallel `nextNumber` → no dup), status machine transitions, GST state-code/regex validation, modifier price aggregation
 - [ ] Integration (supertest): `placeOrder` (server-side pricing, rejects bad size/qty, stock deducted once), `POST /orders/:id/invoice` idempotency, inventory movements sign rules, activity rows written with no password leakage, settings-driven tax
-- [ ] Frontend: `formatMoney`, API→view adapters, `AuthContext` role logic, customization dialog with fixture modifier data, checkout no-address flow
+- [x] Frontend: `formatMoney`, API→view adapters, `AuthContext` role logic, customization dialog with fixture modifier data, checkout no-address flow
 
 **Environment blockers (fix in F — without these nothing runs)**
 - [ ] Rate limiters disabled under `NODE_ENV=test` (5/15min auth + 100/15min general would 429 every suite — known)
