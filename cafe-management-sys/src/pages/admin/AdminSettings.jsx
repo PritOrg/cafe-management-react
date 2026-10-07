@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Card, CardContent, Grid, TextField, Button, Switch, FormControlLabel, Divider, Alert, Tabs, Tab, List, ListItem, ListItemText, ListItemSecondaryAction, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress } from '@mui/material';
-import { Save, Refresh, Security, Notifications, Store, Payment, Backup, Delete, Palette, ReceiptLong } from '@mui/icons-material';
+import { Save, Refresh, Security, Notifications, Store, Payment, Backup, Delete, Palette, ReceiptLong, Print, Settings } from '@mui/icons-material';
 import { useThemeContext } from '../../contexts/ThemeContext';
 import { settingsAPI, unwrap } from '../../services/api';
 import { useBrand } from '../../contexts/BrandContext';
@@ -37,6 +37,12 @@ const AdminSettings = () => {
   });
   const [gstError, setGstError] = useState('');
   const [gstSaving, setGstSaving] = useState(false);
+  const [ops, setOps] = useState({ timezone: 'Asia/Kolkata', currency: 'INR', activity_retention_days: 365 });
+  const [print, setPrint] = useState({ default_paper: 'a4', printer_host: '' });
+  const [opsSaving, setOpsSaving] = useState(false);
+  const [printSaving, setPrintSaving] = useState(false);
+  const [printTestResult, setPrintTestResult] = useState('');
+  const [settingsMsg, setSettingsMsg] = useState('');
 
   const loadBrandSettings = useCallback(async () => {
     try {
@@ -64,6 +70,19 @@ const AdminSettings = () => {
           bps: data.gst.bps ?? 500,
         });
       }
+      if (data.ops) {
+        setOps({
+          timezone: data.ops.timezone || 'Asia/Kolkata',
+          currency: data.ops.currency || 'INR',
+          activity_retention_days: data.ops.activity_retention_days ?? 365,
+        });
+      }
+      if (data.print) {
+        setPrint({
+          default_paper: data.print.default_paper || 'a4',
+          printer_host: data.print.printer_host || '',
+        });
+      }
     } catch (err) {
       console.error('Failed to load brand settings', err);
     } finally {
@@ -78,6 +97,60 @@ const AdminSettings = () => {
   const brandValid = brand.title.trim().length > 0
     && isValidHex(brand.primaryColor)
     && isValidHex(brand.accentColor);
+
+  const handleSaveOps = async () => {
+    setSettingsMsg('');
+    try {
+      setOpsSaving(true);
+      await settingsAPI.update({
+        ops: {
+          timezone: ops.timezone,
+          currency: ops.currency,
+          activity_retention_days: Number(ops.activity_retention_days) || 365,
+          printer_host: print.printer_host,
+        },
+        print: { default_paper: print.default_paper, printer_host: print.printer_host },
+      });
+      setSettingsMsg('Operations saved');
+      setTimeout(() => setSettingsMsg(''), 2500);
+    } catch (err) {
+      setSettingsMsg(err.message || 'Failed to save operations');
+    } finally {
+      setOpsSaving(false);
+    }
+  };
+
+  const handleSavePrint = async () => {
+    setSettingsMsg('');
+    try {
+      setPrintSaving(true);
+      await settingsAPI.update({
+        ops: { printer_host: print.printer_host },
+        print: { default_paper: print.default_paper, printer_host: print.printer_host },
+      });
+      setSettingsMsg('Printing saved');
+      setTimeout(() => setSettingsMsg(''), 2500);
+    } catch (err) {
+      setSettingsMsg(err.message || 'Failed to save printing');
+    } finally {
+      setPrintSaving(false);
+    }
+  };
+
+  const handleTestPrint = async () => {
+    setPrintTestResult('');
+    try {
+      const body = await settingsAPI.update({ print: { default_paper: print.default_paper, printer_host: print.printer_host } });
+      void body;
+      if (!print.printer_host) {
+        setPrintTestResult('Add a printer host (e.g. 192.168.1.50) to send a test job');
+        return;
+      }
+      setPrintTestResult(`Test job would be sent to ${print.printer_host}:9100`);
+    } catch (err) {
+      setPrintTestResult(err.message || 'Test print failed');
+    }
+  };
 
   const handleSaveBrand = async () => {
     setSaveError('');
@@ -240,6 +313,8 @@ const AdminSettings = () => {
           <Tab icon={<Security />} label="Security" />
           <Tab icon={<Payment />} label="Payment" />
           <Tab icon={<Backup />} label="System" />
+          <Tab icon={<Print />} label="Printing" />
+          <Tab icon={<Settings />} label="Operations" />
         </Tabs>
 
         <TabPanel value={activeTab} index={0}>
@@ -798,6 +873,96 @@ const AdminSettings = () => {
               </ListItem>
             </List>
           </CardContent>
+        </TabPanel>
+
+        <TabPanel value={activeTab} index={7}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Printing</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Default paper for invoice printing and optional network thermal printer (ESC/POS).
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Default paper"
+                    value={print.default_paper}
+                    onChange={(e) => setPrint({ ...print, default_paper: e.target.value })}
+                    SelectProps={{ native: true }}
+                  >
+                    <option value="a4">A4</option>
+                    <option value="thermal80">Thermal 80mm</option>
+                    <option value="thermal58">Thermal 58mm</option>
+                  </TextField>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Printer host (optional)"
+                    placeholder="192.168.1.50"
+                    value={print.printer_host}
+                    onChange={(e) => setPrint({ ...print, printer_host: e.target.value })}
+                    helperText="Network ESC/POS printer, port 9100"
+                  />
+                </Grid>
+                {printTestResult && (
+                  <Grid item xs={12}><Alert severity="info">{printTestResult}</Alert></Grid>
+                )}
+                <Grid item xs={12}>
+                  <Button variant="outlined" onClick={handleTestPrint} sx={{ mr: 1 }}>Test print</Button>
+                  <Button variant="contained" startIcon={<Save />} onClick={handleSavePrint} disabled={printSaving}>
+                    {printSaving ? 'Saving…' : 'Save printing'}
+                  </Button>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        </TabPanel>
+
+        <TabPanel value={activeTab} index={8}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Operations</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Timezone drives reporting day boundaries; retention prunes old activity rows.
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    fullWidth
+                    label="Timezone"
+                    value={ops.timezone}
+                    onChange={(e) => setOps({ ...ops, timezone: e.target.value })}
+                    helperText="e.g. Asia/Kolkata"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    fullWidth
+                    label="Currency"
+                    value={ops.currency}
+                    onChange={(e) => setOps({ ...ops, currency: e.target.value })}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Activity retention (days)"
+                    value={ops.activity_retention_days}
+                    onChange={(e) => setOps({ ...ops, activity_retention_days: e.target.value })}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <Button variant="contained" startIcon={<Save />} onClick={handleSaveOps} disabled={opsSaving}>
+                    {opsSaving ? 'Saving…' : 'Save operations'}
+                  </Button>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
         </TabPanel>
 
         <Divider />

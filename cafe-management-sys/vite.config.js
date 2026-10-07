@@ -25,6 +25,12 @@ export default defineConfig({
         'src/contexts/**',
         'src/hooks/**',
       ],
+      thresholds: {
+        statements: 66,
+        branches: 50,
+        functions: 68,
+        lines: 68,
+      },
     },
   },
 });

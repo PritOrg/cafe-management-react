@@ -20,6 +20,12 @@ export default defineConfig({
                 'db/mappers.js',
             ],
             exclude: ['test/**', 'node_modules/**', 'logs/**'],
+            thresholds: {
+                statements: 66,
+                branches: 50,
+                functions: 66,
+                lines: 68,
+            },
         },
     },
     resolve: {
