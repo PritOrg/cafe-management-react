@@ -5,13 +5,14 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "lint": "eslint . --ext .js",
     "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "db:migrate": "knex migrate:latest --knexfile db/knexfile.js",
     "db:deploy": "NODE_ENV=production knex migrate:latest --knexfile db/knexfile.js",
     "db:seed": "knex seed:run --knexfile db/knexfile.js",
-    "db:reset": "node scripts/db-reset.js",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "db:reset": "node scripts/db-reset.js"
   },
   "keywords": [],
   "author": "",
@@ -43,6 +44,7 @@
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.11",
+    "eslint": "^8.57.1",
     "vitest": "^4.1.11"
   }
 }
