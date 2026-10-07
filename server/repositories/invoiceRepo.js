@@ -15,13 +15,13 @@ const findById = (tenantId, id) =>
  */
 const nextNumber = async (tenantId, prefix, fy, trx = getDb()) => {
     const name = `invoice:${fy}`;
-    const row = await trx('counters').where({ tenant_id: tenantId, name }).forUpdate().first();
-    const seq = row ? Number(row.value) + 1 : 1;
-    if (row) {
-        await trx('counters').where({ id: row.id }).update({ value: seq, updated_at: new Date() });
-    } else {
-        await trx('counters').insert({ tenant_id: tenantId, name, value: seq });
-    }
+    // Atomic upsert — safe under concurrent invoice issues
+    const [row] = await trx('counters')
+        .insert({ tenant_id: tenantId, name, value: 1 })
+        .onConflict(['tenant_id', 'name'])
+        .merge({ value: trx.raw('counters.value + 1'), updated_at: new Date() })
+        .returning('value');
+    const seq = Number(row.value);
     return {
         invoiceNumber: `${prefix}/${fy}/${String(seq).padStart(4, '0')}`,
         fy,
