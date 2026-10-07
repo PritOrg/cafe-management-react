@@ -14,12 +14,38 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 const   CustomizationDialog = ({ open, onClose, menuItem }) => {
     // Use CartContext instead of passing addToCart as prop
     const { addToCart } = useContext(CartContext);
-    
-    const [selectedSize, setSelectedSize] = useState('medium');
+
+    const sizeOptions = (menuItem?.sizes?.length
+        ? menuItem.sizes.map((s) => ({ value: s.label, label: s.label, price: s.price }))
+        : [
+            { value: 'medium', label: 'Medium', price: menuItem?.price?.medium || 0 },
+            { value: 'large', label: 'Large', price: menuItem?.price?.large || 0 },
+        ]);
+
+    const modifierGroups = menuItem?.modifierGroups || [];
+    const legacyOptions = menuItem?.customizationOptions || [];
+
+    const defaultSize = sizeOptions.find((s) => s.isDefault)?.value || sizeOptions[0]?.value || 'medium';
+
+    const [selectedSize, setSelectedSize] = useState(defaultSize);
+    // selectedCustomizations: { optionName: priceDelta }
     const [selectedCustomizations, setSelectedCustomizations] = useState({});
     const [quantity, setQuantity] = useState(1);
-    const [totalPrice, setTotalPrice] = useState(menuItem?.price?.medium || 0);
+    const [totalPrice, setTotalPrice] = useState(sizeOptions[0]?.price || 0);
     const [notification, setNotification] = useState({ open: false, message: '', type: 'success' });
+
+    const basePriceFor = (size) => {
+        const found = sizeOptions.find((s) => s.value === size);
+        return Number(found?.price || 0);
+    };
+
+    const modifierDelta = (customizations) =>
+        Object.values(customizations).reduce((sum, v) => sum + (Number(v) || 0), 0);
+
+    const calculateTotalPrice = (size, customizations, qty) => {
+        const basePrice = basePriceFor(size);
+        setTotalPrice((basePrice + modifierDelta(customizations)) * qty);
+    };
 
     const handleSizeChange = (event) => {
         const newSize = event.target.value;
@@ -27,21 +53,16 @@ const   CustomizationDialog = ({ open, onClose, menuItem }) => {
         calculateTotalPrice(newSize, selectedCustomizations, quantity);
     };
 
-    const handleCustomizationChange = (event) => {
-        const option = event.target.name;
+    const handleCustomizationChange = (event, optionName, priceDelta = 10) => {
         const isChecked = event.target.checked;
-
-        // Convert customizations to the format expected by CartContext
-        const updatedCustomizations = { ...selectedCustomizations };
-        
+        const updated = { ...selectedCustomizations };
         if (isChecked) {
-            updatedCustomizations[option] = true;
+            updated[optionName] = Number(priceDelta) || 0;
         } else {
-            delete updatedCustomizations[option];
+            delete updated[optionName];
         }
-
-        setSelectedCustomizations(updatedCustomizations);
-        calculateTotalPrice(selectedSize, updatedCustomizations, quantity);
+        setSelectedCustomizations(updated);
+        calculateTotalPrice(selectedSize, updated, quantity);
     };
 
     const handleQuantityChange = (change) => {
@@ -50,34 +71,25 @@ const   CustomizationDialog = ({ open, onClose, menuItem }) => {
         calculateTotalPrice(selectedSize, selectedCustomizations, newQuantity);
     };
 
-    const calculateTotalPrice = (size, customizations, qty) => {
-        const basePrice = size === 'large' ? menuItem.price.large : menuItem.price.medium;
-        const extraCost = Object.keys(customizations).length * 10; // 10 Rupee for each extra customization
-        setTotalPrice((basePrice + extraCost) * qty);
-    };
-
     const handleAddToCart = async () => {
         try {
-            // Call the addToCart method from CartContext with the expected parameters
             await addToCart(
-                menuItem._id, 
-                selectedCustomizations, 
+                menuItem._id,
+                selectedCustomizations,
                 selectedSize
             );
-            
+
             setNotification({
                 open: true,
                 message: 'Item added to cart successfully!',
                 type: 'success'
             });
-            
-            // Reset dialog state
-            setSelectedSize('medium');
+
+            setSelectedSize(defaultSize);
             setSelectedCustomizations({});
             setQuantity(1);
-            setTotalPrice(menuItem.price.medium);
-            
-            // Close dialog after a short delay to show the success message
+            setTotalPrice(basePriceFor(defaultSize));
+
             setTimeout(() => {
                 onClose();
             }, 1000);
@@ -180,14 +192,72 @@ const   CustomizationDialog = ({ open, onClose, menuItem }) => {
                     <Typography variant="subtitle1" sx={{ fontWeight: 600, marginBottom: 2 }}>Customization Options</Typography>
                     <Paper variant="outlined" sx={{ padding: 2, borderRadius: '12px', marginBottom: 3, borderColor: '#eee' }}>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                            {menuItem.customizationOptions && menuItem.customizationOptions.map((option) => (
+                            {modifierGroups.length > 0 && modifierGroups.map((group) => (
+                                <Box key={group._id} sx={{ mb: 1 }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>{group.name}</Typography>
+                                    {group.displayType === 'radio' ? (
+                                        <RadioGroup
+                                            value={selectedCustomizations[group.name] !== undefined ? group.name : ''}
+                                            onChange={(e) => {
+                                                const opt = (group.options || []).find((o) => o.name === e.target.value);
+                                                const cleared = { ...selectedCustomizations };
+                                                delete cleared[group.name];
+                                                if (opt) cleared[group.name] = Number(opt.priceDelta) || 0;
+                                                setSelectedCustomizations(cleared);
+                                                calculateTotalPrice(selectedSize, cleared, quantity);
+                                            }}
+                                        >
+                                            {(group.options || []).map((opt) => (
+                                                <FormControlLabel
+                                                    key={opt._id || opt.name}
+                                                    value={opt.name}
+                                                    control={<Radio sx={{ color: '#222', '&.Mui-checked': { color: '#222' } }} />}
+                                                    label={
+                                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                                                            <Typography variant="body2">{opt.name}</Typography>
+                                                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                                                {opt.priceDelta > 0 ? `+₹${opt.priceDelta}` : 'Free'}
+                                                            </Typography>
+                                                        </Box>
+                                                    }
+                                                />
+                                            ))}
+                                        </RadioGroup>
+                                    ) : (
+                                        (group.options || []).map((opt) => (
+                                            <FormControlLabel
+                                                key={opt._id || opt.name}
+                                                control={
+                                                    <Checkbox
+                                                        name={opt.name}
+                                                        checked={!!selectedCustomizations[opt.name]}
+                                                        onChange={(e) => handleCustomizationChange(e, opt.name, opt.priceDelta)}
+                                                        sx={{ color: '#222', '&.Mui-checked': { color: '#222' } }}
+                                                    />
+                                                }
+                                                label={
+                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                                                        <Typography variant="body2">{opt.name}</Typography>
+                                                        <Chip
+                                                            label={opt.priceDelta > 0 ? `+₹${opt.priceDelta}` : 'Free'}
+                                                            size="small"
+                                                            sx={{ backgroundColor: '#f0f0f0' }}
+                                                        />
+                                                    </Box>
+                                                }
+                                            />
+                                        ))
+                                    )}
+                                </Box>
+                            ))}
+                            {modifierGroups.length === 0 && legacyOptions.map((option) => (
                                 <FormControlLabel
                                     key={option}
                                     control={
                                         <Checkbox
                                             name={option}
                                             checked={!!selectedCustomizations[option]}
-                                            onChange={handleCustomizationChange}
+                                            onChange={(e) => handleCustomizationChange(e, option, 10)}
                                             sx={{ color: '#222', '&.Mui-checked': { color: '#222' } }}
                                         />
                                     }
@@ -200,6 +270,9 @@ const   CustomizationDialog = ({ open, onClose, menuItem }) => {
                                     sx={{ width: '100%', margin: 0 }}
                                 />
                             ))}
+                            {modifierGroups.length === 0 && legacyOptions.length === 0 && (
+                                <Typography variant="body2" color="text.secondary">No customizations for this item</Typography>
+                            )}
                         </Box>
                     </Paper>
 
@@ -237,14 +310,14 @@ const   CustomizationDialog = ({ open, onClose, menuItem }) => {
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', marginBottom: 1 }}>
                             <Typography variant="body2" sx={{ color: '#666' }}>Base price:</Typography>
                             <Typography variant="body2" sx={{ color: '#666' }}>
-                                ₹{selectedSize === 'large' ? menuItem.price.large : menuItem.price.medium}
+                                ₹{basePriceFor(selectedSize)}
                             </Typography>
                         </Box>
                         {Object.keys(selectedCustomizations).length > 0 && (
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', marginBottom: 1 }}>
                                 <Typography variant="body2" sx={{ color: '#666' }}>Customizations:</Typography>
                                 <Typography variant="body2" sx={{ color: '#666' }}>
-                                    ₹{Object.keys(selectedCustomizations).length * 10}
+                                    ₹{modifierDelta(selectedCustomizations)}
                                 </Typography>
                             </Box>
                         )}
