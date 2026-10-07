@@ -1,13 +1,78 @@
-import React, { useState } from 'react';
-import { Box, Typography, Card, CardContent, Grid, TextField, Button, Switch, FormControlLabel, Divider, Alert, Tabs, Tab, List, ListItem, ListItemText, ListItemSecondaryAction, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import { Save, Refresh, Security, Notifications, Store, Payment, Backup, Delete } from '@mui/icons-material';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Box, Typography, Card, CardContent, Grid, TextField, Button, Switch, FormControlLabel, Divider, Alert, Tabs, Tab, List, ListItem, ListItemText, ListItemSecondaryAction, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress } from '@mui/material';
+import { Save, Refresh, Security, Notifications, Store, Payment, Backup, Delete, Palette } from '@mui/icons-material';
 import { useThemeContext } from '../../contexts/ThemeContext';
+import { settingsAPI, unwrap } from '../../services/api';
+import { useBrand } from '../../contexts/BrandContext';
+
+const isValidHex = (c) => /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(c || '');
 
 const AdminSettings = () => {
   const { toggleMode, isDarkMode } = useThemeContext();
+  const { refresh: refreshBrand } = useBrand();
   const [activeTab, setActiveTab] = useState(0);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [loadingBrand, setLoadingBrand] = useState(true);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, action: '', title: '', message: '' });
+
+  const [brand, setBrand] = useState({
+    title: 'Cafe Management',
+    logoUrl: '',
+    primaryColor: '#ff6b35',
+    accentColor: '#f7931e',
+  });
+
+  const loadBrandSettings = useCallback(async () => {
+    try {
+      setLoadingBrand(true);
+      const body = await settingsAPI.get();
+      const data = unwrap(body) || {};
+      if (data.brand) {
+        setBrand({
+          title: data.brand.title || '',
+          logoUrl: data.brand.logoUrl || '',
+          primaryColor: data.brand.primaryColor || '#ff6b35',
+          accentColor: data.brand.accentColor || '#f7931e',
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load brand settings', err);
+    } finally {
+      setLoadingBrand(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadBrandSettings();
+  }, [loadBrandSettings]);
+
+  const brandValid = brand.title.trim().length > 0
+    && isValidHex(brand.primaryColor)
+    && isValidHex(brand.accentColor);
+
+  const handleSaveBrand = async () => {
+    setSaveError('');
+    if (!brandValid) {
+      setSaveError('Title required; colors must be hex like #ff6b35');
+      return;
+    }
+    try {
+      await settingsAPI.update({
+        brand: {
+          title: brand.title.trim(),
+          logoUrl: brand.logoUrl,
+          primaryColor: brand.primaryColor,
+          accentColor: brand.accentColor,
+        },
+      });
+      await refreshBrand();
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      setSaveError(err.message || 'Failed to save brand settings');
+    }
+  };
 
   // General Settings State
   const [generalSettings, setGeneralSettings] = useState({
@@ -53,7 +118,6 @@ const AdminSettings = () => {
   });
 
   const handleSaveSettings = () => {
-    // Simulate saving settings
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };
@@ -105,6 +169,7 @@ const AdminSettings = () => {
           variant="scrollable"
           scrollButtons="auto"
         >
+        <Tab icon={<Palette />} label="Brand" />
           <Tab icon={<Store />} label="General" />
           <Tab icon={<Notifications />} label="Notifications" />
           <Tab icon={<Security />} label="Security" />
@@ -112,8 +177,83 @@ const AdminSettings = () => {
           <Tab icon={<Backup />} label="System" />
         </Tabs>
 
-        {/* General Settings */}
         <TabPanel value={activeTab} index={0}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>White-label brand</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Title and colors load from this tenant&apos;s settings and apply to the whole UI (Navbar, theme).
+              </Typography>
+              {loadingBrand ? (
+                <CircularProgress size={28} />
+              ) : (
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Brand title"
+                      value={brand.title}
+                      onChange={(e) => setBrand({ ...brand, title: e.target.value })}
+                      helperText="Shown in navbar and browser tab"
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Logo URL"
+                      value={brand.logoUrl}
+                      onChange={(e) => setBrand({ ...brand, logoUrl: e.target.value })}
+                    />
+                  </Grid>
+                  <Grid item xs={6} md={3}>
+                    <TextField
+                      fullWidth
+                      label="Primary color"
+                      value={brand.primaryColor}
+                      onChange={(e) => setBrand({ ...brand, primaryColor: e.target.value })}
+                      error={brand.primaryColor && !isValidHex(brand.primaryColor)}
+                      helperText={isValidHex(brand.primaryColor) ? 'e.g. #ff6b35' : 'Invalid hex'}
+                    />
+                  </Grid>
+                  <Grid item xs={6} md={3}>
+                    <TextField
+                      fullWidth
+                      label="Accent color"
+                      value={brand.accentColor}
+                      onChange={(e) => setBrand({ ...brand, accentColor: e.target.value })}
+                      error={brand.accentColor && !isValidHex(brand.accentColor)}
+                      helperText={isValidHex(brand.accentColor) ? 'e.g. #f7931e' : 'Invalid hex'}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                      <Box sx={{ width: 48, height: 48, borderRadius: 1, bgcolor: brand.primaryColor, border: '1px solid divider' }} />
+                      <Box sx={{ width: 48, height: 48, borderRadius: 1, bgcolor: brand.accentColor, border: '1px solid divider' }} />
+                      <Typography variant="body2" color="text.secondary">Preview</Typography>
+                    </Box>
+                  </Grid>
+                  {saveError && (
+                    <Grid item xs={12}>
+                      <Alert severity="error">{saveError}</Alert>
+                    </Grid>
+                  )}
+                  <Grid item xs={12}>
+                    <Button
+                      variant="contained"
+                      startIcon={<Save />}
+                      onClick={handleSaveBrand}
+                      disabled={!brandValid}
+                    >
+                      Save brand
+                    </Button>
+                  </Grid>
+                </Grid>
+              )}
+            </CardContent>
+          </Card>
+        </TabPanel>
+
+        <TabPanel value={activeTab} index={1}>
           <CardContent>
             <Typography variant="h6" gutterBottom>
               Cafe Information
@@ -220,7 +360,7 @@ const AdminSettings = () => {
         </TabPanel>
 
         {/* Notification Settings */}
-        <TabPanel value={activeTab} index={1}>
+        <TabPanel value={activeTab} index={2}>
           <CardContent>
             <Typography variant="h6" gutterBottom>
               Notification Preferences
@@ -297,7 +437,7 @@ const AdminSettings = () => {
         </TabPanel>
 
         {/* Security Settings */}
-        <TabPanel value={activeTab} index={2}>
+        <TabPanel value={activeTab} index={3}>
           <CardContent>
             <Typography variant="h6" gutterBottom>
               Security Configuration
@@ -354,7 +494,7 @@ const AdminSettings = () => {
         </TabPanel>
 
         {/* Payment Settings */}
-        <TabPanel value={activeTab} index={3}>
+        <TabPanel value={activeTab} index={4}>
           <CardContent>
             <Typography variant="h6" gutterBottom>
               Payment Configuration
@@ -426,7 +566,7 @@ const AdminSettings = () => {
         </TabPanel>
 
         {/* System Settings */}
-        <TabPanel value={activeTab} index={4}>
+        <TabPanel value={activeTab} index={5}>
           <CardContent>
             <Typography variant="h6" gutterBottom>
               System Management

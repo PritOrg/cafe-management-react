@@ -202,6 +202,20 @@ export const invoicesAPI = {
     `${API_BASE_URL}/invoices/${id}/pdf?format=${format}`,
 };
 
+// Inventory API (Phase H)
+export const inventoryAPI = {
+  list: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return apiRequest(`/inventory${qs ? `?${qs}` : ''}`);
+  },
+  getById: (id) => apiRequest(`/inventory/${id}`),
+  create: (data) => apiRequest('/inventory', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => apiRequest(`/inventory/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  remove: (id) => apiRequest(`/inventory/${id}`, { method: 'DELETE' }),
+  addMovement: (id, data) =>
+    apiRequest(`/inventory/${id}/movements`, { method: 'POST', body: JSON.stringify(data) }),
+};
+
 // Orders API
 export const ordersAPI = {
   getAll: (params = {}) => {
