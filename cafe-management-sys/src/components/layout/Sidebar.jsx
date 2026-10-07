@@ -125,6 +125,7 @@ const baseSidebarItems = [
   { title: 'Settings', href: '/admin/settings', icon: Settings, badge: null },
   { title: 'Customers', href: '/admin/customers', icon: People, badge: null },
   { title: 'Kitchen', href: '/admin/kitchen', icon: Restaurant, badge: null },
+  { title: 'Activity', href: '/admin/activity', icon: Analytics, badge: null },
 ];
 
 const platformItem = { title: 'Tenants', href: '/admin/tenants', icon: Business, badge: null };

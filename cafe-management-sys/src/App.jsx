@@ -8,7 +8,7 @@ import { Layout, AdminLayout, AdminRoute, ErrorBoundary, ToastProvider, LoadingP
 // Pages
 import { // Customer pages
   LandingPage, LoginRegisterPage, MenuPage, CartPage, // Admin pages
-  AdminDashboard, AdminOrders, AdminMenu, AdminStaff, AdminRevenue, AdminInventory, AdminAnalytics, AdminSettings, AddMenuItemForm, AdminTenants, AdminCustomers, AdminKitchen, // Error pages
+  AdminDashboard, AdminOrders, AdminMenu, AdminStaff, AdminRevenue, AdminInventory, AdminAnalytics, AdminSettings, AddMenuItemForm, AdminTenants, AdminCustomers, AdminKitchen, AdminActivity, // Error pages
   NotFound } from './pages';
 
 function App() {
@@ -49,6 +49,7 @@ function App() {
           <Route path="tenants" element={<AdminTenants />} />
           <Route path="customers" element={<AdminCustomers />} />
           <Route path="kitchen" element={<AdminKitchen />} />
+          <Route path="activity" element={<AdminActivity />} />
         </Route>
 
         {/* Legacy redirect for old menu/add route */}
