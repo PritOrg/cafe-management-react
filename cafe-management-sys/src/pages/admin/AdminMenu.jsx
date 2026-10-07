@@ -31,7 +31,7 @@ import {
   FilterList,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { menuAPI } from '../../services/api';
+import { menuAPI, activityAPI, unwrap } from '../../services/api';
 
 const AdminMenu = () => {
   const navigate = useNavigate();
@@ -43,6 +43,26 @@ const AdminMenu = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedItemId, setSelectedItemId] = useState(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyItem, setHistoryItem] = useState(null);
+  const [historyRows, setHistoryRows] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const openItemHistory = async (item) => {
+    setHistoryItem(item);
+    setHistoryOpen(true);
+    setHistoryRows([]);
+    setHistoryLoading(true);
+    try {
+      const body = await activityAPI.byEntity('menuItem', item._id);
+      setHistoryRows(unwrap(body) || []);
+    } catch (err) {
+      console.error('Error loading item history:', err);
+      setHistoryRows([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
 
   const categories = [
     { value: 'all', label: 'All Categories' },
@@ -305,11 +325,11 @@ const AdminMenu = () => {
       >
         <MenuItem onClick={() => {
           const item = menuItems.find(item => item._id === selectedItemId);
-          console.log('View item:', item);
+          openItemHistory(item);
           handleMenuClose();
         }}>
           <Visibility sx={{ mr: 1 }} />
-          View Details
+          History
         </MenuItem>
         <MenuItem onClick={handleEditItem}>
           <Edit sx={{ mr: 1 }} />
@@ -320,6 +340,33 @@ const AdminMenu = () => {
           Delete Item
         </MenuItem>
       </Menu>
+
+      {/* Item History Dialog */}
+      <Dialog open={historyOpen} onClose={() => setHistoryOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>History — {historyItem?.title}</DialogTitle>
+        <DialogContent>
+          {historyLoading && <Typography variant="body2">Loading history…</Typography>}
+          {!historyLoading && historyRows.length === 0 && (
+            <Typography variant="body2" color="text.secondary">No activity yet</Typography>
+          )}
+          {!historyLoading && historyRows.map((h) => (
+            <Box key={h._id} sx={{ mb: 1, pb: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="subtitle2">{h.action}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {h.createdAt ? new Date(h.createdAt).toLocaleString() : ''}
+                </Typography>
+              </Box>
+              <Typography variant="caption" color="text.secondary">
+                {h.actorType}{h.requestId ? ` · ${String(h.requestId).slice(0, 8)}` : ''}
+              </Typography>
+            </Box>
+          ))}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setHistoryOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog
