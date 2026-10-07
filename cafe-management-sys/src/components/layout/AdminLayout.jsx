@@ -4,6 +4,7 @@ import {
   Box,
   CssBaseline,
   useTheme,
+  useMediaQuery,
   Paper,
   Breadcrumbs,
   Link,
@@ -20,6 +21,11 @@ const AdminLayout = () => {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  // sm (600)–lg (1200): tablet portrait uses icon mini-rail (aligns with 768+ contract)
+  const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
+  const drawerVariant = isMobile ? 'temporary' : 'permanent';
+  const railMode = isTablet && !isMobile;
 
   // Get page title from current route
   const getPageTitle = () => {
@@ -102,10 +108,11 @@ const AdminLayout = () => {
         toggleTheme={toggleTheme}
       />
       
-      {/* Sidebar */}
-      <Sidebar 
+      {/* Sidebar — full drawer on mobile, icon mini-rail on tablet */}
+      <Sidebar
         mobileOpen={mobileOpen}
         handleDrawerToggle={handleDrawerToggle}
+        rail={railMode}
       />
 
       {/* Main content */}

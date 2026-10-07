@@ -37,6 +37,7 @@ import {
 import Grid2 from '@mui/material/Unstable_Grid2';
 import { authAPI } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { authTextFieldSx, autocompleteFor } from '../../utils/adminNav';
 
 const LoginRegisterPage = () => {
   const theme = useTheme();
@@ -508,6 +509,7 @@ const LoginRegisterPage = () => {
                   label="Email Address"
                   name="email"
                   type="email"
+                  autoComplete={autocompleteFor('email')}
                   margin="normal"
                   variant="outlined"
                   value={loginData.email}
@@ -523,6 +525,7 @@ const LoginRegisterPage = () => {
                     ),
                   }}
                   sx={{
+                    ...authTextFieldSx,
                     '& .MuiOutlinedInput-root': {
                       '&.Mui-focused fieldset': {
                         borderColor: roleInfo.color,
@@ -539,6 +542,7 @@ const LoginRegisterPage = () => {
                   label="Password"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete={autocompleteFor('password')}
                   margin="normal"
                   variant="outlined"
                   value={loginData.password}
@@ -546,6 +550,17 @@ const LoginRegisterPage = () => {
                   disabled={loading}
                   error={!!fieldErrors.password}
                   helperText={fieldErrors.password}
+                  sx={{
+                    ...authTextFieldSx,
+                    '& .MuiOutlinedInput-root': {
+                      '&.Mui-focused fieldset': {
+                        borderColor: roleInfo.color,
+                      }
+                    },
+                    '& .MuiInputLabel-root.Mui-focused': {
+                      color: roleInfo.color,
+                    }
+                  }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -563,16 +578,6 @@ const LoginRegisterPage = () => {
                         </IconButton>
                       </InputAdornment>
                     )
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '&.Mui-focused fieldset': {
-                        borderColor: roleInfo.color,
-                      }
-                    },
-                    '& .MuiInputLabel-root.Mui-focused': {
-                      color: roleInfo.color,
-                    }
                   }}
                 />
 
@@ -679,6 +684,7 @@ const LoginRegisterPage = () => {
                     <TextField
                       fullWidth
                       label="First Name"
+                      autoComplete="given-name"
                       name="firstName"
                       margin="normal"
                       variant="outlined"
@@ -710,6 +716,7 @@ const LoginRegisterPage = () => {
                     <TextField
                       fullWidth
                       label="Last Name"
+                      autoComplete="family-name"
                       name="lastName"
                       margin="normal"
                       variant="outlined"
@@ -765,6 +772,7 @@ const LoginRegisterPage = () => {
                 <TextField
                   fullWidth
                   label="Email Address"
+                  autoComplete="email"
                   name="email"
                   type="email"
                   margin="normal"
@@ -796,6 +804,7 @@ const LoginRegisterPage = () => {
                 <TextField
                   fullWidth
                   label="Password"
+                  autoComplete="new-password"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   margin="normal"
