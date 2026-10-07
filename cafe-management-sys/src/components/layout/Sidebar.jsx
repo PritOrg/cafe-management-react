@@ -5,6 +5,7 @@ import { styled } from '@mui/material/styles';
 import { Dashboard, ShoppingCart, Restaurant, People, AttachMoney, Inventory, Analytics, Settings, Logout, Coffee, Close as CloseIcon, Business } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBrand } from '../../contexts/BrandContext';
+import { inventoryAPI, unwrap } from '../../services/api';
 
 const drawerWidth = 280;
 
@@ -123,6 +124,7 @@ const baseSidebarItems = [
   { title: 'Analytics', href: '/admin/analytics', icon: Analytics, badge: null },
   { title: 'Settings', href: '/admin/settings', icon: Settings, badge: null },
   { title: 'Customers', href: '/admin/customers', icon: People, badge: null },
+  { title: 'Kitchen', href: '/admin/kitchen', icon: Restaurant, badge: null },
 ];
 
 const platformItem = { title: 'Tenants', href: '/admin/tenants', icon: Business, badge: null };
@@ -133,7 +135,30 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
   const location = useLocation();
   const { user, logout, isPlatformAdmin } = useAuth();
   const { brand } = useBrand();
-  const sidebarItems = isPlatformAdmin() ? [...baseSidebarItems, platformItem] : baseSidebarItems;
+  const [lowStockCount, setLowStockCount] = useState(0);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    inventoryAPI.list({ lowStock: 'true' })
+      .then((body) => {
+        if (cancelled) return;
+        const data = unwrap(body) || {};
+        setLowStockCount((data.items || []).length);
+      })
+      .catch(() => {
+        if (!cancelled) setLowStockCount(0);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const navItems = React.useMemo(() => baseSidebarItems.map((item) => {
+    if (item.href === '/admin/inventory' && lowStockCount > 0) {
+      return { ...item, badge: String(lowStockCount) };
+    }
+    return item;
+  }), [lowStockCount]);
+
+  const sidebarItems = isPlatformAdmin() ? [...navItems, platformItem] : navItems;
 
   const handleLogout = async () => {
     try {

@@ -36,8 +36,9 @@ const create = async (tenantId, data, trx = getDb()) => {
         unit: data.unit,
         category: data.category,
         min_qty: data.minQty || 0,
-    }).returning(cols);
-    return mapItem(row);
+        menu_item_id: data.menuItemId || null,
+    }).returning(cols.concat(['menu_item_id']));
+    return { ...mapItem(row), menuItemId: row.menu_item_id };
 };
 
 const updateById = async (tenantId, id, data, trx = getDb()) => {

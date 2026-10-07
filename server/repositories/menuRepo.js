@@ -1,19 +1,29 @@
 const { getDb } = require('../db/pool');
 const { mapMenuItem } = require('../db/mappers');
 
+const withSizes = async (tenantId, item) => {
+    if (!item) return item;
+    const sizeRepo = require('./sizeRepo');
+    const sizes = await sizeRepo.listForMenu(tenantId, item._id);
+    return { ...item, sizes };
+};
+
 const findAll = async (tenantId) => {
     const rows = await getDb()('menu_items').where({ tenant_id: tenantId }).orderBy('title');
-    return rows.map(mapMenuItem);
+    const items = rows.map(mapMenuItem);
+    return Promise.all(items.map((it) => withSizes(tenantId, it)));
 };
 
 const findById = async (tenantId, id) => {
     const row = await getDb()('menu_items').where({ id, tenant_id: tenantId }).first();
-    return row ? mapMenuItem(row) : null;
+    if (!row) return null;
+    return withSizes(tenantId, mapMenuItem(row));
 };
 
 const findByIdLean = async (tenantId, id) => {
     const row = await getDb()('menu_items').where({ id, tenant_id: tenantId }).first();
-    return row ? mapMenuItem(row) : null;
+    if (!row) return null;
+    return withSizes(tenantId, mapMenuItem(row));
 };
 
 const create = async (tenantId, data) => {
@@ -24,6 +34,7 @@ const create = async (tenantId, data) => {
         price_medium: data.price?.medium ?? data.priceMedium ?? 0,
         price_large: data.price?.large ?? data.priceLarge ?? 0,
         category: data.category,
+        category_id: data.categoryId || null,
         image_url: data.imageUrl || '',
         availability: data.availability !== false,
         calories: data.calories || 0,
@@ -33,8 +44,27 @@ const create = async (tenantId, data) => {
         tags: data.tags || [],
         allergens: data.allergens || [],
         order_count: data.orderCount || 0,
+        subtract_stock: data.subtractStock === true,
     }).returning('*');
-    return mapMenuItem(row);
+
+    if (Array.isArray(data.sizes) && data.sizes.length) {
+        const sizeRepo = require('./sizeRepo');
+        await sizeRepo.replaceForMenu(tenantId, row.id, data.sizes);
+    }
+
+    if (Array.isArray(data.modifierGroupIds) && data.modifierGroupIds.length) {
+        const modifierRepo = require('./modifierRepo');
+        await modifierRepo.setMenuItemGroups(tenantId, row.id, data.modifierGroupIds);
+    }
+
+    let mapped = mapMenuItem(row);
+    const sizeRepo = require('./sizeRepo');
+    mapped = await withSizes(tenantId, mapped);
+    if (Array.isArray(data.modifierGroupIds)) {
+        const modifierRepo = require('./modifierRepo');
+        mapped.modifierGroups = await modifierRepo.getMenuItemGroups(tenantId, row.id);
+    }
+    return mapped;
 };
 
 const updateById = async (tenantId, id, data) => {
@@ -55,8 +85,23 @@ const updateById = async (tenantId, id, data) => {
     if (data.preparationTime !== undefined) patch.preparation_time = data.preparationTime;
     if (data.tags !== undefined) patch.tags = data.tags;
     if (data.allergens !== undefined) patch.allergens = data.allergens;
+    if (data.subtractStock !== undefined) patch.subtract_stock = data.subtractStock;
+    if (data.categoryId !== undefined) patch.category_id = data.categoryId;
+    if (data.price?.medium !== undefined || data.priceMedium !== undefined) {
+        patch.price_medium = data.price?.medium ?? data.priceMedium;
+    }
+    if (data.price?.large !== undefined || data.priceLarge !== undefined) {
+        patch.price_large = data.price?.large ?? data.priceLarge;
+    }
     const [row] = await getDb()('menu_items').where({ id, tenant_id: tenantId }).update(patch).returning('*');
-    return row ? mapMenuItem(row) : null;
+    if (!row) return null;
+    let mapped = mapMenuItem(row);
+    if (Array.isArray(data.sizes)) {
+        const sizeRepo = require('./sizeRepo');
+        await sizeRepo.replaceForMenu(tenantId, id, data.sizes);
+    }
+    mapped = await withSizes(tenantId, mapped);
+    return mapped;
 };
 
 const deleteById = async (tenantId, id) => {
