@@ -34,6 +34,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://cafe:cafe@127.0.0.1:5432/cafe
       DIRECT_DATABASE_URL: postgresql://cafe:cafe@127.0.0.1:5432/cafe
+      PGDATABASE: cafe
       JWT_SECRET: ci-test-secret
       STORAGE_DRIVER: local
       DEFAULT_TENANT_SLUG: cafe1
