@@ -225,6 +225,7 @@ const placeOrder = async (req) => {
             action: 'order.place',
             entity: 'order',
             entityId: order._id,
+            requestId: req.id,
             meta: {
                 orderNumber: order.orderNumber,
                 paymentMethod,

@@ -6,6 +6,7 @@ const {
     listInvoices,
     getInvoice,
     getInvoicePdf,
+    getInvoicePrint,
     voidInvoice,
 } = require('../controllers/invoiceController');
 const { ensureAuthenticated, ensureAdmin, ensureAdminOrStaff } = require('../middleware/auth');
@@ -14,6 +15,7 @@ router.use(ensureAuthenticated);
 router.get('/', ensureAdminOrStaff, listInvoices);
 router.get('/:id', ensureAdminOrStaff, getInvoice);
 router.get('/:id/pdf', ensureAdminOrStaff, getInvoicePdf);
+router.get('/:id/print', ensureAdminOrStaff, getInvoicePrint);
 router.post('/:id/void', ensureAdmin, voidInvoice);
 
 module.exports = router;
