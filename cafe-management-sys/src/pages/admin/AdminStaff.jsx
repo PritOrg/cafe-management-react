@@ -1,40 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  IconButton,
-  Button,
-  TextField,
-  InputAdornment,
-  Menu,
-  MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Grid,
-  Avatar,
-  Fab,
-} from '@mui/material';
-import {
-  Search,
-  Add,
-  Edit,
-  Delete,
-  MoreVert,
-  Person,
-  Email,
-  Phone,
-} from '@mui/icons-material';
+import { Box, Typography, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Button, TextField, InputAdornment, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Avatar, Fab } from '@mui/material';
+import { Search, Add, Edit, Delete, MoreVert, Email, Phone } from '@mui/icons-material';
 import { staffAPI } from '../../services/api';
 
 const AdminStaff = () => {
@@ -47,12 +13,30 @@ const AdminStaff = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedStaffId, setSelectedStaffId] = useState(null);
   const [newStaff, setNewStaff] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
-    role: 'waiter',
+    role: 'staff',
     password: '',
   });
+
+  const emptyStaff = {
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    role: 'staff',
+    password: '',
+  };
+
+  const displayName = (member) => {
+    if (!member) return '';
+    const full = [member.firstName, member.lastName].filter(Boolean).join(' ').trim();
+    return full || member.name || member.email || '—';
+  };
+
+  const memberStatus = (member) => (member?.isActive !== false ? 'active' : 'inactive');
 
   useEffect(() => {
     fetchStaff();
@@ -75,15 +59,10 @@ const AdminStaff = () => {
   const handleAddStaff = async () => {
     try {
       const addedStaff = await staffAPI.add(newStaff);
-      setStaff([...staff, addedStaff]);
+      const staffObj = addedStaff?.data ?? addedStaff;
+      setStaff([...staff, staffObj]);
       setAddDialogOpen(false);
-      setNewStaff({
-        name: '',
-        email: '',
-        phone: '',
-        role: 'waiter',
-        password: '',
-      });
+      setNewStaff(emptyStaff);
     } catch (error) {
       console.error('Error adding staff:', error);
     }
@@ -103,8 +82,7 @@ const AdminStaff = () => {
   const getRoleColor = (role) => {
     const colors = {
       admin: 'error',
-      manager: 'warning',
-      waiter: 'primary',
+      staff: 'primary',
     };
     return colors[role] || 'default';
   };
@@ -113,11 +91,12 @@ const AdminStaff = () => {
     return status === 'active' ? 'success' : 'default';
   };
 
-  const filteredStaff = staff.filter(member =>
-    member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    member.role.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredStaff = staff.filter(member => {
+    const name = displayName(member).toLowerCase();
+    return name.includes(searchQuery.toLowerCase()) ||
+      (member.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (member.role || '').toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   const handleMenuClick = (event, staffId) => {
     setAnchorEl(event.currentTarget);
@@ -203,11 +182,11 @@ const AdminStaff = () => {
                   <TableRow key={member._id} hover>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Avatar src={member.avatar}>
-                          {member.name.charAt(0)}
+                        <Avatar src={member.profilePhotoUrl || member.avatar}>
+                          {displayName(member).charAt(0)}
                         </Avatar>
                         <Typography variant="subtitle2" fontWeight={600}>
-                          {member.name}
+                          {displayName(member)}
                         </Typography>
                       </Box>
                     </TableCell>
@@ -225,21 +204,21 @@ const AdminStaff = () => {
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+                        label={(member.role || '').charAt(0).toUpperCase() + (member.role || '').slice(1)}
                         color={getRoleColor(member.role)}
                         size="small"
                       />
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={member.status.charAt(0).toUpperCase() + member.status.slice(1)}
-                        color={getStatusColor(member.status)}
+                        label={memberStatus(member).charAt(0).toUpperCase() + memberStatus(member).slice(1)}
+                        color={getStatusColor(memberStatus(member))}
                         size="small"
                       />
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">
-                        {new Date(member.joinDate).toLocaleDateString()}
+                        {new Date(member.registrationDate || member.joinDate || Date.now()).toLocaleDateString()}
                       </Typography>
                     </TableCell>
                     <TableCell align="center">
@@ -297,12 +276,20 @@ const AdminStaff = () => {
         <DialogTitle>Add New Staff Member</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                label="Full Name"
-                value={newStaff.name}
-                onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
+                label="First Name"
+                value={newStaff.firstName}
+                onChange={(e) => setNewStaff({ ...newStaff, firstName: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Last Name"
+                value={newStaff.lastName}
+                onChange={(e) => setNewStaff({ ...newStaff, lastName: e.target.value })}
               />
             </Grid>
             <Grid item xs={12}>
@@ -331,8 +318,7 @@ const AdminStaff = () => {
                 onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value })}
                 SelectProps={{ native: true }}
               >
-                <option value="waiter">Waiter</option>
-                <option value="manager">Manager</option>
+                <option value="staff">Staff</option>
                 <option value="admin">Admin</option>
               </TextField>
             </Grid>
@@ -363,7 +349,7 @@ const AdminStaff = () => {
         <DialogTitle>Remove Staff Member</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to remove "{selectedStaff?.name}" from the staff? This action cannot be undone.
+            Are you sure you want to remove "{displayName(selectedStaff)}" from the staff? This action cannot be undone.
           </Typography>
         </DialogContent>
         <DialogActions>

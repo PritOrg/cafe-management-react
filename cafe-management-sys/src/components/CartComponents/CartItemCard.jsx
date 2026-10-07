@@ -1,25 +1,7 @@
 // components/CartItemCard.jsx
 import React, { useState } from 'react';
-import {
-  Card,
-  CardContent,
-  Grid,
-  Typography,
-  IconButton,
-  Avatar,
-  Chip,
-  Box,
-  Fade,
-  Tooltip,
-  Button
-} from '@mui/material';
-import {
-  Delete as DeleteIcon,
-  Add as AddIcon,
-  Remove as RemoveIcon,
-  Edit as EditIcon,
-  Settings as SettingsIcon
-} from '@mui/icons-material';
+import { Card, CardContent, Grid, Typography, IconButton, Avatar, Chip, Box, Fade, Tooltip } from '@mui/material';
+import { Delete as DeleteIcon, Settings as SettingsIcon } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import QuantitySelector from './QuantitySelector';
 import CartCustomizationDialog from './CartCustomizationDialog';
@@ -84,8 +66,8 @@ const CartItemCard = ({ item, onQuantityChange, onRemoveItem, onUpdateCustomizat
     return null;
   }
 
-  const selectedSize = item.selectedSize?.toLowerCase() || 'regular';
-  const price = item.price[selectedSize] || item.price.regular || 0;
+  const selectedSize = item.selectedSize?.toLowerCase() || 'medium';
+  const price = item.price[selectedSize] || item.price.medium || 0;
   const itemTotal = (price * item.quantity).toFixed(2);
 
   const handleEditCustomization = () => {
@@ -211,7 +193,7 @@ const CartItemCard = ({ item, onQuantityChange, onRemoveItem, onUpdateCustomizat
                     mt: 0.5
                   }}
                 >
-                  ${item.price[item.selectedSize?.toLowerCase() || 'regular']} each
+                  ₹{item.price[item.selectedSize?.toLowerCase() || 'medium'] || 0} each
                 </Typography>
               </Box>
             </Grid>

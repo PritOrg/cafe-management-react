@@ -1,8 +1,7 @@
 // components/CartItems.jsx
 import React from 'react';
-import { Grid, Box, Typography, Button } from '@mui/material';
-import { ShoppingCart as ShoppingCartIcon } from '@mui/icons-material';
-import { Link } from 'react-router-dom';
+import { Grid, Box } from '@mui/material';
+
 import CartItemCard from './CartItemCard';
 import OrderSummary from './OrderSummary';
 

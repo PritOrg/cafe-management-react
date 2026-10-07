@@ -1,25 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  Container, 
-  Typography, 
-  Box, 
-  TextField, 
-  Select, 
-  MenuItem,
-  InputAdornment,
-  Paper,
-  Chip,
-  Button,
-  CircularProgress,
-  Zoom,
-  Fade,
-  Stack,
-  InputLabel,
-  FormControl,
-  Skeleton
-} from '@mui/material';
+import { Container, Typography, Box, TextField, Select, MenuItem, InputAdornment, Paper, Chip, Button, Zoom, Fade, Stack, FormControl, Skeleton } from '@mui/material';
 import Grid2 from '@mui/material/Unstable_Grid2';
 import MenuItemCard from '../../components/menu/MenuItemCard';
+import { menuAPI, unwrap } from '../../services/api';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
@@ -41,26 +24,21 @@ const MenuPage = () => {
         { value: 'Sandwiches', icon: '🥪', color: '#B8956A' }
     ];
     
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4969/api';
-    
     useEffect(() => {
         setLoading(true);
-        fetch(`${API_URL}/menu`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                setMenuItems(data);
-                setLoading(false);
+        menuAPI.getAll()
+            .then(body => {
+                const data = unwrap(body);
+                setMenuItems(Array.isArray(data) ? data : []);
             })
             .catch(error => {
                 console.error('There was a problem with the fetch operation:', error);
+                setMenuItems([]);
+            })
+            .finally(() => {
                 setLoading(false);
             });
-    }, [API_URL]);
+    }, []);
 
     const filteredItems = menuItems
         .filter((item) => 

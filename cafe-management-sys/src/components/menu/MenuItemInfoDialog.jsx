@@ -1,31 +1,6 @@
 import React from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
-  Chip,
-  Box,
-  Avatar,
-  Stack,
-  IconButton,
-  Fade,
-  useTheme,
-  useMediaQuery,
-} from '@mui/material';
-import {
-  ShoppingCart as ShoppingCartIcon,
-  AccessTime as TimeIcon,
-  LocalFireDepartment as CaloriesIcon,
-  Star as StarIcon,
-  RestaurantMenu as CategoryIcon,
-  Warning as AllergenIcon,
-  Close as CloseIcon,
-  TrendingUp as TrendingIcon,
-  Favorite as FavoriteIcon,
-} from '@mui/icons-material';
+import { Dialog, DialogContent, DialogActions, Button, Typography, Chip, Box, Avatar, Stack, IconButton, Fade, useTheme, useMediaQuery } from '@mui/material';
+import { ShoppingCart as ShoppingCartIcon, AccessTime as TimeIcon, LocalFireDepartment as CaloriesIcon, Star as StarIcon, RestaurantMenu as CategoryIcon, Warning as AllergenIcon, Close as CloseIcon, TrendingUp as TrendingIcon, Favorite as FavoriteIcon } from '@mui/icons-material';
 
 const MenuItemInfoDialog = ({ open, onClose, onAddToCart, menuItem }) => {
   const theme = useTheme();

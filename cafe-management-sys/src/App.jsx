@@ -1,41 +1,15 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { CssBaseline } from '@mui/material';
+
 
 // Components and layouts
-import {
-  Layout,
-  AdminLayout,
-  ProtectedRoute,
-  AdminRoute,
-  ErrorBoundary,
-  ToastProvider,
-  LoadingProvider,
-  ConfirmProvider
-} from './components';
+import { Layout, AdminLayout, AdminRoute, ErrorBoundary, ToastProvider, LoadingProvider, ConfirmProvider } from './components';
 
 // Pages
-import { 
-  // Customer pages
-  LandingPage, 
-  LoginRegisterPage, 
-  MenuPage, 
-  CartPage,
-  
-  // Admin pages
-  AdminDashboard,
-  AdminOrders,
-  AdminMenu,
-  AdminStaff,
-  AdminRevenue,
-  AdminInventory,
-  AdminAnalytics,
-  AdminSettings,
-  AddMenuItemForm,
-  
-  // Error pages
-  NotFound
-} from './pages';
+import { // Customer pages
+  LandingPage, LoginRegisterPage, MenuPage, CartPage, // Admin pages
+  AdminDashboard, AdminOrders, AdminMenu, AdminStaff, AdminRevenue, AdminInventory, AdminAnalytics, AdminSettings, AddMenuItemForm, AdminTenants, AdminCustomers, // Error pages
+  NotFound } from './pages';
 
 function App() {
   return (
@@ -49,14 +23,7 @@ function App() {
           <Route index element={<LandingPage />} />
           <Route path="login-register" element={<LoginRegisterPage />} />
           <Route path="menu" element={<MenuPage />} />
-          <Route
-            path="cart"
-            element={
-              <ProtectedRoute>
-                <CartPage />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="cart" element={<CartPage />} />
         </Route>
 
         {/* Admin Routes */}
@@ -79,6 +46,8 @@ function App() {
           <Route path="inventory" element={<AdminInventory />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="settings" element={<AdminSettings />} />
+          <Route path="tenants" element={<AdminTenants />} />
+          <Route path="customers" element={<AdminCustomers />} />
         </Route>
 
         {/* Legacy redirect for old menu/add route */}

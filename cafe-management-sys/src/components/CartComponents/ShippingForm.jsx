@@ -87,11 +87,11 @@ const ShippingForm = ({
           <Box mb={2}>
             <Grid container justifyContent="space-between">
               <Typography>Subtotal ({cartCount} items)</Typography>
-              <Typography>${total.toFixed(2)}</Typography>
+              <Typography>₹{total.toFixed(2)}</Typography>
             </Grid>
             <Grid container justifyContent="space-between">
-              <Typography>Delivery</Typography>
-              <Typography>FREE</Typography>
+              <Typography>Tax (GST)</Typography>
+              <Typography>Added at checkout</Typography>
             </Grid>
             <Grid container justifyContent="space-between">
               <Typography>Estimated Prep Time</Typography>
@@ -107,7 +107,7 @@ const ShippingForm = ({
           
           <Grid container justifyContent="space-between" mb={3}>
             <Typography variant="h6">Total</Typography>
-            <Typography variant="h6">${total.toFixed(2)}</Typography>
+            <Typography variant="h6">₹{total.toFixed(2)}</Typography>
           </Grid>
           
           <Box display="flex" justifyContent="space-between" gap={2}>

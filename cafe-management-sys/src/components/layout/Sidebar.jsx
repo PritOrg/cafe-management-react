@@ -1,36 +1,8 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import {
-  Box,
-  Drawer,
-  List,
-  Typography,
-  Divider,
-  Avatar,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Badge,
-  Chip,
-  IconButton,
-  useTheme,
-  alpha
-} from '@mui/material';
+import { Box, Drawer, List, Typography, Avatar, ListItem, ListItemButton, ListItemIcon, ListItemText, Badge, Chip, IconButton, useTheme, alpha } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import {
-  Dashboard,
-  ShoppingCart,
-  Restaurant,
-  People,
-  AttachMoney,
-  Inventory,
-  Analytics,
-  Settings,
-  Logout,
-  Coffee,
-  Close as CloseIcon
-} from '@mui/icons-material';
+import { Dashboard, ShoppingCart, Restaurant, People, AttachMoney, Inventory, Analytics, Settings, Logout, Coffee, Close as CloseIcon, Business } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 
 const drawerWidth = 280;
@@ -140,22 +112,26 @@ const StyledListItemButton = styled(ListItemButton)(({ theme, active }) => ({
   },
 }));
 
-const sidebarItems = [
+const baseSidebarItems = [
   { title: 'Dashboard', href: '/admin', icon: Dashboard, badge: null },
-  { title: 'Orders', href: '/admin/orders', icon: ShoppingCart, badge: '12' },
+  { title: 'Orders', href: '/admin/orders', icon: ShoppingCart, badge: null },
   { title: 'Menu Items', href: '/admin/menu', icon: Restaurant, badge: null },
   { title: 'Staff', href: '/admin/staff', icon: People, badge: null },
   { title: 'Revenue', href: '/admin/revenue', icon: AttachMoney, badge: null },
-  { title: 'Inventory', href: '/admin/inventory', icon: Inventory, badge: '3' },
+  { title: 'Inventory', href: '/admin/inventory', icon: Inventory, badge: null },
   { title: 'Analytics', href: '/admin/analytics', icon: Analytics, badge: null },
   { title: 'Settings', href: '/admin/settings', icon: Settings, badge: null },
+  { title: 'Customers', href: '/admin/customers', icon: People, badge: null },
 ];
+
+const platformItem = { title: 'Tenants', href: '/admin/tenants', icon: Business, badge: null };
 
 const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, isPlatformAdmin } = useAuth();
+  const sidebarItems = isPlatformAdmin() ? [...baseSidebarItems, platformItem] : baseSidebarItems;
 
   const handleLogout = async () => {
     try {

@@ -5,11 +5,15 @@ const generateToken = (user) => {
     const payload = {
         id: user._id,
         email: user.email,
-        role: user.role
+        role: user.role,
     };
+    if (user.tenantId) {
+        payload.tenantId = user.tenantId.toString();
+    }
+    payload.isPlatformAdmin = !!user.isPlatformAdmin;
 
     return jwt.sign(payload, process.env.JWT_SECRET, {
-        expiresIn: '7d' // Set your preferred expiration
+        expiresIn: '7d'
     });
 };
 

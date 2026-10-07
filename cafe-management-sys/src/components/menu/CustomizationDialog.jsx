@@ -1,25 +1,6 @@
 // CustomizationDialog.jsx - With CartContext integration
 import React, { useState, useContext } from 'react';
-import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Typography,
-    Button,
-    Checkbox,
-    FormControlLabel,
-    Radio,
-    RadioGroup,
-    Box,
-    Divider,
-    IconButton,
-    Paper,
-    Chip,
-    Slide,
-    Snackbar,
-    Alert
-} from '@mui/material';
+import { Dialog, DialogContent, DialogActions, Typography, Button, Checkbox, FormControlLabel, Radio, RadioGroup, Box, Divider, IconButton, Paper, Chip, Slide, Snackbar, Alert } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';

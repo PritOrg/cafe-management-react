@@ -1,89 +1,87 @@
-const MenuItem = require('../models/menuItem');
-const uploadToFirebase = require('../utils/firebaseUpload');
+const { sendResponse } = require('../middleware/auth');
 const handleError = require('../utils/handleError');
+const uploadToFirebase = require('../utils/firebaseUpload');
+const menuRepo = require('../repositories/menuRepo');
+const activityRepo = require('../repositories/activityRepo');
 
-// Create a new menu item
 exports.createMenuItem = async (req, res) => {
     try {
         const {
-            title,
-            subTitle,
-            priceMedium,
-            priceLarge,
-            category,
-            calories,
-            preparationTime,
-            customizationOptions,
-            tags,
-            allergens
+            title, subTitle, priceMedium, priceLarge,
+            category, calories, preparationTime,
+            customizationOptions, tags, allergens,
         } = req.body;
-        
+
         const imageUrl = req.file
-        ? await uploadToFirebase(req.file.buffer, req.file.originalname, req.file.mimetype, 'menu-img')
-        : '';
-        console.log(`Image URL: ${imageUrl}`);
-        
-        const item = new MenuItem({
+            ? await uploadToFirebase(req.file.buffer, req.file.originalname, req.file.mimetype, 'menu-img')
+            : '';
+
+        const item = await menuRepo.create(req.tenantId, {
             title,
             subTitle,
             category,
             price: {
                 medium: parseFloat(priceMedium),
-                large: parseFloat(priceLarge)
+                large: parseFloat(priceLarge),
             },
-            calories: parseFloat(calories),
-            preparationTime: parseFloat(preparationTime),
-            customizationOptions: customizationOptions?.split(',').map(opt => opt.trim()),
-            tags: tags?.split(',').map(tag => tag.trim()),
-            allergens: allergens?.split(',').map(all => all.trim()),
-            imageUrl
+            calories: parseFloat(calories) || 0,
+            preparationTime: parseFloat(preparationTime) || 0,
+            customizationOptions: customizationOptions?.split(',').map((opt) => opt.trim()),
+            tags: tags?.split(',').map((tag) => tag.trim()),
+            allergens: allergens?.split(',').map((all) => all.trim()),
+            imageUrl,
         });
 
-        const newItem = await item.save();
-        res.status(201).json(newItem);
+        await activityRepo.log({
+            tenantId: req.tenantId,
+            actorId: req.userId,
+            actorType: req.role,
+            action: 'menu.create',
+            entity: 'menuItem',
+            entityId: item._id,
+            meta: { title: item.title },
+        });
+
+        return sendResponse(res, 201, true, 'Menu item created', item);
     } catch (err) {
         handleError(res, err);
     }
 };
 
-// Get all menu items
 exports.getAllMenuItems = async (req, res) => {
     try {
-        const items = await MenuItem.find();
-        res.json(items);
+        const items = await menuRepo.findAll(req.tenantId);
+        return sendResponse(res, 200, true, 'Menu items retrieved', items);
     } catch (err) {
         handleError(res, err);
     }
 };
 
-// Get a menu item by ID
 exports.getMenuItemById = async (req, res) => {
     try {
-        const item = await MenuItem.findById(req.params.id);
-        if (!item) return res.status(404).json({ message: 'Item not found' });
-        res.json(item);
+        const item = await menuRepo.findById(req.tenantId, req.params.id);
+        if (!item) return sendResponse(res, 404, false, 'Item not found');
+        return sendResponse(res, 200, true, 'Menu item retrieved', item);
     } catch (err) {
         handleError(res, err);
     }
 };
 
-// Update menu item
 exports.updateMenuItem = async (req, res) => {
     try {
-        const item = await MenuItem.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!item) return res.status(404).json({ message: 'Item not found' });
-        res.json(item);
+        const item = await menuRepo.updateById(req.tenantId, req.params.id, req.body);
+        if (!item) return sendResponse(res, 404, false, 'Item not found');
+        return sendResponse(res, 200, true, 'Menu item updated', item);
     } catch (err) {
         handleError(res, err);
     }
 };
 
-// Delete menu item
 exports.deleteMenuItem = async (req, res) => {
     try {
-        const item = await MenuItem.findByIdAndDelete(req.params.id);
-        if (!item) return res.status(404).json({ message: 'Item not found' });
-        res.json({ message: 'Item deleted' });
+        const item = await menuRepo.deleteById(req.tenantId, req.params.id);
+        if (!item) return sendResponse(res, 404, false, 'Item not found');
+        return sendResponse(res, 200, true, 'Menu item deleted');
     } catch (err) {
         handleError(res, err);
     }

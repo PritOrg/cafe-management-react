@@ -1,11 +1,15 @@
 import React, { createContext, useState, useEffect, useMemo, useCallback } from 'react';
-import axios from 'axios';
+import { menuAPI, ordersAPI } from '../services/api';
 
 const CartContext = createContext();
 
+const normalizeSize = (size) => {
+    const s = String(size || '').toLowerCase();
+    return s === 'large' ? 'large' : 'medium';
+};
+
 export const CartProvider = ({ children }) => {
     const [cartItems, setCartItems] = useState(() => {
-        // Initialize state with localStorage data to avoid hydration mismatch
         try {
             const storedCart = localStorage.getItem('cartItems');
             return storedCart ? JSON.parse(storedCart) : [];
@@ -14,37 +18,37 @@ export const CartProvider = ({ children }) => {
             return [];
         }
     });
-    
+
     const [orderConfirmation, setOrderConfirmation] = useState(null);
     const [orderError, setOrderError] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4969/api';
-
-    // 💾 Save cart to localStorage on change
     useEffect(() => {
         try {
             localStorage.setItem('cartItems', JSON.stringify(cartItems));
         } catch (error) {
-            console.error('Failed to save cart to localStorage', error);
+            console.error('Failed to save cartItems to localStorage', error);
         }
     }, [cartItems]);
 
-    // Memoized function to generate unique cart item ID
     const generateCartItemId = useCallback((id, selectedSize, selectedOptions) => {
-        return `${id}-${selectedSize}-${Object.entries(selectedOptions)
+        return `${id}-${selectedSize}-${Object.entries(selectedOptions || {})
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([key, value]) => `${key}:${value}`)
             .join('|')}`;
     }, []);
 
-    const addToCart = useCallback(async (id, selectedOptions = {}, selectedSize = 'regular') => {
+    const addToCart = useCallback(async (id, selectedOptions = {}, selectedSize = 'medium') => {
         setIsLoading(true);
         try {
-            const response = await axios.get(`${API_URL}/menu/${id}`);
-            const item = response.data;
+            const body = await menuAPI.getById(id);
+            const item = body?.data ?? body;
+            if (!item || !item._id) {
+                throw new Error('Menu item not found');
+            }
 
-            const cartItemId = generateCartItemId(id, selectedSize, selectedOptions);
+            const size = normalizeSize(selectedSize);
+            const cartItemId = generateCartItemId(id, size, selectedOptions);
 
             setCartItems(prevItems => {
                 const existingItemIndex = prevItems.findIndex(
@@ -52,10 +56,10 @@ export const CartProvider = ({ children }) => {
                 );
 
                 if (existingItemIndex !== -1) {
-                    return prevItems.map((item, idx) =>
+                    return prevItems.map((cartItem, idx) =>
                         idx === existingItemIndex
-                            ? { ...item, quantity: item.quantity + 1 }
-                            : item
+                            ? { ...cartItem, quantity: cartItem.quantity + 1 }
+                            : cartItem
                     );
                 }
 
@@ -65,7 +69,7 @@ export const CartProvider = ({ children }) => {
                         ...item,
                         cartItemId,
                         selectedOptions,
-                        selectedSize,
+                        selectedSize: size,
                         quantity: 1,
                     }
                 ];
@@ -76,13 +80,18 @@ export const CartProvider = ({ children }) => {
         } finally {
             setIsLoading(false);
         }
-    }, [API_URL, generateCartItemId]);
+    }, [generateCartItemId]);
 
     const updateCartItem = useCallback((cartItemId, updates) => {
         setCartItems(prevItems =>
-            prevItems.map(item =>
-                item.cartItemId === cartItemId ? { ...item, ...updates } : item
-            )
+            prevItems.map(item => {
+                if (item.cartItemId !== cartItemId) return item;
+                const next = { ...item, ...updates };
+                if (updates.selectedSize) {
+                    next.selectedSize = normalizeSize(updates.selectedSize);
+                }
+                return next;
+            })
         );
     }, []);
 
@@ -98,11 +107,11 @@ export const CartProvider = ({ children }) => {
 
     const { total, totalPrepTime } = useMemo(() => {
         return cartItems.reduce((acc, item) => {
-            const size = item.selectedSize?.toLowerCase() || 'regular';
+            const size = normalizeSize(item.selectedSize);
             const itemPrice = item.price?.[size] || 0;
             const quantity = item.quantity || 1;
             const prepTime = item.preparationTime || 0;
-            
+
             return {
                 total: acc.total + (itemPrice * quantity),
                 totalPrepTime: acc.totalPrepTime + (prepTime * quantity)
@@ -110,45 +119,54 @@ export const CartProvider = ({ children }) => {
         }, { total: 0, totalPrepTime: 0 });
     }, [cartItems]);
 
-    const createOrder = useCallback(async (paymentMethod) => {
+    const createOrder = useCallback(async (paymentMethod, options = {}) => {
         setIsLoading(true);
         try {
             const orderItems = cartItems.map(item => ({
                 menuItem: item._id,
-                quantity: item.quantity,
-                selectedOptions: item.selectedOptions,
-                selectedSize: item.selectedSize,
+                size: normalizeSize(item.selectedSize),
+                quantity: item.quantity || 1,
+                options: Object.entries(item.selectedOptions || {}).map(([name, value]) => ({
+                    name: typeof value === 'string' ? value : name,
+                    priceDelta: Number(value) || 0,
+                })),
+                specialInstructions: item.specialInstructions || '',
             }));
 
             const orderData = {
-                tableNumber:5,
                 items: orderItems,
-                totalPrice: total,
-                totalPreparationTime: totalPrepTime,
-                tipAmount:5,
                 paymentMethod,
-                placedByCustomer:'66859c153e58a15304d57af9',
             };
 
-            const response = await axios.post(`${API_URL}/orders`, orderData, {
-                headers: {
-                    Authorization: `Bearer ${sessionStorage.getItem('token')}`,
-                },
-            });
+            if (options.tableNumber != null && options.tableNumber !== '') {
+                orderData.tableNumber = Number(options.tableNumber);
+            }
+            if (options.tipAmount != null && options.tipAmount !== '') {
+                orderData.tipAmount = Number(options.tipAmount) || 0;
+            }
 
-            setOrderConfirmation(response.data);
+            const body = await ordersAPI.create(orderData);
+            const data = body?.data ?? body;
+
+            setOrderConfirmation({
+                orderNumber: data.orderNumber || data.order?.orderNumber,
+                totalPreparationTime: data.totalPreparationTime ?? data.preparationTime,
+                taxAmount: data.taxAmount,
+                finalAmount: data.order?.finalAmount,
+                order: data.order,
+            });
             setOrderError(null);
             clearCart();
-            return response.data;
+            return data;
         } catch (error) {
-            const errorMessage = error.response?.data?.message || 'Order failed';
+            const errorMessage = error.message || 'Order failed';
             setOrderError(errorMessage);
             setOrderConfirmation(null);
             throw new Error(errorMessage);
         } finally {
             setIsLoading(false);
         }
-    }, [API_URL, cartItems, total, totalPrepTime, clearCart]);
+    }, [cartItems, clearCart]);
 
     const contextValue = useMemo(() => ({
         cartItems,

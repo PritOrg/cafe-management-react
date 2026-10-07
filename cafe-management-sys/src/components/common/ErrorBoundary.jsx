@@ -1,26 +1,6 @@
 import React from 'react';
-import {
-  Box,
-  Typography,
-  Button,
-  Paper,
-  Container,
-  Alert,
-  AlertTitle,
-  Collapse,
-  IconButton,
-  Stack,
-  Chip
-} from '@mui/material';
-import {
-  ErrorOutline,
-  Refresh,
-  ExpandMore,
-  ExpandLess,
-  BugReport,
-  Home,
-  ContentCopy
-} from '@mui/icons-material';
+import { Box, Typography, Button, Paper, Container } from '@mui/material';
+import { ErrorOutline, Refresh } from '@mui/icons-material';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {

@@ -1,23 +1,54 @@
-const Staff = require('../models/staffAndAdmin');
+const { sendResponse } = require('../middleware/auth');
+const staffRepo = require('../repositories/staffRepo');
+const activityRepo = require('../repositories/activityRepo');
 
-// Basic Staff CRUD
 exports.getAllStaff = async (req, res) => {
-  const staff = await Staff.find();
-  res.json(staff);
+    try {
+        const staff = await staffRepo.findAll(req.tenantId);
+        return sendResponse(res, 200, true, 'Staff retrieved', staff);
+    } catch (err) {
+        console.error('Error fetching staff:', err);
+        return sendResponse(res, 500, false, 'Server error');
+    }
 };
 
 exports.addStaff = async (req, res) => {
-  const newStaff = new Staff(req.body);
-  await newStaff.save();
-  res.status(201).json(newStaff);
+    try {
+        const newStaff = await staffRepo.create(req.tenantId, req.body);
+        await activityRepo.log({
+            tenantId: req.tenantId,
+            actorId: req.userId,
+            actorType: req.role,
+            action: 'staff.create',
+            entity: 'staff',
+            entityId: newStaff._id,
+            meta: { email: newStaff.email, role: newStaff.role },
+        });
+        return sendResponse(res, 201, true, 'Staff added', newStaff);
+    } catch (err) {
+        console.error('Error adding staff:', err);
+        return sendResponse(res, 500, false, err.message || 'Server error');
+    }
 };
 
 exports.updateStaff = async (req, res) => {
-  const updated = await Staff.findByIdAndUpdate(req.params.id, req.body, { new: true });
-  res.json(updated);
+    try {
+        const updated = await staffRepo.updateById(req.tenantId, req.params.id, req.body);
+        if (!updated) return sendResponse(res, 404, false, 'Staff not found');
+        return sendResponse(res, 200, true, 'Staff updated', updated);
+    } catch (err) {
+        console.error('Error updating staff:', err);
+        return sendResponse(res, 500, false, err.message || 'Server error');
+    }
 };
 
 exports.removeStaff = async (req, res) => {
-  await Staff.findByIdAndDelete(req.params.id);
-  res.status(204).send();
+    try {
+        const removed = await staffRepo.deleteById(req.tenantId, req.params.id);
+        if (!removed) return sendResponse(res, 404, false, 'Staff not found');
+        return sendResponse(res, 200, true, 'Staff removed');
+    } catch (err) {
+        console.error('Error removing staff:', err);
+        return sendResponse(res, 500, false, err.message || 'Server error');
+    }
 };

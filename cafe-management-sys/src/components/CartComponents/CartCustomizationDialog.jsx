@@ -1,31 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Typography,
-  Button,
-  Checkbox,
-  FormControlLabel,
-  Radio,
-  RadioGroup,
-  Box,
-  Divider,
-  IconButton,
-  Paper,
-  Chip,
-  Slide,
-  Alert,
-  FormControl,
-  FormLabel
-} from '@mui/material';
-import {
-  Close as CloseIcon,
-  Edit as EditIcon,
-  Save as SaveIcon,
-  Cancel as CancelIcon
-} from '@mui/icons-material';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, Button, Checkbox, FormControlLabel, Radio, RadioGroup, Box, Divider, IconButton, Paper, Slide, FormControl, FormLabel } from '@mui/material';
+import { Close as CloseIcon, Edit as EditIcon, Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -36,6 +11,14 @@ const CartCustomizationDialog = ({ open, onClose, item, onUpdateCustomization })
   const [selectedCustomizations, setSelectedCustomizations] = useState({});
   const [totalPrice, setTotalPrice] = useState(0);
 
+  const calculateTotalPrice = useCallback((size, customizations) => {
+    if (!item || !item.price) return;
+
+    const basePrice = item.price[size?.toLowerCase()] || item.price.medium || 0;
+    const extraCost = Object.keys(customizations).length * 10;
+    setTotalPrice((basePrice + extraCost) * item.quantity);
+  }, [item]);
+
   // Initialize state when dialog opens
   useEffect(() => {
     if (open && item) {
@@ -43,7 +26,7 @@ const CartCustomizationDialog = ({ open, onClose, item, onUpdateCustomization })
       setSelectedCustomizations(item.selectedOptions || {});
       calculateTotalPrice(item.selectedSize || 'medium', item.selectedOptions || {});
     }
-  }, [open, item]);
+  }, [open, item, calculateTotalPrice]);
 
   const handleSizeChange = (event) => {
     const newSize = event.target.value;
@@ -56,7 +39,7 @@ const CartCustomizationDialog = ({ open, onClose, item, onUpdateCustomization })
     const isChecked = event.target.checked;
 
     const updatedCustomizations = { ...selectedCustomizations };
-    
+
     if (isChecked) {
       updatedCustomizations[option] = true;
     } else {
@@ -65,14 +48,6 @@ const CartCustomizationDialog = ({ open, onClose, item, onUpdateCustomization })
 
     setSelectedCustomizations(updatedCustomizations);
     calculateTotalPrice(selectedSize, updatedCustomizations);
-  };
-
-  const calculateTotalPrice = (size, customizations) => {
-    if (!item || !item.price) return;
-    
-    const basePrice = item.price[size?.toLowerCase()] || item.price.medium || item.price.regular || 0;
-    const extraCost = Object.keys(customizations).length * 10; // ₹10 for each customization
-    setTotalPrice((basePrice + extraCost) * item.quantity);
   };
 
   const handleSaveChanges = () => {

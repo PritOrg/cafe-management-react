@@ -1,41 +1,6 @@
 import React, { useState } from 'react';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Grid,
-  TextField,
-  Button,
-  Switch,
-  FormControlLabel,
-  Divider,
-  Alert,
-  Tabs,
-  Tab,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-} from '@mui/material';
-import {
-  Save,
-  Refresh,
-  Security,
-  Notifications,
-  Store,
-  Payment,
-  Email,
-  Backup,
-  Delete,
-  Edit,
-} from '@mui/icons-material';
+import { Box, Typography, Card, CardContent, Grid, TextField, Button, Switch, FormControlLabel, Divider, Alert, Tabs, Tab, List, ListItem, ListItemText, ListItemSecondaryAction, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Save, Refresh, Security, Notifications, Store, Payment, Backup, Delete } from '@mui/icons-material';
 import { useThemeContext } from '../../contexts/ThemeContext';
 
 const AdminSettings = () => {

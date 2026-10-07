@@ -123,7 +123,7 @@ export default function Navbar() {
     <Box sx={{ width: 280, pt: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 4 }}>
         <LocalCafeIcon sx={{ mr: 1, color: 'primary.main' }} />
-        <Typography variant="h6" sx={{ fontFamily: 'Pacifico, cursive', color: 'primary.main' }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
           Bug Latte
         </Typography>
       </Box>
@@ -204,8 +204,8 @@ export default function Navbar() {
               variant="h5"
               component={Link}
               to="/"
-              sx={{ 
-                fontFamily: 'Pacifico, cursive',
+              sx={{
+                fontWeight: 700,
                 textDecoration: 'none',
                 color: 'primary.main',
                 flexGrow: { xs: 1, md: 0 },

@@ -1,27 +1,6 @@
 import React from 'react';
-import {
-  AppBar,
-  Toolbar,
-  Typography,
-  IconButton,
-  Badge,
-  Avatar,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  Divider,
-  Box,
-  useTheme,
-} from '@mui/material';
-import {
-  Menu as MenuIcon,
-  Notifications as NotificationsIcon,
-  AccountCircle as AccountIcon,
-  Settings as SettingsIcon,
-  Logout as LogoutIcon,
-  Dashboard as DashboardIcon,
-} from '@mui/icons-material';
+import { AppBar, Toolbar, Typography, IconButton, Badge, Avatar, Menu, MenuItem, ListItemIcon, ListItemText, Divider, Box, useTheme } from '@mui/material';
+import { Menu as MenuIcon, Notifications as NotificationsIcon, Settings as SettingsIcon, Logout as LogoutIcon, Dashboard as DashboardIcon } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';

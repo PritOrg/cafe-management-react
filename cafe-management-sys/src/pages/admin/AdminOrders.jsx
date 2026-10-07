@@ -1,45 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  IconButton,
-  Button,
-  TextField,
-  InputAdornment,
-  Menu,
-  MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Grid,
-  Paper,
-  Tabs,
-  Tab,
-  Badge,
-} from '@mui/material';
-import {
-  Search,
-  FilterList,
-  MoreVert,
-  Edit,
-  Delete,
-  Visibility,
-  CheckCircle,
-  Cancel,
-  Schedule,
-  LocalShipping,
-} from '@mui/icons-material';
-import { ordersAPI } from '../../services/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Box, Typography, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Button, TextField, InputAdornment, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Tabs, Tab, Badge } from '@mui/material';
+import { Search, FilterList, MoreVert, Visibility, CheckCircle, Cancel, Schedule, LocalShipping } from '@mui/icons-material';
+import { ordersAPI, unwrap } from '../../services/api';
+import { adaptOrder } from '../../adapters';
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -56,15 +19,11 @@ const AdminOrders = () => {
     { value: 'pending', label: 'Pending', count: 0 },
     { value: 'preparing', label: 'Preparing', count: 0 },
     { value: 'ready', label: 'Ready', count: 0 },
-    { value: 'completed', label: 'Completed', count: 0 },
+    { value: 'served', label: 'Served', count: 0 },
     { value: 'cancelled', label: 'Cancelled', count: 0 },
   ];
 
-  useEffect(() => {
-    fetchOrders();
-  }, [statusFilter]);
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
       const params = {};
@@ -73,15 +32,19 @@ const AdminOrders = () => {
       }
 
       const response = await ordersAPI.getAll(params);
-      const ordersData = response?.data || response || [];
-      setOrders(Array.isArray(ordersData) ? ordersData : []);
+      const ordersData = unwrap(response) || [];
+      setOrders((Array.isArray(ordersData) ? ordersData : []).map(adaptOrder));
     } catch (error) {
       console.error('Error fetching orders:', error);
       setOrders([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter]);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
@@ -100,7 +63,7 @@ const AdminOrders = () => {
       pending: 'warning',
       preparing: 'info',
       ready: 'success',
-      completed: 'default',
+      served: 'success',
       cancelled: 'error',
     };
     return colors[status] || 'default';
@@ -111,15 +74,15 @@ const AdminOrders = () => {
       pending: <Schedule />,
       preparing: <Schedule />,
       ready: <CheckCircle />,
-      completed: <CheckCircle />,
+      served: <CheckCircle />,
       cancelled: <Cancel />,
     };
     return icons[status] || <Schedule />;
   };
 
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         order.customer.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = (order.orderNumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (order.customer?.name || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -270,7 +233,7 @@ const AdminOrders = () => {
                     </TableCell>
                     <TableCell>
                       <Typography variant="subtitle2" fontWeight={600}>
-                        ${order.total.toFixed(2)}
+                        {order.total != null ? `₹${order.total.toFixed(2)}` : '—'}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -326,9 +289,9 @@ const AdminOrders = () => {
           <CheckCircle sx={{ mr: 1 }} />
           Mark as Ready
         </MenuItem>
-        <MenuItem onClick={() => handleStatusChange(selectedOrderId, 'completed')}>
+        <MenuItem onClick={() => handleStatusChange(selectedOrderId, 'served')}>
           <LocalShipping sx={{ mr: 1 }} />
-          Mark as Completed
+          Mark as Served
         </MenuItem>
       </Menu>
 
@@ -347,13 +310,13 @@ const AdminOrders = () => {
             <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
                 <Typography variant="h6" gutterBottom>Customer Information</Typography>
-                <Typography><strong>Name:</strong> {selectedOrder.customer.name}</Typography>
-                <Typography><strong>Email:</strong> {selectedOrder.customer.email}</Typography>
+                <Typography><strong>Name:</strong> {selectedOrder.customer?.name}</Typography>
+                <Typography><strong>Email:</strong> {selectedOrder.customer?.email}</Typography>
               </Grid>
               <Grid item xs={12} md={6}>
                 <Typography variant="h6" gutterBottom>Order Information</Typography>
                 <Typography><strong>Status:</strong> {selectedOrder.status}</Typography>
-                <Typography><strong>Total:</strong> ${selectedOrder.total.toFixed(2)}</Typography>
+                <Typography><strong>Total:</strong> ₹{selectedOrder.total?.toFixed(2)}</Typography>
                 <Typography><strong>Date:</strong> {new Date(selectedOrder.createdAt).toLocaleString()}</Typography>
               </Grid>
               <Grid item xs={12}>
@@ -361,7 +324,7 @@ const AdminOrders = () => {
                 {selectedOrder.items.map((item, index) => (
                   <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                     <Typography>{item.name} x {item.quantity}</Typography>
-                    <Typography>${(item.price * item.quantity).toFixed(2)}</Typography>
+                    <Typography>₹{(item.price * item.quantity).toFixed(2)}</Typography>
                   </Box>
                 ))}
               </Grid>
