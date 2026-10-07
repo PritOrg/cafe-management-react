@@ -1,7 +1,7 @@
 const { getDb } = require('../db/pool');
 const { mapActivity } = require('../db/mappers');
 
-const log = async ({ tenantId, actorId, actorType, action, entity, entityId, meta }) => {
+const log = async ({ tenantId, actorId, actorType, action, entity, entityId, meta, requestId }) => {
     try {
         const [row] = await getDb()('activity_logs').insert({
             tenant_id: tenantId || null,
@@ -11,8 +11,9 @@ const log = async ({ tenantId, actorId, actorType, action, entity, entityId, met
             entity,
             entity_id: entityId || null,
             meta: meta || {},
+            request_id: requestId || null,
         }).returning('*');
-        return mapActivity(row);
+        return row || null;
     } catch (err) {
         console.error('logActivity failed:', err.message);
         return null;
