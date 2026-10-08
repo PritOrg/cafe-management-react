@@ -15,6 +15,7 @@ import CheckCircle from '@mui/icons-material/CheckCircle';
 import { styled } from '@mui/material/styles';
 
 import { analyticsAPI, ordersAPI, inventoryAPI, unwrap } from '../../services/api';
+import useOpsEvents from '../../hooks/useOpsEvents';
 import { formatMoney } from '../../utils/formatMoney';
 import { adaptOrder } from '../../adapters';
 
@@ -124,6 +125,13 @@ export default function AdminDashboard() {
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Realtime: refresh immediately on this tenant's order/invoice events.
+  useOpsEvents({
+    'order:created': fetchDashboardData,
+    'order:status': fetchDashboardData,
+    'invoice:issued': fetchDashboardData,
+  });
 
   const statsCards = dashboardData ? [
     {

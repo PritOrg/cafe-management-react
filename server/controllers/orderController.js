@@ -5,6 +5,7 @@ const orderRepo = require('../repositories/orderRepo');
 const customerRepo = require('../repositories/customerRepo');
 const tableRepo = require('../repositories/tableRepo');
 const activityRepo = require('../repositories/activityRepo');
+const events = require('../services/events');
 
 exports.placeOrder = async (req, res) => {
     try {
@@ -140,6 +141,12 @@ exports.updateOrderStatus = async (req, res) => {
             entityId: order._id,
             requestId: req.id,
             meta: { status, before: previousStatus, after: status },
+        });
+
+        events.emit('order:status', {
+            tenantId: req.tenantId,
+            orderId: order._id,
+            status: order.status,
         });
 
         return sendResponse(res, 200, true, 'Order status updated', { status: order.status });
