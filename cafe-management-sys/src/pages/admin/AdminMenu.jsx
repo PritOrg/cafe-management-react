@@ -233,6 +233,7 @@ const AdminMenu = () => {
                 <CardMedia
                   component="img"
                   height="200"
+                  loading="lazy"
                   image={item.imageUrl || '/logo512.png'}
                   alt={item.title}
                 />

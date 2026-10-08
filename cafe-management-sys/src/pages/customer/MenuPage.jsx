@@ -135,6 +135,9 @@ const MenuPage = () => {
             overflowX: 'auto',
             scrollbarWidth: 'none',
             '&::-webkit-scrollbar': { display: 'none' },
+            // Edge fade hint that the row scrolls horizontally.
+            WebkitMaskImage: 'linear-gradient(to right, transparent, #000 12px, #000 calc(100% - 12px), transparent)',
+            maskImage: 'linear-gradient(to right, transparent, #000 12px, #000 calc(100% - 12px), transparent)',
           }}
         >
           <Chip

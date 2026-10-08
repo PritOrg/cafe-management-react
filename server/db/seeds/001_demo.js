@@ -175,10 +175,36 @@ exports.seed = async (knex) => {
             await knex('tables').insert([1, 2, 3, 4, 5, 6].map((number) => ({ tenant_id: tenant.id, number })));
         }
 
-        await knex('settings')
-            .insert({ tenant_id: tenant.id, data: DEFAULTS })
-            .onConflict('tenant_id')
-            .ignore();
+        // Demo GST so bills/invoices can be issued out-of-the-box (clearly a test
+        // GSTIN — real deployments set their own in Settings → GST).
+        const demoGst = {
+            enabled: true,
+            bps: 500,
+            gstin: '27AAAAA0000A1Z5',
+            legalName: `${t.name} Pvt Ltd`,
+            legalAddress: '123 Demo Street, Mumbai',
+            stateCode: '27',
+            stateName: 'Maharashtra',
+            hsnSAC: '996311',
+            invoicePrefix: 'INV',
+            fyStartMonth: 4,
+        };
+
+        const existingSettings = await knex('settings').where({ tenant_id: tenant.id }).first();
+        if (!existingSettings) {
+            await knex('settings').insert({
+                tenant_id: tenant.id,
+                data: { ...DEFAULTS, gst: { ...DEFAULTS.gst, ...demoGst } },
+            });
+        } else if (!existingSettings.data?.gst?.gstin) {
+            // Backfill GST for DBs seeded before demo GST existed.
+            await knex('settings').where({ tenant_id: tenant.id }).update({
+                data: {
+                    ...existingSettings.data,
+                    gst: { ...DEFAULTS.gst, ...(existingSettings.data.gst || {}), ...demoGst },
+                },
+            });
+        }
 
         const discountExists = await knex('discounts')
             .where({ tenant_id: tenant.id, code: 'WELCOME10' })
