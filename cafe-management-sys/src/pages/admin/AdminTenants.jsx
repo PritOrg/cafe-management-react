@@ -169,7 +169,7 @@ const AdminTenants = () => {
                 label="Slug (subdomain)"
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
-                helperText="e.g. cafe1 → cafe1.yourdomain.com"
+                helperText="e.g. pizzeria → pizzeria.yourdomain.com"
               />
             </Grid>
             <Grid item xs={12}>

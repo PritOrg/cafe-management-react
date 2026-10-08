@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -62,14 +62,11 @@ const AdminMenu = () => {
     }
   };
 
-  const categories = [
-    { value: 'all', label: 'All Categories' },
-    { value: 'coffee', label: 'Coffee' },
-    { value: 'tea', label: 'Tea' },
-    { value: 'pastries', label: 'Pastries' },
-    { value: 'sandwiches', label: 'Sandwiches' },
-    { value: 'desserts', label: 'Desserts' },
-  ];
+  // Categories are derived from the tenant's own menu (works for any cuisine).
+  const categories = useMemo(() => {
+    const unique = [...new Set(menuItems.map((item) => item.category).filter(Boolean))].sort();
+    return [{ value: 'all', label: 'All Categories' }, ...unique.map((c) => ({ value: c, label: c }))];
+  }, [menuItems]);
 
   useEffect(() => {
     fetchMenuItems();

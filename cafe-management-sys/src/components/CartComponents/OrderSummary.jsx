@@ -10,7 +10,7 @@ import {
   Chip,
   LinearProgress
 } from '@mui/material';
-import CoffeeIcon from '@mui/icons-material/LocalCafe';
+import ReceiptIcon from '@mui/icons-material/ReceiptLong';
 import TimeIcon from '@mui/icons-material/Schedule';
 import ShippingIcon from '@mui/icons-material/LocalShipping';
 import MoneyIcon from '@mui/icons-material/MonetizationOn';
@@ -66,7 +66,7 @@ const OrderSummary = ({
     <SummaryPaper elevation={3}>
       {/* Header */}
       <Box display="flex" alignItems="center" mb={3}>
-        <CoffeeIcon sx={{ color: 'primary.main', mr: 1 }} />
+        <ReceiptIcon sx={{ color: 'primary.main', mr: 1 }} />
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
           Order Summary
         </Typography>

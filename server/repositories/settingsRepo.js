@@ -2,7 +2,7 @@ const { getDb } = require('../db/pool');
 const { mapSettings } = require('../db/mappers');
 
 const DEFAULTS = {
-    brand: { title: 'Cafe Day', logoUrl: '', primaryColor: '#ff6b35', accentColor: '#f7931e' },
+    brand: { title: 'My Restaurant', logoUrl: '', primaryColor: '#ff6b35', accentColor: '#f7931e' },
     gst: {
         enabled: true,
         bps: 500,

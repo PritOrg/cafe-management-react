@@ -30,6 +30,12 @@ export const clearMenuCache = () => {
   cache = null;
 };
 
+/** Synchronous lookup against the session menu cache (used for fast add / reorder). */
+export const findMenuItem = (id) => {
+  if (!cache || !id) return null;
+  return cache.find((item) => item._id === id || item.id === id) || null;
+};
+
 const useMenuData = () => {
   const [items, setItems] = useState(cache || []);
   const [loading, setLoading] = useState(!cache);

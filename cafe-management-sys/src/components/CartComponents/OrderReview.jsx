@@ -1,25 +1,39 @@
 import React from 'react';
 import {
-  Grid,
   Card,
   CardContent,
   Typography,
   Button,
   Divider,
   Box,
-  Paper
+  Paper,
 } from '@mui/material';
+import Grid2 from '@mui/material/Unstable_Grid2';
+
+const formatPrep = (minutes) =>
+  minutes > 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : `${minutes}m`;
+
+const unitPrice = (item) => {
+  const sizes = item.sizes || [];
+  if (sizes.length) {
+    const match = sizes.find((s) => s.label === item.selectedSize)
+      || sizes.find((s) => s.isDefault)
+      || sizes[0];
+    return Number(match?.price || 0);
+  }
+  return Number(item.price?.[String(item.selectedSize || 'medium').toLowerCase()] ?? item.price?.medium ?? 0);
+};
 
 const OrderReview = ({
   cartItems,
-  shippingInfo,
+  customerInfo,
   paymentMethod,
   total,
   cartCount,
   totalPrepTime,
   onBack,
   onNext,
-  isLoading
+  isLoading,
 }) => {
   const getPaymentMethodLabel = (method) => {
     switch (method) {
@@ -31,108 +45,87 @@ const OrderReview = ({
   };
 
   return (
-    <Grid container spacing={3}>
-      <Grid item xs={12} md={8}>
+    <Grid2 container spacing={3}>
+      <Grid2 xs={12} md={8}>
         <Card>
           <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Order Review
+            <Typography variant="h6" sx={{ fontWeight: 700 }} gutterBottom>
+              Order review
             </Typography>
-            
-            <Typography variant="subtitle1" gutterBottom>
-              Shipping to:
+
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 2 }}>
+              Customer
             </Typography>
-            <Typography paragraph>
-              {shippingInfo.address}<br />
-              {shippingInfo.city}, {shippingInfo.postalCode}<br />
-              {shippingInfo.country}
+            <Typography>{customerInfo.name} · {customerInfo.phone}</Typography>
+            {customerInfo.tableNumber && (
+              <Typography color="text.secondary">Table {customerInfo.tableNumber}</Typography>
+            )}
+
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 2 }}>
+              Payment
             </Typography>
-            
-            <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
-              Payment Method:
-            </Typography>
-            <Typography paragraph>
-              {getPaymentMethodLabel(paymentMethod)}
-            </Typography>
-            
-            <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
-              Items:
+            <Typography paragraph>{getPaymentMethodLabel(paymentMethod)}</Typography>
+
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 2 }}>
+              Items
             </Typography>
             {cartItems.map((item) => (
-              <Box key={item.cartItemId} mb={2} p={2} sx={{ bgcolor: 'grey.50', borderRadius: 1 }}>
-                <Typography variant="body1">
-                  <strong>{item.quantity} × {item.name}</strong> ({item.selectedSize})
-                </Typography>
+              <Box key={item.cartItemId} sx={{ py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography>{item.quantity} × {item.title || item.name}</Typography>
+                  <Typography>₹{(unitPrice(item) * item.quantity).toFixed(2)}</Typography>
+                </Box>
                 <Typography variant="body2" color="text.secondary">
-                  ₹{((item.price?.[item.selectedSize?.toLowerCase() || 'medium'] || 0) * item.quantity).toFixed(2)}
+                  {item.selectedSize}
+                  {item.selectedOptions && Object.keys(item.selectedOptions).length > 0
+                    ? ` · ${Object.keys(item.selectedOptions).join(', ')}`
+                    : ''}
                 </Typography>
-                {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 && (
-                  <Typography variant="body2" color="text.secondary">
-                    Options: {Object.entries(item.selectedOptions).map(([key, value]) => (
-                      `${key}: ${value}`
-                    )).join(', ')}
-                  </Typography>
-                )}
               </Box>
             ))}
           </CardContent>
         </Card>
-      </Grid>
-      <Grid item xs={12} md={4}>
-        <Paper elevation={3} sx={{ p: 3, position: 'sticky', top: 16 }}>
-          <Typography variant="h6" gutterBottom>
-            Order Summary
+      </Grid2>
+
+      <Grid2 xs={12} md={4}>
+        <Paper elevation={0} sx={{ p: 3, position: 'sticky', top: 16, border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700 }} gutterBottom>
+            Order summary
           </Typography>
           <Divider sx={{ my: 2 }} />
-          
-          <Box mb={2}>
-            <Grid container justifyContent="space-between">
-              <Typography>Subtotal ({cartCount} items)</Typography>
+
+          <Box sx={{ display: 'grid', gap: 1 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography color="text.secondary">Subtotal ({cartCount} items)</Typography>
               <Typography>₹{total.toFixed(2)}</Typography>
-            </Grid>
-            <Grid container justifyContent="space-between">
-              <Typography>Tax (GST)</Typography>
-              <Typography>Added at checkout</Typography>
-            </Grid>
-            <Grid container justifyContent="space-between">
-              <Typography>Estimated Prep Time</Typography>
-              <Typography>
-                {totalPrepTime > 60 
-                  ? `${Math.floor(totalPrepTime / 60)}h ${totalPrepTime % 60}m` 
-                  : `${totalPrepTime}m`}
-              </Typography>
-            </Grid>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography color="text.secondary">Tax (GST)</Typography>
+              <Typography>At checkout</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography color="text.secondary">Prep time</Typography>
+              <Typography>{formatPrep(totalPrepTime)}</Typography>
+            </Box>
           </Box>
-          
+
           <Divider sx={{ my: 2 }} />
-          
-          <Grid container justifyContent="space-between" mb={3}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
             <Typography variant="h6">Total</Typography>
             <Typography variant="h6">₹{total.toFixed(2)}</Typography>
-          </Grid>
-          
-          <Box display="flex" justifyContent="space-between" gap={2}>
-            <Button
-              variant="outlined"
-              onClick={onBack}
-              disabled={isLoading}
-              sx={{ flex: 1 }}
-            >
+          </Box>
+
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button variant="outlined" onClick={onBack} disabled={isLoading} sx={{ flex: 1 }}>
               Back
             </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={onNext}
-              disabled={isLoading}
-              sx={{ flex: 1 }}
-            >
-              {isLoading ? 'Processing...' : 'Place Order'}
+            <Button variant="contained" onClick={onNext} disabled={isLoading} sx={{ flex: 1 }}>
+              {isLoading ? 'Placing…' : 'Place order'}
             </Button>
           </Box>
         </Paper>
-      </Grid>
-    </Grid>
+      </Grid2>
+    </Grid2>
   );
 };
 

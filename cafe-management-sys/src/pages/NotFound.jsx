@@ -3,7 +3,7 @@ import { Box, Typography, Button, Container, Paper, useTheme, alpha } from '@mui
 import { useNavigate } from 'react-router-dom';
 import Home from '@mui/icons-material/Home';
 import ArrowBack from '@mui/icons-material/ArrowBack';
-import Coffee from '@mui/icons-material/Coffee';
+import StorefrontIcon from '@mui/icons-material/Storefront';
 import SentimentDissatisfied from '@mui/icons-material/SentimentDissatisfied';
 
 const NotFound = () => {
@@ -49,8 +49,8 @@ const NotFound = () => {
               overflow: 'hidden',
             }}
           >
-            {/* Coffee cup icon in background */}
-            <Coffee
+            {/* Storefront icon in background */}
+            <StorefrontIcon
               sx={{
                 position: 'absolute',
                 fontSize: 240,

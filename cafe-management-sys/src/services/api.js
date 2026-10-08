@@ -1,5 +1,49 @@
 // API Configuration — all product endpoints are versioned under /api/v1
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4969/api/v1';
+const RAW_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4969/api/v1';
+
+/**
+ * The server resolves the tenant from the request Host header. In dev the app is
+ * often served from a tenant subdomain (cafe2.localhost:3000) while the API lives
+ * on a different port — so mirror the frontend's subdomain onto the API host
+ * (cafe2.localhost:4969) to hit the right restaurant's menu/branding.
+ * No-op for relative URLs, bare hosts (localhost), and www.
+ */
+const BASE_HOSTS = new Set(['localhost', 'www']);
+
+const isIpAddress = (hostname) =>
+  /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname) || hostname.includes(':');
+
+export const tenantSlugFromHost = () => {
+  if (typeof window === 'undefined') return null;
+  const hostname = (window.location.hostname || '').toLowerCase();
+  if (!hostname || isIpAddress(hostname)) return null;
+  const labels = hostname.split('.');
+  if (labels.length < 2) return null;
+  const first = labels[0];
+  if (BASE_HOSTS.has(first)) return null;
+  return first;
+};
+
+const resolveApiBaseUrl = (raw) => {
+  if (typeof window === 'undefined' || !/^https?:\/\//i.test(raw)) return raw;
+  try {
+    const slug = tenantSlugFromHost();
+    if (!slug) return raw;
+    const url = new URL(raw);
+    if (url.hostname === 'localhost' || isIpAddress(url.hostname)) {
+      url.hostname = `${slug}.${url.hostname}`;
+    } else {
+      const labels = url.hostname.split('.');
+      labels[0] = slug;
+      url.hostname = labels.join('.');
+    }
+    return url.toString();
+  } catch {
+    return raw;
+  }
+};
+
+const API_BASE_URL = resolveApiBaseUrl(RAW_API_URL);
 
 // Helper function to get auth token (sessionStorage preferred, localStorage fallback)
 const getAuthToken = () => {

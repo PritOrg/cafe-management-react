@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { settingsAPI, unwrap } from '../services/api';
 
 const DEFAULT_BRAND = {
-  title: 'Cafe Management',
+  title: 'Restaurant',
   logoUrl: '',
   primaryColor: '#ff6b35',
   accentColor: '#f7931e',

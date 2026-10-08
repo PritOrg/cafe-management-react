@@ -27,7 +27,7 @@ import Person from '@mui/icons-material/Person';
 import Phone from '@mui/icons-material/Phone';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import Coffee from '@mui/icons-material/Coffee';
+import StorefrontIcon from '@mui/icons-material/Storefront';
 import Close from '@mui/icons-material/Close';
 import ArrowForward from '@mui/icons-material/ArrowForward';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
@@ -404,7 +404,7 @@ const LoginRegisterPage = () => {
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
               }}
             >
-              <Coffee fontSize="large" sx={{ color: roleInfo.color }} />
+              <StorefrontIcon fontSize="large" sx={{ color: roleInfo.color }} />
             </Avatar>
             <Typography variant="h5" component="h1" fontWeight="bold">
               Café Management System
@@ -491,7 +491,7 @@ const LoginRegisterPage = () => {
                     <Box>
                       <Typography variant="body2" fontWeight={600}>Admin</Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Full cafe management access
+                        Full restaurant management access
                       </Typography>
                     </Box>
                   </MenuItem>
