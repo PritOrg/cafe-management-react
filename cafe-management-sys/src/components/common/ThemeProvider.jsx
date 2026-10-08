@@ -1,118 +1,21 @@
-import React from 'react';
-import { ThemeProvider as MuiThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import React, { useMemo } from 'react';
+import { ThemeProvider as MuiThemeProvider, CssBaseline } from '@mui/material';
 import { useThemeContext } from '../../contexts/ThemeContext';
 import { useBrand } from '../../contexts/BrandContext';
+import { buildTheme } from '../../utils/m3Theme';
 
 /**
- * ThemeProvider — palette driven by tenant brand settings (white-label).
+ * ThemeProvider — Material 3-flavoured palette driven by tenant brand settings.
+ * The whole theme (palette + component shapes) is memoised so brand/theme
+ * changes are the only thing that rebuilds it.
  */
 const ThemeProvider = ({ children }) => {
   const { mode } = useThemeContext();
   const { brand } = useBrand();
-  const primaryColor = brand?.primaryColor || '#ff6b35';
-  const accentColor = brand?.accentColor || '#f7931e';
 
-  const theme = React.useMemo(
-    () =>
-      createTheme({
-        palette: {
-          mode,
-          primary: {
-            main: primaryColor,
-            light: primaryColor,
-            dark: primaryColor,
-            contrastText: '#ffffff',
-          },
-          secondary: {
-            main: accentColor,
-            light: accentColor,
-            dark: accentColor,
-            contrastText: '#ffffff',
-          },
-          error: {
-            main: '#f44336',
-          },
-          warning: {
-            main: '#ff9800',
-          },
-          info: {
-            main: '#2196f3',
-          },
-          success: {
-            main: '#4caf50',
-          },
-          background: {
-            default: mode === 'light' ? '#f8fafc' : '#121212',
-            paper: mode === 'light' ? '#ffffff' : '#1e1e1e',
-          },
-          text: {
-            primary: mode === 'light' ? '#333333' : '#ffffff',
-            secondary: mode === 'light' ? '#666666' : '#b0b0b0',
-          },
-        },
-        typography: {
-          fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-          h1: { fontWeight: 700 },
-          h2: { fontWeight: 700 },
-          h3: { fontWeight: 600 },
-          h4: { fontWeight: 600 },
-          h5: { fontWeight: 600 },
-          h6: { fontWeight: 600 },
-          button: { fontWeight: 600, textTransform: 'none' },
-        },
-        shape: { borderRadius: 10 },
-        components: {
-          MuiCssBaseline: {
-            styleOverrides: {
-              html: { colorScheme: mode },
-              body: { WebkitFontSmoothing: 'antialiased' },
-            },
-          },
-          MuiAppBar: {
-            defaultProps: { elevation: 0, color: 'default' },
-            styleOverrides: {
-              root: {
-                backgroundImage: 'none',
-                backdropFilter: 'saturate(180%) blur(12px)',
-                backgroundColor: mode === 'light'
-                  ? 'rgba(255,255,255,0.82)'
-                  : 'rgba(30,30,30,0.82)',
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-              },
-            },
-          },
-          MuiButton: {
-            defaultProps: { disableElevation: true },
-            styleOverrides: {
-              root: {
-                borderRadius: 10,
-                padding: '8px 16px',
-                textTransform: 'none',
-              },
-            },
-          },
-          MuiPaper: {
-            styleOverrides: {
-              root: { backgroundImage: 'none' },
-              elevation1: {
-                boxShadow: mode === 'light'
-                  ? '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05)'
-                  : '0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.1)',
-              },
-            },
-          },
-          MuiCard: {
-            styleOverrides: {
-              root: { borderRadius: 14, overflow: 'hidden' },
-            },
-          },
-          MuiTooltip: {
-            defaultProps: { arrow: true },
-          },
-        },
-      }),
-    [mode, primaryColor, accentColor]
+  const theme = useMemo(
+    () => buildTheme(mode, brand?.primaryColor || '#ff6b35', brand?.accentColor || '#f7931e'),
+    [mode, brand?.primaryColor, brand?.accentColor]
   );
 
   return (
