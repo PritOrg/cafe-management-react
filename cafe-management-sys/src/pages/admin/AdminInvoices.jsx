@@ -12,7 +12,6 @@ import {
   Chip,
   Button,
   Grid,
-  Alert,
   LinearProgress,
   Dialog,
   DialogTitle,
@@ -25,6 +24,7 @@ import ReceiptLong from '@mui/icons-material/ReceiptLong';
 import Print from '@mui/icons-material/Print';
 import Download from '@mui/icons-material/Download';
 import { invoicesAPI, activityAPI, unwrap } from '../../services/api';
+import ErrorState from '../../components/common/ErrorState';
 import { formatMoney } from '../../utils/formatMoney';
 
 const statusColor = (s) => (s === 'issued' ? 'success' : 'default');
@@ -96,11 +96,11 @@ const AdminInvoices = () => {
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} action={
-          <Button color="inherit" size="small" onClick={fetchInvoices}>Retry</Button>
-        }>
-          {error}
-        </Alert>
+        <ErrorState
+          title="Couldn't load invoices"
+          message={error}
+          onRetry={fetchInvoices}
+        />
       )}
 
       <Card>

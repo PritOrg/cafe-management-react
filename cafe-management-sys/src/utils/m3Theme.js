@@ -20,6 +20,23 @@ const relativeLuminance = (hex) => {
 /** Pick a Material 3 accessible "on" color for a seed color. */
 export const onColor = (hex) => (relativeLuminance(hex) > 0.5 ? '#1D1B20' : '#FFFFFF');
 
+const contrastRatio = (a, b) => {
+  const la = relativeLuminance(a);
+  const lb = relativeLuminance(b);
+  const [hi, lo] = la > lb ? [la, lb] : [lb, la];
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+/** Nudge `color` until it meets `target` contrast vs `bg` (keep bright fills; use for text). */
+const ensureContrast = (color, bg, target = 4.5) => {
+  const onLightBg = relativeLuminance(bg) > 0.5;
+  let c = color;
+  for (let i = 0; i < 24 && contrastRatio(c, bg) < target; i += 1) {
+    c = onLightBg ? darken(c, 0.06) : lighten(c, 0.06);
+  }
+  return c;
+};
+
 /**
  * Build a Material 3-flavoured MUI theme from a brand seed color.
  * Approximation of Material You: tonal surfaces, Roboto, 12–28px shapes,
@@ -41,6 +58,9 @@ export const buildTheme = (mode, primarySeed, accentSeed) => {
   const textPrimary = dark ? '#E6E0E9' : '#1D1B20';
   const textSecondary = dark ? '#CAC4D0' : '#49454F';
   const divider = dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)';
+
+  // Readable brand text on the app background (WCAG AA) while keeping the bright fill.
+  const primaryText = ensureContrast(primary, background);
 
   return createTheme({
     palette: {
@@ -70,6 +90,7 @@ export const buildTheme = (mode, primarySeed, accentSeed) => {
       },
     },
     shape: { borderRadius: 12 },
+    brand: { primary, onPrimary, primaryText, accent },
     typography: {
       fontFamily: '"Outfit Variable", "Outfit", system-ui, -apple-system, "Segoe UI", sans-serif',
       h1: { fontWeight: 700, letterSpacing: '-0.5px' },
@@ -84,9 +105,22 @@ export const buildTheme = (mode, primarySeed, accentSeed) => {
     components: {
       MuiCssBaseline: {
         styleOverrides: {
+          '*, *::before, *::after': { boxSizing: 'border-box' },
           html: { colorScheme: mode, scrollBehavior: 'smooth' },
           body: { WebkitFontSmoothing: 'antialiased', textRendering: 'optimizeLegibility' },
           '::selection': { backgroundColor: alpha(primary, 0.24) },
+          // Visible keyboard focus everywhere (mouse/touch users unaffected).
+          '*:focus-visible': { outline: `2px solid ${primaryText}`, outlineOffset: 2 },
+          // 16px inputs prevent iOS zoom-on-focus.
+          'input, textarea, select': { fontSize: '16px' },
+          '@media (prefers-reduced-motion: reduce)': {
+            '*, *::before, *::after': {
+              animationDuration: '0.01ms !important',
+              animationIterationCount: '1 !important',
+              transitionDuration: '0.01ms !important',
+              scrollBehavior: 'auto !important',
+            },
+          },
         },
       },
       MuiAppBar: {

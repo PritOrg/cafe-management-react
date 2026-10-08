@@ -11,7 +11,6 @@ import {
   Chip,
   Divider,
   CircularProgress,
-  Alert,
 } from '@mui/material';
 import PhoneIcon from '@mui/icons-material/Phone';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
@@ -20,6 +19,7 @@ import ReplayIcon from '@mui/icons-material/Replay';
 import { ordersAPI, unwrap } from '../../services/api';
 import PageHeader from '../../components/common/PageHeader';
 import EmptyState from '../../components/common/EmptyState';
+import ErrorState from '../../components/common/ErrorState';
 import { useToast } from '../../components/ui';
 import CartContext from '../../components/CartContext';
 import { useCustomer } from '../../contexts/CustomerContext';
@@ -187,7 +187,13 @@ const OrderHistoryPage = () => {
         </Stack>
       </Paper>
 
-      {error && <Alert severity="warning" sx={{ mb: 3 }}>{error}</Alert>}
+      {error && (
+        <ErrorState
+          title="Couldn't load your orders"
+          message={error}
+          onRetry={phone ? () => load(phone) : undefined}
+        />
+      )}
 
       {!loading && searched && orders.length === 0 && !error && (
         <EmptyState
