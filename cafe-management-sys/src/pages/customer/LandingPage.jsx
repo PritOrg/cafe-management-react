@@ -14,7 +14,7 @@ import {
 import Grid2 from '@mui/material/Unstable_Grid2';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
-import LocalCafeIcon from '@mui/icons-material/LocalCafe';
+import LocalDiningIcon from '@mui/icons-material/LocalDining';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
 import InsightsIcon from '@mui/icons-material/Insights';
@@ -24,7 +24,7 @@ const FEATURES = [
   { icon: <QrCodeScannerIcon />, title: 'Scan & order', text: 'Guests order from the table in seconds — no app install.' },
   { icon: <RestaurantMenuIcon />, title: 'Live menu', text: 'Per-tenant menu with sizes, modifiers and instant availability.' },
   { icon: <Inventory2Icon />, title: 'Stock aware', text: 'Recipes deduct inventory automatically on every sale.' },
-  { icon: <LocalCafeIcon />, title: 'Kitchen display', text: 'Tickets flow pending → preparing → ready → served.' },
+  { icon: <LocalDiningIcon />, title: 'Kitchen display', text: 'Tickets flow pending → preparing → ready → served.' },
   { icon: <ReceiptLongIcon />, title: 'GST invoices', text: 'Rule-46 tax invoices, PDF for A4 and thermal printers.' },
   { icon: <InsightsIcon />, title: 'Sales insight', text: 'Daily revenue, top items and GST split at a glance.' },
 ];
@@ -33,7 +33,7 @@ const LandingPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { brand } = useBrand();
-  const title = brand?.title || 'Cafe';
+  const title = brand?.title || 'Restaurant';
 
   return (
     <Box sx={{ pb: 6 }}>
@@ -62,8 +62,8 @@ const LandingPage = () => {
             {title}
           </Typography>
           <Typography variant="body1" sx={{ mt: 2, maxWidth: 560, opacity: 0.95 }}>
-            A modern cafe point-of-sale: mobile ordering, kitchen display, live inventory,
-            GST invoices and sales analytics — self-hostable and white-label ready.
+            A modern restaurant point-of-sale: mobile ordering, kitchen display, live inventory,
+            GST invoices and sales analytics — for any café or restaurant, self-hostable and white-label ready.
           </Typography>
           <Stack
             direction={{ xs: 'column', sm: 'row' }}

@@ -14,18 +14,22 @@ import {
 import Grid2 from '@mui/material/Unstable_Grid2';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
+import FavoriteIcon from '@mui/icons-material/Favorite';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import MenuItemCard from '../../components/menu/MenuItemCard';
 import PageHeader from '../../components/common/PageHeader';
 import EmptyState from '../../components/common/EmptyState';
 import useMenuData from '../../hooks/useMenuData';
+import useFavourites from '../../hooks/useFavourites';
 
 const MenuPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryParam = searchParams.get('q') || '';
   const [searchQuery, setSearchQuery] = useState(queryParam);
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [favOnly, setFavOnly] = useState(false);
   const { items, loading } = useMenuData();
+  const { favourites } = useFavourites();
 
   // Navbar search lands here as ?q=; keep the field in sync with it.
   useEffect(() => {
@@ -47,15 +51,17 @@ const MenuPage = () => {
       items.filter(
         (item) =>
           (item.title || '').toLowerCase().includes(searchQuery.toLowerCase()) &&
-          (!categoryFilter || item.category === categoryFilter)
+          (!categoryFilter || item.category === categoryFilter) &&
+          (!favOnly || favourites.has(item._id || item.id))
       ),
-    [items, searchQuery, categoryFilter]
+    [items, searchQuery, categoryFilter, favOnly, favourites]
   );
 
-  const hasFilters = Boolean(categoryFilter || searchQuery);
+  const hasFilters = Boolean(categoryFilter || searchQuery || favOnly);
   const clearAllFilters = () => {
     updateSearch('');
     setCategoryFilter('');
+    setFavOnly(false);
   };
 
   const renderSkeletonCards = () => (
@@ -135,6 +141,13 @@ const MenuPage = () => {
             onClick={() => setCategoryFilter('')}
             color={categoryFilter ? 'default' : 'primary'}
             variant={categoryFilter ? 'outlined' : 'filled'}
+          />
+          <Chip
+            icon={<FavoriteIcon />}
+            label="Favourites"
+            onClick={() => setFavOnly((v) => !v)}
+            color={favOnly ? 'error' : 'default'}
+            variant={favOnly ? 'filled' : 'outlined'}
           />
           {categories.map((category) => {
             const selected = categoryFilter === category;

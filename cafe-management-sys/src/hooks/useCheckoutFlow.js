@@ -1,51 +1,56 @@
 // hooks/useCheckoutFlow.js
 import { useState } from 'react';
 
-export const useCheckoutFlow = (createOrder) => {
+/**
+ * Checkout flow state. Orders are linked to a customer by phone number, so the
+ * "details" step captures name + phone (+ optional table) instead of shipping.
+ */
+export const useCheckoutFlow = (createOrder, initialCustomer = {}) => {
   const [activeStep, setActiveStep] = useState(0);
   const [openDialog, setOpenDialog] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('cash');
-  const [shippingInfo, setShippingInfo] = useState({
-    address: '',
-    city: '',
-    postalCode: '',
-    country: ''
+  const [customerInfo, setCustomerInfo] = useState({
+    name: initialCustomer.name || '',
+    phone: initialCustomer.phone || '',
+    tableNumber: initialCustomer.tableNumber || '',
   });
 
-  const handleNext = () => {
-    setActiveStep((prevActiveStep) => prevActiveStep + 1);
-  };
+  const handleNext = () => setActiveStep((prev) => prev + 1);
+  const handleBack = () => setActiveStep((prev) => prev - 1);
 
-  const handleBack = () => {
-    setActiveStep((prevActiveStep) => prevActiveStep - 1);
-  };
-
-  const handleShippingChange = (e) => {
-    const { name, value } = e.target;
-    setShippingInfo(prev => ({ ...prev, [name]: value }));
+  const handleCustomerChange = (event) => {
+    const { name, value } = event.target;
+    setCustomerInfo((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleCheckout = async () => {
     try {
-      await createOrder(paymentMethod);
+      await createOrder(paymentMethod, {
+        phone: customerInfo.phone,
+        customerName: customerInfo.name,
+        tableNumber: customerInfo.tableNumber,
+      });
       setOpenDialog(true);
     } catch (error) {
       console.error('Checkout failed:', error);
+      throw error;
     }
   };
 
-    return {
-      activeStep,
-      setActiveStep,
-      openDialog,
-      setOpenDialog,
-      paymentMethod,
-      setPaymentMethod,
-      shippingInfo,
-      setShippingInfo,
-      handleNext,
-      handleBack,
-      handleShippingChange,
-      handleCheckout
-    };
+  return {
+    activeStep,
+    setActiveStep,
+    openDialog,
+    setOpenDialog,
+    paymentMethod,
+    setPaymentMethod,
+    customerInfo,
+    setCustomerInfo,
+    handleNext,
+    handleBack,
+    handleCustomerChange,
+    handleCheckout,
   };
+};
+
+export default useCheckoutFlow;

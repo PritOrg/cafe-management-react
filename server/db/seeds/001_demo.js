@@ -2,9 +2,121 @@ const { hashPassword } = require('../../services/authService');
 const { DEFAULTS } = require('../../repositories/settingsRepo');
 
 const MENU = [
-    { title: 'House Latte', sub_title: 'Smooth espresso + steamed milk', category: 'Coffee', price_medium: 120, price_large: 160, preparation_time: 5, calories: 130 },
-    { title: 'Cappuccino', sub_title: 'Classic foam cup', category: 'Coffee', price_medium: 110, price_large: 150, preparation_time: 5, calories: 120 },
-    { title: 'Butter Croissant', sub_title: 'Flaky, baked daily', category: 'Pastries', price_medium: 90, price_large: 90, preparation_time: 2, calories: 260 },
+    {
+        title: 'Muffins',
+        sub_title: 'Crispy baked and delicious muffin',
+        category: 'Baked',
+        price_medium: 150,
+        price_large: 250,
+        image_url: 'https://storage.googleapis.com/cafe-management-2c495.appspot.com/menu-img/1719634315555_baked-muffins.jpg',
+        calories: 49,
+        customization_options: ['cream', 'choco'],
+        preparation_time: 4,
+        rating: 4.2,
+        tags: ['new', 'trending'],
+        allergens: ['nothing'],
+        order_count: 1,
+    },
+    {
+        title: 'Vidhi Special',
+        sub_title: 'Very special house frappe',
+        category: 'Caffeine',
+        price_medium: 250,
+        price_large: 500,
+        image_url: 'https://storage.googleapis.com/cafe-management-2c495.appspot.com/menu-img/1726073770018_Frappuccinos.jpg',
+        calories: 450,
+        customization_options: ['Dark Chocolate', 'Cream', 'Ice Cream', 'Sprinkles', 'Caramel'],
+        preparation_time: 8,
+        rating: 4.7,
+        tags: ['chilled', 'trending'],
+        allergens: ['Milk'],
+        order_count: 5,
+    },
+    {
+        title: 'Apple Pie',
+        sub_title: 'Pie of apple pulp',
+        category: 'PIE',
+        price_medium: 450,
+        price_large: 600,
+        image_url: 'https://storage.googleapis.com/cafe-management-2c495.appspot.com/menu-img/1723052024811_PiesApple.jpg',
+        calories: 12,
+        customization_options: ['NAHI', 'PATA'],
+        preparation_time: 12,
+        rating: 4.6,
+        tags: ['no', 'tags', '#rightnow'],
+        allergens: ['APPLE'],
+    },
+    {
+        title: 'Checking',
+        sub_title: 'Nice one',
+        category: 'Lunch',
+        price_medium: 20,
+        price_large: 54,
+        image_url: 'https://storage.googleapis.com/cafe-management-2c495.appspot.com/menu-img/1748247454499_sandwich.jpg',
+        calories: 5,
+        customization_options: ['extra shot', 'skim milk', 'sugar free'],
+        preparation_time: 5,
+        rating: 4.5,
+        tags: ['vegan', 'popular'],
+        allergens: ['Soybeans'],
+    },
+    {
+        title: 'Frappuccino',
+        sub_title: 'Creamy, cold and refreshing.',
+        category: 'Drink',
+        price_medium: 250,
+        price_large: 375,
+        image_url: 'https://storage.googleapis.com/cafe-management-2c495.appspot.com/menu-img/1719634557633_frappacuccino.jpg',
+        calories: 150,
+        customization_options: ['cream', 'ice'],
+        preparation_time: 5,
+        rating: 4.4,
+        tags: ['Creamy', 'Iced', 'Refreshing', 'Blended', 'Sweet', 'Flavorful'],
+        allergens: ['nothing'],
+    },
+    {
+        title: 'Strawberry Lemonade',
+        sub_title: 'Strawberry with a fresh lemon twist',
+        category: 'Beverages',
+        price_medium: 200,
+        price_large: 350,
+        image_url: 'https://storage.googleapis.com/cafe-management-2c495.appspot.com/menu-img/1719907816998_strawberry-lemonade.jpg',
+        calories: 89,
+        customization_options: ['strawberry', 'cream', 'lemon'],
+        preparation_time: 10,
+        rating: 4.3,
+        tags: ['drinks', 'latest', 'trending'],
+        allergens: ['strawberry'],
+        order_count: 1,
+    },
+    {
+        title: 'H',
+        sub_title: 'House cappuccino',
+        category: 'Coffee',
+        price_medium: 45,
+        price_large: 120,
+        image_url: 'https://storage.googleapis.com/cafe-management-2c495.appspot.com/menu-img/1748334387104_cappuccino.jpg',
+        calories: 1,
+        customization_options: ['strong', 'mild', 'extra foam'],
+        preparation_time: 2,
+        rating: 4.1,
+        tags: ['classic', 'hot'],
+        allergens: ['Milk'],
+    },
+    {
+        title: 'Cappuccino',
+        sub_title: 'Classic foam cup',
+        category: 'Coffee',
+        price_medium: 45,
+        price_large: 70,
+        image_url: 'https://storage.googleapis.com/cafe-management-2c495.appspot.com/menu-img/1719647847864_cappuccino.jpg',
+        calories: 90,
+        customization_options: ['CREAM', 'MOCHA'],
+        preparation_time: 5,
+        rating: 4.8,
+        tags: ['TRENDING'],
+        allergens: ['nothing'],
+    },
 ];
 
 const TENANTS = [
@@ -38,9 +150,24 @@ exports.seed = async (knex) => {
             });
         }
 
-        const menuCount = await knex('menu_items').where({ tenant_id: tenant.id }).count('* as c');
-        if (Number(menuCount[0].c) === 0) {
-            await knex('menu_items').insert(MENU.map((m) => ({ ...m, tenant_id: tenant.id })));
+        // Idempotent: insert only menu items whose title isn't already present,
+        // so re-seeding an existing DB adds new demo items without duplicating.
+        const existingMenu = await knex('menu_items')
+            .where({ tenant_id: tenant.id })
+            .select('id', 'title', 'image_url');
+        const existingTitles = new Set(existingMenu.map((m) => m.title));
+        const missingMenu = MENU.filter((m) => !existingTitles.has(m.title))
+            .map((m) => ({ ...m, tenant_id: tenant.id }));
+        if (missingMenu.length) {
+            await knex('menu_items').insert(missingMenu);
+        }
+
+        // Backfill images for older demo items that shipped without one.
+        for (const row of existingMenu) {
+            const match = MENU.find((m) => m.title === row.title);
+            if (match?.image_url && !row.image_url) {
+                await knex('menu_items').where({ id: row.id }).update({ image_url: match.image_url });
+            }
         }
 
         const tableCount = await knex('tables').where({ tenant_id: tenant.id }).count('* as c');

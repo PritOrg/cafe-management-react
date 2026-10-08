@@ -1,11 +1,4 @@
-import React, {
-  memo,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import React, { memo, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
@@ -21,6 +14,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
+import Chip from '@mui/material/Chip';
 import InputBase from '@mui/material/InputBase';
 import { styled, alpha } from '@mui/material/styles';
 
@@ -33,14 +27,20 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import LogoutIcon from '@mui/icons-material/Logout';
-import LocalCafeIcon from '@mui/icons-material/LocalCafe';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import TableRestaurantIcon from '@mui/icons-material/TableRestaurant';
 
 import CartContext from '../CartContext';
 import { useBrand } from '../../contexts/BrandContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useCustomer } from '../../contexts/CustomerContext';
 import { useThemeContext } from '../../contexts/ThemeContext';
 import { CUSTOMER_TEXT_NAV } from '../../constants/navigation';
 import { prefetchMenu } from '../../hooks/useMenuData';
+
+// Loaded only when the guest taps "Sign in" — keeps Dialog/TextField off the
+// initial bundle.
+const CustomerSignInDialog = React.lazy(() => import('../common/CustomerSignInDialog'));
 
 const SearchForm = styled('form')(({ theme }) => ({
   display: 'flex',
@@ -52,7 +52,7 @@ const SearchForm = styled('form')(({ theme }) => ({
   px: 2,
   py: 0.5,
   borderRadius: 999,
-  backgroundColor: alpha(theme.palette.text.primary, 0.06),
+  backgroundColor: theme.palette.action.hover,
   transition: theme.transitions.create(['background-color', 'box-shadow']),
   '&:focus-within': {
     backgroundColor: alpha(theme.palette.text.primary, 0.09),
@@ -66,7 +66,7 @@ const NavButton = styled(Button, { shouldForwardProp: (prop) => prop !== 'active
     fontWeight: active ? 700 : 500,
     px: 1.5,
     minWidth: 0,
-    borderRadius: 8,
+    borderRadius: 999,
     '&:hover': { backgroundColor: alpha(theme.palette.primary.main, 0.08) },
   })
 );
@@ -86,54 +86,58 @@ const Navbar = () => {
   const [searchParams] = useSearchParams();
   const { brand } = useBrand();
   const { isAuthenticated, user, isStaff, logout } = useAuth();
+  const { phone, name: customerName, tableNumber, isKnown, clearCustomer, setTable } = useCustomer();
   const { isDarkMode, toggleMode } = useThemeContext();
   const { cartCount = 0 } = useContext(CartContext) || {};
 
   const [query, setQuery] = useState('');
   const [mobileSearch, setMobileSearch] = useState(false);
   const [accountAnchor, setAccountAnchor] = useState(null);
+  const [signInOpen, setSignInOpen] = useState(false);
 
-  const brandTitle = brand?.title || 'Cafe';
+  const brandTitle = brand?.title || 'Restaurant';
 
-  // Keep the search box in sync with `?q=` (e.g. after landing on /menu).
   useEffect(() => {
     setQuery(searchParams.get('q') || '');
   }, [searchParams]);
 
-  const submitSearch = useCallback(
-    (event) => {
-      event.preventDefault();
-      const q = query.trim();
-      navigate(q ? `/menu?q=${encodeURIComponent(q)}` : '/menu');
-      setMobileSearch(false);
-    },
-    [navigate, query]
-  );
+  // Table QR: any `?table=` in the URL becomes the guest's table.
+  useEffect(() => {
+    const table = searchParams.get('table');
+    if (table) setTable(table);
+  }, [searchParams, setTable]);
 
-  const onSearchIntent = useCallback(() => {
-    prefetchMenu().catch(() => {});
-  }, []);
+  const submitSearch = useCallback((event) => {
+    event.preventDefault();
+    const q = query.trim();
+    navigate(q ? `/menu?q=${encodeURIComponent(q)}` : '/menu');
+    setMobileSearch(false);
+  }, [navigate, query]);
 
-  const handleAccount = useCallback(
-    (event) => {
-      if (isAuthenticated) setAccountAnchor(event.currentTarget);
-      else navigate('/login-register');
-    },
-    [isAuthenticated, navigate]
-  );
+  const onSearchIntent = useCallback(() => { prefetchMenu().catch(() => {}); }, []);
+
+  const handleAccount = useCallback((event) => {
+    if (isAuthenticated || isKnown) setAccountAnchor(event.currentTarget);
+    else setSignInOpen(true);
+  }, [isAuthenticated, isKnown]);
 
   const handleAccountClose = useCallback(() => setAccountAnchor(null), []);
 
-  const handleLogout = useCallback(() => {
+  const handleStaffLogout = useCallback(() => {
     setAccountAnchor(null);
     logout();
     navigate('/');
   }, [logout, navigate]);
 
+  const handleCustomerSignOut = useCallback(() => {
+    setAccountAnchor(null);
+    clearCustomer();
+  }, [clearCustomer]);
+
   const initial = useMemo(() => {
-    const source = user?.firstName || user?.email || 'A';
+    const source = isAuthenticated ? (user?.firstName || user?.email || 'A') : (customerName || phone || 'G');
     return String(source).charAt(0).toUpperCase();
-  }, [user]);
+  }, [isAuthenticated, user, customerName, phone]);
 
   const searchField = (
     <SearchForm onSubmit={submitSearch} role="search">
@@ -162,30 +166,15 @@ const Navbar = () => {
         ) : (
           <>
             <BrandLink to="/" aria-label={`${brandTitle} home`}>
-              <Avatar
-                sx={{
-                  bgcolor: 'primary.main',
-                  width: { xs: 34, md: 38 },
-                  height: { xs: 34, md: 38 },
-                  display: { xs: 'flex', md: 'flex' },
-                }}
-              >
-                <LocalCafeIcon fontSize="small" />
+              <Avatar sx={{ bgcolor: 'primary.main', width: { xs: 34, md: 38 }, height: { xs: 34, md: 38 } }}>
+                <StorefrontIcon fontSize="small" />
               </Avatar>
-              <Typography
-                variant="h6"
-                noWrap
-                sx={{ fontWeight: 800, color: 'primary.main', fontSize: { xs: '1.05rem', md: '1.25rem' } }}
-              >
+              <Typography variant="h6" noWrap sx={{ fontWeight: 800, color: 'primary.main', fontSize: { xs: '1.05rem', md: '1.25rem' } }}>
                 {brandTitle}
               </Typography>
             </BrandLink>
 
-            {/* Desktop links */}
-            <Box
-              component="nav"
-              sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', ml: 2, gap: 0.5 }}
-            >
+            <Box component="nav" sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', ml: 2, gap: 0.5 }}>
               {CUSTOMER_TEXT_NAV.map((item) => (
                 <NavButton
                   key={item.key}
@@ -201,18 +190,21 @@ const Navbar = () => {
 
             <Box sx={{ flexGrow: 1 }} />
 
-            {/* Desktop search */}
+            {tableNumber && (
+              <Chip
+                icon={<TableRestaurantIcon />}
+                label={`Table ${tableNumber}`}
+                size="small"
+                sx={{ display: { xs: 'none', sm: 'flex' }, mr: 0.5 }}
+              />
+            )}
+
             <Box sx={{ display: { xs: 'none', md: 'flex' }, flex: 1, justifyContent: 'flex-end' }}>
               {searchField}
             </Box>
 
-            {/* Mobile search toggle */}
             <Tooltip title="Search">
-              <IconButton
-                onClick={() => setMobileSearch(true)}
-                aria-label="Open search"
-                sx={{ display: { xs: 'inline-flex', md: 'none' } }}
-              >
+              <IconButton onClick={() => setMobileSearch(true)} aria-label="Open search" sx={{ display: { xs: 'inline-flex', md: 'none' } }}>
                 <SearchIcon />
               </IconButton>
             </Tooltip>
@@ -224,21 +216,16 @@ const Navbar = () => {
             </Tooltip>
 
             <Tooltip title="Cart">
-              <IconButton
-                component={RouterLink}
-                to="/cart"
-                aria-label={`Cart, ${cartCount} items`}
-                onMouseEnter={onSearchIntent}
-              >
+              <IconButton component={RouterLink} to="/cart" aria-label={`Cart, ${cartCount} items`} onMouseEnter={onSearchIntent}>
                 <Badge badgeContent={cartCount} color="primary" max={99} overlap="circular">
                   <ShoppingCartIcon />
                 </Badge>
               </IconButton>
             </Tooltip>
 
-            <Tooltip title={isAuthenticated ? 'Account' : 'Sign in'}>
+            <Tooltip title={isAuthenticated || isKnown ? 'Account' : 'Sign in'}>
               <IconButton onClick={handleAccount} aria-label="Account" edge="end">
-                {isAuthenticated ? (
+                {isAuthenticated || isKnown ? (
                   <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: '0.9rem' }}>
                     {initial}
                   </Avatar>
@@ -257,18 +244,20 @@ const Navbar = () => {
         onClose={handleAccountClose}
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-        PaperProps={{ sx: { minWidth: 220, mt: 1, borderRadius: 2 } }}
+        PaperProps={{ sx: { minWidth: 240, mt: 1, borderRadius: 3 } }}
       >
         <Box sx={{ px: 2, py: 1.25 }}>
           <Typography variant="subtitle2" noWrap sx={{ fontWeight: 700 }}>
-            {user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user?.email || 'Account'}
+            {isAuthenticated
+              ? (user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user?.email || 'Account')
+              : (customerName || 'Guest')}
           </Typography>
           <Typography variant="caption" color="text.secondary" noWrap>
-            {user?.role === 'admin' ? 'Administrator' : isAuthenticated ? 'Staff' : ''}
+            {isAuthenticated ? (user?.role === 'admin' ? 'Administrator' : 'Staff') : phone}
           </Typography>
         </Box>
         <Divider />
-        {isStaff() && (
+        {isAuthenticated && isStaff() && (
           <MenuItem component={RouterLink} to="/admin" onClick={handleAccountClose}>
             <ListItemIcon><DashboardIcon fontSize="small" /></ListItemIcon>
             <ListItemText>Dashboard</ListItemText>
@@ -279,11 +268,20 @@ const Navbar = () => {
           <ListItemText>My Orders</ListItemText>
         </MenuItem>
         <Divider />
-        <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
+        <MenuItem
+          onClick={isAuthenticated ? handleStaffLogout : handleCustomerSignOut}
+          sx={{ color: 'error.main' }}
+        >
           <ListItemIcon><LogoutIcon fontSize="small" color="error" /></ListItemIcon>
-          <ListItemText>Sign out</ListItemText>
+          <ListItemText>{isAuthenticated ? 'Sign out' : 'Sign out'}</ListItemText>
         </MenuItem>
       </Menu>
+
+      {signInOpen && (
+        <React.Suspense fallback={null}>
+          <CustomerSignInDialog open onClose={() => setSignInOpen(false)} />
+        </React.Suspense>
+      )}
     </AppBar>
   );
 };
