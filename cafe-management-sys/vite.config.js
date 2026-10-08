@@ -4,9 +4,14 @@ import react from '@vitejs/plugin-react';
 // WSL/D: the optimizer hangs when writing into the Windows mount and when
 // bundling the full `@mui/icons-material` barrel (thousands of icons). Icons are
 // imported as deep paths (one file each) so only the ~200 used icons are bundled.
-// Discovery stays ON: `@mui/icons-material/*.js` and MUI's `@mui/system` internals
-// are CommonJS on disk, so they MUST be pre-bundled for ESM interop (otherwise
-// the browser gets "does not provide an export named ..." for darken/prop-types).
+// Discovery stays ON so MUI's CommonJS deep modules get ESM interop.
+//
+// IMPORTANT: `@mui/icons-material/<Icon>.js` is CommonJS and rolldown's interop
+// exposes it as `export default require_X()` — the *namespace* object, so
+// `import Home from '@mui/icons-material/Home'` yields an object and React throws
+// "Element type is invalid ... got: object". We alias icon subpaths to MUI's real
+// ESM build (`esm/Home.js` -> `export default createSvgIcon(...)`), which resolves
+// correctly. (@mui/material deep paths are already ESM, so no alias needed.)
 const OPTIMIZE_DEPS = [
   'react',
   'react-dom',
@@ -33,6 +38,14 @@ export default defineConfig({
   plugins: [react()],
   // Cache deps on the Linux-native fs (/tmp) instead of the Windows mount.
   cacheDir: process.env.VITE_CACHE_DIR || '/tmp/cafe-vite-cache',
+  resolve: {
+    alias: [
+      {
+        find: /^@mui\/icons-material\/(?!esm\/)(.*)$/,
+        replacement: '@mui/icons-material/esm/$1',
+      },
+    ],
+  },
   optimizeDeps: {
     include: OPTIMIZE_DEPS,
   },
