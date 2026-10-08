@@ -27,6 +27,7 @@ import Print from '@mui/icons-material/Print';
 import Download from '@mui/icons-material/Download';
 import { invoicesAPI, activityAPI, unwrap } from '../../services/api';
 import ErrorState from '../../components/common/ErrorState';
+import useOpsEvents from '../../hooks/useOpsEvents';
 import { formatMoney } from '../../utils/formatMoney';
 
 const statusColor = (s) => (s === 'issued' ? 'success' : 'default');
@@ -66,6 +67,9 @@ const AdminInvoices = () => {
   useEffect(() => {
     fetchInvoices();
   }, [fetchInvoices]);
+
+  // Realtime: new bills appear immediately (auto-issued on checkout).
+  useOpsEvents({ 'invoice:issued': fetchInvoices, 'order:created': fetchInvoices });
 
   const openInvoice = async (inv) => {
     setSelected(inv);
