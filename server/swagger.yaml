@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
-  title: Developer's Paradise Cafe API
-  description: API documentation for cafe management backend.
+  title: Restaurant POS API
+  description: API documentation for the restaurant/café management backend.
   version: 1.0.0
 
 servers:
