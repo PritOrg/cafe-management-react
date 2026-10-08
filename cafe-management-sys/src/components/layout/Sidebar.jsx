@@ -1,47 +1,40 @@
-import React from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Box, Drawer, List, Typography, Avatar, ListItem, ListItemButton, ListItemIcon, ListItemText, Badge, Chip, IconButton, useTheme, alpha } from '@mui/material';
-import { styled } from '@mui/material/styles';
-import Dashboard from '@mui/icons-material/Dashboard';
-import ShoppingCart from '@mui/icons-material/ShoppingCart';
-import Restaurant from '@mui/icons-material/Restaurant';
-import People from '@mui/icons-material/People';
-import AttachMoney from '@mui/icons-material/AttachMoney';
-import Inventory from '@mui/icons-material/Inventory';
-import Analytics from '@mui/icons-material/Analytics';
-import Settings from '@mui/icons-material/Settings';
-import Logout from '@mui/icons-material/Logout';
+import Box from '@mui/material/Box';
+import Drawer from '@mui/material/Drawer';
+import List from '@mui/material/List';
+import Typography from '@mui/material/Typography';
+import Avatar from '@mui/material/Avatar';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Badge from '@mui/material/Badge';
+import Chip from '@mui/material/Chip';
+import IconButton from '@mui/material/IconButton';
+import { styled, alpha } from '@mui/material/styles';
 import Coffee from '@mui/icons-material/Coffee';
 import CloseIcon from '@mui/icons-material/Close';
-import Business from '@mui/icons-material/Business';
+import Logout from '@mui/icons-material/Logout';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBrand } from '../../contexts/BrandContext';
+import { adminNavItems, isAdminNavActive } from '../../constants/navigation';
 import { inventoryAPI, unwrap } from '../../services/api';
 
-const drawerWidth = 280;
+const DRAWER_WIDTH = 280;
+const RAIL_WIDTH = 72;
 
 const StyledDrawer = styled(Drawer)(({ theme }) => ({
-  width: drawerWidth,
+  width: DRAWER_WIDTH,
   flexShrink: 0,
   '& .MuiDrawer-paper': {
-    width: drawerWidth,
+    width: DRAWER_WIDTH,
     boxSizing: 'border-box',
-    background: theme.palette.mode === 'dark' 
-      ? 'linear-gradient(145deg, #1a1a1a 0%, #2d2d2d 100%)' 
-      : 'linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%)',
+    background: theme.palette.mode === 'dark'
+      ? 'linear-gradient(145deg, #1a1a1a 0%, #2d2d2d 100%)'
+      : 'linear-gradient(145deg, #ffffff 0%, #f1f3f6 100%)',
     borderRight: `1px solid ${theme.palette.divider}`,
-    transition: theme.transitions.create(['width', 'margin'], {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
     overflowX: 'hidden',
-    '&::-webkit-scrollbar': {
-      width: '6px',
-    },
-    '&::-webkit-scrollbar-thumb': {
-      backgroundColor: alpha(theme.palette.primary.main, 0.2),
-      borderRadius: '3px',
-    },
   },
 }));
 
@@ -51,379 +44,196 @@ const LogoContainer = styled(Box)(({ theme }) => ({
   padding: theme.spacing(2, 3),
   minHeight: 70,
   background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-  color: 'white',
-  position: 'relative',
-  overflow: 'hidden',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: -100,
-    width: 50,
-    height: '100%',
-    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
-    animation: 'shimmer 3s infinite linear',
-    transform: 'skewX(-25deg)',
-  },
-  '@keyframes shimmer': {
-    '0%': {
-      left: -100,
-    },
-    '100%': {
-      left: '100%',
-    },
-  },
-  '& .MuiTypography-root': {
-    textShadow: '0 2px 4px rgba(0,0,0,0.2)',
-  },
-  '& .logo-icon': {
-    transition: 'transform 0.3s ease-in-out',
-    '&:hover': {
-      transform: 'rotate(10deg) scale(1.1)',
-    },
-  },
+  color: '#fff',
+  '& .MuiTypography-root': { textShadow: '0 2px 4px rgba(0,0,0,0.2)' },
 }));
 
 const StyledListItemButton = styled(ListItemButton)(({ theme, active }) => ({
   margin: theme.spacing(0.5, 1),
-  borderRadius: theme.shape.borderRadius * 1.5,
+  borderRadius: theme.shape.borderRadius,
   padding: theme.spacing(1, 2),
   color: active ? theme.palette.primary.main : theme.palette.text.primary,
   backgroundColor: active ? alpha(theme.palette.primary.main, 0.1) : 'transparent',
-  position: 'relative',
-  transition: 'all 0.2s ease-in-out',
-  '&::before': active && {
-    content: '""',
-    position: 'absolute',
-    left: -theme.spacing(1),
-    top: '50%',
-    transform: 'translateY(-50%)',
-    height: '60%',
-    width: 4,
-    backgroundColor: theme.palette.primary.main,
-    borderRadius: theme.shape.borderRadius,
-  },
   '&:hover': {
-    backgroundColor: active 
-      ? alpha(theme.palette.primary.main, 0.15) 
-      : alpha(theme.palette.action.hover, 0.8),
-    transform: 'translateX(4px)',
+    backgroundColor: active
+      ? alpha(theme.palette.primary.main, 0.15)
+      : theme.palette.action.hover,
   },
   '& .MuiListItemIcon-root': {
-    color: active ? theme.palette.primary.main : theme.palette.text.primary,
-    transition: 'transform 0.2s ease-in-out',
+    color: active ? theme.palette.primary.main : theme.palette.text.secondary,
+    minWidth: 40,
   },
-  '&:hover .MuiListItemIcon-root': {
-    transform: 'scale(1.1)',
-  },
-  '& .MuiListItemText-primary': {
-    fontWeight: active ? 600 : 400,
-    transition: 'color 0.2s ease-in-out',
-  },
-  '&:hover .MuiListItemText-primary': {
-    color: theme.palette.primary.main,
-  },
+  '& .MuiListItemText-primary': { fontWeight: active ? 700 : 500 },
 }));
 
-const baseSidebarItems = [
-  { title: 'Dashboard', href: '/admin', icon: Dashboard, badge: null },
-  { title: 'Orders', href: '/admin/orders', icon: ShoppingCart, badge: null },
-  { title: 'Menu Items', href: '/admin/menu', icon: Restaurant, badge: null },
-  { title: 'Staff', href: '/admin/staff', icon: People, badge: null },
-  { title: 'Revenue', href: '/admin/revenue', icon: AttachMoney, badge: null },
-  { title: 'Inventory', href: '/admin/inventory', icon: Inventory, badge: null },
-  { title: 'Analytics', href: '/admin/analytics', icon: Analytics, badge: null },
-  { title: 'Settings', href: '/admin/settings', icon: Settings, badge: null },
-  { title: 'Customers', href: '/admin/customers', icon: People, badge: null },
-  { title: 'Kitchen', href: '/admin/kitchen', icon: Restaurant, badge: null },
-  { title: 'Activity', href: '/admin/activity', icon: Analytics, badge: null },
-  { title: 'Invoices', href: '/admin/invoices', icon: AttachMoney, badge: null },
-];
-
-const platformItem = { title: 'Tenants', href: '/admin/tenants', icon: Business, badge: null };
-
-const Sidebar = ({ mobileOpen, handleDrawerToggle, rail = false }) => {
-  const theme = useTheme();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { user, logout, isPlatformAdmin } = useAuth();
-  const { brand } = useBrand();
-  const [lowStockCount, setLowStockCount] = React.useState(0);
-
-  React.useEffect(() => {
+const useLowStockCount = () => {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
     let cancelled = false;
-    inventoryAPI.list({ lowStock: 'true' })
+    inventoryAPI
+      .list({ lowStock: 'true' })
       .then((body) => {
         if (cancelled) return;
         const data = unwrap(body) || {};
-        setLowStockCount((data.items || []).length);
+        setCount((data.items || []).length);
       })
-      .catch(() => {
-        if (!cancelled) setLowStockCount(0);
-      });
+      .catch(() => { if (!cancelled) setCount(0); });
     return () => { cancelled = true; };
   }, []);
+  return count;
+};
 
-  const navItems = React.useMemo(() => baseSidebarItems.map((item) => {
-    if (item.href === '/admin/inventory' && lowStockCount > 0) {
-      return { ...item, badge: String(lowStockCount) };
-    }
-    return item;
-  }), [lowStockCount]);
+const Sidebar = ({ mobileOpen, handleDrawerToggle, rail = false }) => {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const { user, logout, isPlatformAdmin } = useAuth();
+  const { brand } = useBrand();
+  const lowStockCount = useLowStockCount();
 
-  const sidebarItems = isPlatformAdmin() ? [...navItems, platformItem] : navItems;
+  const items = useMemo(() => adminNavItems(isPlatformAdmin()), [isPlatformAdmin, user]);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       await logout();
       navigate('/login-register');
     } catch (error) {
       console.error('Logout error:', error);
     }
-  };
+  }, [logout, navigate]);
 
   const drawer = (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <LogoContainer>
         <Box
-            className="logo-icon"
-            sx={{
-              width: 40,
-              height: 40,
-              borderRadius: 2,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              mr: 2,
-              backdropFilter: 'blur(4px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            }}
-          >
-            <Coffee sx={{ color: 'white', fontSize: 24 }} />
-          </Box>
-        <Box>
-          <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 'bold' }}>
+          sx={{
+            width: 40,
+            height: 40,
+            borderRadius: 2,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+            mr: 2,
+          }}
+        >
+          <Coffee sx={{ color: '#fff', fontSize: 24 }} />
+        </Box>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="h6" noWrap sx={{ fontWeight: 700 }}>
             {brand?.title || 'Cafe'}
           </Typography>
-          <Typography variant="body2" sx={{ opacity: 0.8 }}>
+          <Typography variant="body2" sx={{ opacity: 0.85 }}>
             Admin Panel
           </Typography>
         </Box>
       </LogoContainer>
 
-      {/* Admin Profile Section */}
-      <Box 
-        sx={{ 
-          p: 3, 
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          background: theme.palette.mode === 'dark'
-            ? 'linear-gradient(to bottom, rgba(255,255,255,0.05), transparent)'
-            : 'linear-gradient(to bottom, rgba(0,0,0,0.02), transparent)',
-        }}
-      >
-        <Box 
-          sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 2,
-            position: 'relative',
-            '&::after': {
-              content: '""',
-              position: 'absolute',
-              bottom: -theme.spacing(3),
-              left: 0,
-              right: 0,
-              height: 1,
-              background: `linear-gradient(to right, ${theme.palette.divider}, transparent)`,
-            },
-          }}
-        >
-          <Avatar
-            sx={{
-              width: 48,
-              height: 48,
-              bgcolor: 'primary.main',
-              border: '2px solid',
-              borderColor: 'primary.light',
-              boxShadow: `0 0 0 4px ${alpha(theme.palette.primary.main, 0.1)}`,
-              transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-              '&:hover': {
-                transform: 'scale(1.1)',
-                boxShadow: `0 0 0 6px ${alpha(theme.palette.primary.main, 0.15)}`,
-              },
-            }}
-          >
+      <Box sx={{ p: 2.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Avatar sx={{ width: 44, height: 44, bgcolor: 'primary.main' }}>
             {user?.firstName ? user.firstName.charAt(0).toUpperCase() : 'A'}
-            {user?.lastName ? user.lastName.charAt(0).toUpperCase() : 'D'}
           </Avatar>
-          <Box sx={{ flex: 1 }}>
-            <Typography 
-              variant="subtitle1" 
-              sx={{ 
-                fontWeight: 600, 
-                color: 'text.primary',
-                mb: 0.5,
-                transition: 'color 0.2s ease-in-out',
-                '&:hover': {
-                  color: 'primary.main',
-                },
-              }}
-            >
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography variant="subtitle2" noWrap sx={{ fontWeight: 700 }}>
               {user?.firstName && user?.lastName
                 ? `${user.firstName} ${user.lastName}`
                 : user?.email || 'Admin User'}
             </Typography>
-            <Chip 
-              label={user?.role === 'admin' ? 'Administrator' : 'Staff Member'} 
-              size="small" 
-              color="primary" 
+            <Chip
+              label={user?.role === 'admin' ? 'Administrator' : 'Staff Member'}
+              size="small"
+              color="primary"
               variant="outlined"
-              sx={{ 
-                height: 24,
-                borderRadius: '12px',
-                backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                borderColor: alpha(theme.palette.primary.main, 0.2),
-                '& .MuiChip-label': {
-                  px: 1,
-                  fontWeight: 500,
-                },
-                transition: 'all 0.2s ease-in-out',
-                '&:hover': {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.15),
-                  borderColor: alpha(theme.palette.primary.main, 0.3),
-                  transform: 'translateY(-1px)',
-                },
-              }}
+              sx={{ height: 22, mt: 0.5 }}
             />
           </Box>
         </Box>
       </Box>
 
-      {/* Navigation Items */}
-      <List sx={{ px: 1, py: 2, flex: 1, overflowY: 'auto' }}>
-        {sidebarItems.map((item) => {
-          const isActive = location.pathname === item.href;
+      <List sx={{ px: 1, py: 1.5, flex: 1, overflowY: 'auto' }}>
+        {items.map((item) => {
+          const active = isAdminNavActive(item, pathname);
           const Icon = item.icon;
-          
+          const badge = item.badge === 'lowStock' && lowStockCount > 0 ? String(lowStockCount) : null;
           return (
-            <ListItem key={item.href} disablePadding sx={{ mb: 0.5 }}>
-              <StyledListItemButton
-                active={isActive ? 1 : 0}
-                onClick={() => navigate(item.href)}
-              >
-                <ListItemIcon>
-                  <Icon />
-                </ListItemIcon>
-                <ListItemText 
-                  primary={item.title} 
-                  primaryTypographyProps={{ 
-                    fontWeight: isActive ? 600 : 400,
-                  }}
-                />
-                {item.badge && (
-                  <Badge 
-                    badgeContent={item.badge} 
-                    color={item.title === 'Orders' ? 'error' : 'warning'}
-                    sx={{ '& .MuiBadge-badge': { fontWeight: 600 } }}
-                  />
-                )}
+            <ListItem key={item.href} disablePadding sx={{ mb: 0.25 }}>
+              <StyledListItemButton active={active ? 1 : 0} onClick={() => navigate(item.href)}>
+                <ListItemIcon><Icon /></ListItemIcon>
+                <ListItemText primary={item.title} />
+                {badge && <Badge badgeContent={badge} color="warning" />}
               </StyledListItemButton>
             </ListItem>
           );
         })}
       </List>
-      
-      {/* Logout Button */}
-      <Box sx={{ p: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
+
+      <Box sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
         <ListItemButton
           onClick={handleLogout}
           sx={{
             borderRadius: 2,
-            color: theme.palette.error.main,
-            '&:hover': {
-              backgroundColor: alpha(theme.palette.error.main, 0.1),
-            },
+            color: 'error.main',
+            '&:hover': { backgroundColor: alpha('#f44336', 0.1) },
           }}
         >
-          <ListItemIcon sx={{ color: theme.palette.error.main }}>
-            <Logout />
-          </ListItemIcon>
-          <ListItemText 
-            primary="Sign Out" 
-            primaryTypographyProps={{ fontWeight: 500 }}
-          />
+          <ListItemIcon sx={{ color: 'error.main' }}><Logout /></ListItemIcon>
+          <ListItemText primary="Sign Out" />
         </ListItemButton>
       </Box>
     </Box>
   );
 
   return (
-    <Box
-      component="nav"
-      sx={{ width: { lg: rail ? 72 : drawerWidth, md: rail ? 72 : undefined }, flexShrink: { md: rail ? 0 : undefined, lg: 0 } }}
-    >
-      {/* Tablet icon mini-rail (sm–lg) */}
+    <Box component="nav" sx={{ width: { lg: rail ? RAIL_WIDTH : DRAWER_WIDTH }, flexShrink: { lg: 0 } }}>
       {rail && (
         <Drawer
           variant="permanent"
+          open
           sx={{
             display: { xs: 'none', sm: 'block', lg: 'none' },
-            width: 72,
-            '& .MuiDrawer-paper': {
-              width: 72,
-              overflowX: 'hidden',
-              borderRight: `1px solid ${theme.palette.divider}`,
-            },
+            width: RAIL_WIDTH,
+            '& .MuiDrawer-paper': { width: RAIL_WIDTH, overflowX: 'hidden', borderRight: '1px solid', borderColor: 'divider' },
           }}
-          open
         >
-          <List sx={{ pt: 1 }}>
-            {sidebarItems.map((item) => (
-              <ListItemButton
-                key={item.href}
-                onClick={() => navigate(item.href)}
-                selected={location.pathname === item.href}
-                sx={{ justifyContent: 'center', minHeight: 48, mx: 1, borderRadius: 2 }}
-              >
-                <ListItemIcon sx={{ minWidth: 0 }}>{item.icon}</ListItemIcon>
-              </ListItemButton>
-            ))}
+          <List sx={{ pt: 9 }}>
+            {items.map((item) => {
+              const Icon = item.icon;
+              return (
+                <ListItemButton
+                  key={item.href}
+                  onClick={() => navigate(item.href)}
+                  selected={isAdminNavActive(item, pathname)}
+                  aria-label={item.title}
+                  sx={{ justifyContent: 'center', minHeight: 48, mx: 1, borderRadius: 2 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 0, justifyContent: 'center' }}><Icon /></ListItemIcon>
+                </ListItemButton>
+              );
+            })}
           </List>
         </Drawer>
       )}
 
-      {/* Mobile drawer */}
       <StyledDrawer
         variant="temporary"
         open={mobileOpen}
         onClose={handleDrawerToggle}
         ModalProps={{ keepMounted: true }}
-        sx={{
-          display: { xs: 'block', lg: 'none' },
-        }}
+        sx={{ display: { xs: 'block', lg: 'none' } }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1 }}>
-          <IconButton onClick={handleDrawerToggle}>
+          <IconButton onClick={handleDrawerToggle} aria-label="Close menu">
             <CloseIcon />
           </IconButton>
         </Box>
         {drawer}
       </StyledDrawer>
-      
-      {/* Desktop full drawer */}
-      <StyledDrawer
-        variant="permanent"
-        sx={{
-          display: { xs: 'none', lg: 'block' },
-        }}
-        open
-      >
+
+      <StyledDrawer variant="permanent" open sx={{ display: { xs: 'none', lg: 'block' } }}>
         {drawer}
       </StyledDrawer>
     </Box>
   );
 };
 
-export default Sidebar;
+export default React.memo(Sidebar);

@@ -69,6 +69,14 @@
 - Frontend calls some endpoints that don't exist on the server (`/analytics/*`, `/health` under `/api`) — they have `.catch()` mock fallbacks. Adding analytics routes is real work, not a wiring mistake.
 - Dead code deleted in Phase V: `src/config/` (api/routes/theme), `src/data.js`, `src/reportWebVitals.js`, `src/App.test.js`, `web-vitals`, `dotenv`. Don't reintroduce them.
 
+## Navigation & layout (frontend)
+- **Single source of truth: `src/constants/navigation.js`** — `CUSTOMER_NAV` (Home `/`, Menu `/menu`, My Orders `/orders`, Cart `/cart`), `ADMIN_NAV`, `adminNavItems(isPlatformAdmin)`, `isAdminNavActive(item,path)`, `matchAdminNav(path)`. Add links here, not inline. (`src/config/` still off-limits; `constants/` is the home for this.)
+- Customer shell: `components/navigation/Navbar.jsx` (top bar: brand, desktop links, working search, live `CartContext` badge, account menu, dark-mode toggle), `BottomNav.jsx` (mobile, `CUSTOMER_BOTTOM_NAV`), `Footer.jsx`. `components/layout/Layout.jsx` is the shell and uses **CSS breakpoints** (`sx.display`) — no `useMediaQuery`.
+- Search: navbar submits → `/menu?q=…`; `MenuPage` reads `useSearchParams` and filters via memo. Menu data is fetched once per session through `hooks/useMenuData.js` (`prefetchMenu()` on nav hover). Call `clearMenuCache()` after menu mutations.
+- Admin shell: `AdminLayout.jsx` (title/breadcrumbs from `matchAdminNav`), `Sidebar.jsx` (config-driven, low-stock badge), `Header.jsx` (real `useThemeContext` toggle). No fake notification/search widgets.
+- Theme: `contexts/ThemeContext.jsx` exposes `{ mode, isDarkMode, toggleMode, setThemeMode }` (persisted to `localStorage.themeMode`, follows system until set); `common/ThemeProvider.jsx` maps it to the MUI theme. Both contexts memoize their value to cut re-renders.
+- Perf baseline: route-level `lazy()` for every page (incl. `CartPage`), `React.memo` on shell components, module-scope styled components/nav arrays, no barrel icon imports. Main bundle ~209 kB (58 kB gzip).
+
 ## Order pipeline contract (Phase 0, verified)
 - Order line: `{ menuItemId|menuItem, size: 'medium'|'large', quantity ≥1 int, options: [{name, priceDelta}]|selectedOptions, specialInstructions }`. Legacy keys (`selectedSize`/`selectedOptions`) are still accepted; prices are always computed server-side from `MenuItem.price[size]` (client totals ignored).
 - Statuses: `pending → preparing → ready → served | cancelled` (`server/constants/order.js`, shared by model + controller). Payment methods: `cash | upi_manual | card_manual`.
