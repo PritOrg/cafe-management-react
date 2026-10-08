@@ -66,6 +66,7 @@ const create = async (tenantId, data, trx = getDb()) => {
         payment_method: data.paymentMethod,
         total_amount: data.totalAmount,
         final_amount: data.finalAmount,
+        client_order_id: data.clientOrderId || null,
     }).returning('*');
 
     const items = data.items || [];
@@ -88,6 +89,16 @@ const create = async (tenantId, data, trx = getDb()) => {
 const findById = async (tenantId, id) => {
     const list = await loadFull(getDb(), tenantId, {});
     return list.find((o) => o._id === id) || null;
+};
+
+/** Locate a previously placed order by its client-generated idempotency key. */
+const findByClientOrderId = async (tenantId, clientOrderId) => {
+    if (!clientOrderId) return null;
+    const row = await getDb()('orders')
+        .where({ tenant_id: tenantId, client_order_id: clientOrderId })
+        .first();
+    if (!row) return null;
+    return findByIdForOwner(tenantId, row.id);
 };
 
 const findForHistory = async (tenantId, customerIds) => {
@@ -170,6 +181,7 @@ module.exports = {
     findForHistory,
     findMany,
     findByIdForOwner,
+    findByClientOrderId,
     findStatus,
     updateStatus,
     countToday,

@@ -8,6 +8,7 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import Navbar from '../navigation/Navbar';
 import BottomNav from '../navigation/BottomNav';
 import Footer from '../navigation/Footer';
+import OfflineBanner from '../navigation/OfflineBanner';
 import CartContext from '../CartContext';
 
 const CartBar = memo(({ count, total, onCheckout }) => (
@@ -79,6 +80,7 @@ const Layout = () => {
 
       <Footer />
       <BottomNav />
+      <OfflineBanner />
 
       {showCartBar && <CartBar count={cartCount} total={total} onCheckout={goToCart} />}
     </Box>
