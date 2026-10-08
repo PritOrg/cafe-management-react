@@ -11,7 +11,8 @@ import {
   Typography
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { NavigateNext as NavigateNextIcon, Home as HomeIcon } from '@mui/icons-material';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import HomeIcon from '@mui/icons-material/Home';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import ErrorBoundary from '../common/ErrorBoundary';

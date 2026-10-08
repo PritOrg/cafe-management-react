@@ -23,17 +23,15 @@ import {
     Select,
     MenuItem
 } from '@mui/material';
-import {
-    RestaurantMenu,
-    AccessTime,
-    LocalOffer,
-    AttachMoney,
-    Category,
-    CloudUpload,
-    Info,
-    Warning,
-    AddCircleOutline
-} from '@mui/icons-material';
+import RestaurantMenu from '@mui/icons-material/RestaurantMenu';
+import AccessTime from '@mui/icons-material/AccessTime';
+import LocalOffer from '@mui/icons-material/LocalOffer';
+import AttachMoney from '@mui/icons-material/AttachMoney';
+import Category from '@mui/icons-material/Category';
+import CloudUpload from '@mui/icons-material/CloudUpload';
+import Info from '@mui/icons-material/Info';
+import Warning from '@mui/icons-material/Warning';
+import AddCircleOutline from '@mui/icons-material/AddCircleOutline';
 
 const categoryOptions = [
     "Coffee", "Tea", "Pastries", "Breakfast", "Lunch", "Desserts", "Seasonal", "Specials"

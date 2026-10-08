@@ -9,9 +9,7 @@ import {
   Box,
   Paper
 } from '@mui/material';
-import {
-  Payment as PaymentIcon
-} from '@mui/icons-material';
+import PaymentIcon from '@mui/icons-material/Payment';
 
 const PaymentForm = ({
   paymentMethod,

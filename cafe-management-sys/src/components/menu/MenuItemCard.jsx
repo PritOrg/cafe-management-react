@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { Card, CardActionArea, CardMedia, CardContent, Typography, CardActions, IconButton, Button, Chip, Box, Tooltip, Zoom, Stack } from '@mui/material';
-import { ShoppingCart as ShoppingCartIcon, Info as InfoIcon, Favorite as FavoriteIcon, FavoriteBorder as FavoriteBorderIcon, Share as ShareIcon, AccessTime as TimeIcon, Star as StarIcon, RestaurantMenu as CategoryIcon, TrendingUp as TrendingIcon } from '@mui/icons-material';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import InfoIcon from '@mui/icons-material/Info';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import ShareIcon from '@mui/icons-material/Share';
+import TimeIcon from '@mui/icons-material/AccessTime';
+import StarIcon from '@mui/icons-material/Star';
+import CategoryIcon from '@mui/icons-material/RestaurantMenu';
+import TrendingIcon from '@mui/icons-material/TrendingUp';
 import CustomizationDialog from './CustomizationDialog';
 import MenuItemInfoDialog from './MenuItemInfoDialog';
 

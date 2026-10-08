@@ -1,7 +1,10 @@
 import React from 'react';
 import { Box, Typography, Button, Container, Paper, useTheme, alpha } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { Home, ArrowBack, Coffee, SentimentDissatisfied } from '@mui/icons-material';
+import Home from '@mui/icons-material/Home';
+import ArrowBack from '@mui/icons-material/ArrowBack';
+import Coffee from '@mui/icons-material/Coffee';
+import SentimentDissatisfied from '@mui/icons-material/SentimentDissatisfied';
 
 const NotFound = () => {
   const navigate = useNavigate();

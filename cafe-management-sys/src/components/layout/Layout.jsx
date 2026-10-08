@@ -11,7 +11,9 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { Home, RestaurantMenu, ShoppingCart } from '@mui/icons-material';
+import Home from '@mui/icons-material/Home';
+import RestaurantMenu from '@mui/icons-material/RestaurantMenu';
+import ShoppingCart from '@mui/icons-material/ShoppingCart';
 import Navbar from '../navigation/Navbar';
 import Footer from '../navigation/Footer';
 import CartContext from '../CartContext';

@@ -1,7 +1,8 @@
 // components/EmptyCart.jsx
 import React from 'react';
 import { Container, Box, Typography, Button, Paper } from '@mui/material';
-import { ShoppingCart as ShoppingCartIcon, LocalCafe as CoffeeIcon } from '@mui/icons-material';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import CoffeeIcon from '@mui/icons-material/LocalCafe';
 import { Link } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 

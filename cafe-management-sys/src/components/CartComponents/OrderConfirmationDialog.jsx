@@ -8,9 +8,7 @@ import {
   Button,
   Box
 } from '@mui/material';
-import {
-  CheckCircle as CheckCircleIcon
-} from '@mui/icons-material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { Link } from 'react-router-dom';
 
 const OrderConfirmationDialog = ({

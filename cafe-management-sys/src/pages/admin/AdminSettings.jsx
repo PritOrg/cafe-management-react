@@ -1,6 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Card, CardContent, Grid, TextField, Button, Switch, FormControlLabel, Divider, Alert, Tabs, Tab, List, ListItem, ListItemText, ListItemSecondaryAction, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress } from '@mui/material';
-import { Save, Refresh, Security, Notifications, Store, Payment, Backup, Delete, Palette, ReceiptLong, Print, Settings } from '@mui/icons-material';
+import Save from '@mui/icons-material/Save';
+import Refresh from '@mui/icons-material/Refresh';
+import Security from '@mui/icons-material/Security';
+import Notifications from '@mui/icons-material/Notifications';
+import Store from '@mui/icons-material/Store';
+import Payment from '@mui/icons-material/Payment';
+import Backup from '@mui/icons-material/Backup';
+import Delete from '@mui/icons-material/Delete';
+import Palette from '@mui/icons-material/Palette';
+import ReceiptLong from '@mui/icons-material/ReceiptLong';
+import Print from '@mui/icons-material/Print';
+import Settings from '@mui/icons-material/Settings';
 import { useThemeContext } from '../../contexts/ThemeContext';
 import { settingsAPI, unwrap } from '../../services/api';
 import { useBrand } from '../../contexts/BrandContext';
