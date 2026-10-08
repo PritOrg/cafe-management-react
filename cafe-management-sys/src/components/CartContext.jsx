@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { menuAPI, ordersAPI } from '../services/api';
 import { findMenuItem } from '../hooks/useMenuData';
+import { addToOutbox } from '../utils/orderOutbox';
 
 const CartContext = createContext();
 
@@ -152,6 +153,7 @@ export const CartProvider = ({ children }) => {
 
     const createOrder = useCallback(async (paymentMethod, options = {}) => {
         setIsLoading(true);
+        let orderData = null;
         try {
             const orderItems = cartItems.map(item => ({
                 menuItem: item._id,
@@ -164,9 +166,13 @@ export const CartProvider = ({ children }) => {
                 specialInstructions: item.specialInstructions || '',
             }));
 
-            const orderData = {
+            orderData = {
                 items: orderItems,
                 paymentMethod,
+                // Idempotency key so offline replays never duplicate.
+                clientOrderId: (typeof crypto !== 'undefined' && crypto.randomUUID)
+                    ? crypto.randomUUID()
+                    : `ord-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
             };
 
             if (options.tableNumber != null && options.tableNumber !== '') {
@@ -197,6 +203,24 @@ export const CartProvider = ({ children }) => {
             return data;
         } catch (error) {
             const errorMessage = error.message || 'Order failed';
+            const isNetwork = (typeof navigator !== 'undefined' && !navigator.onLine)
+                || error.name === 'TypeError'
+                || /failed to fetch|networkerror|load failed|network request failed/i.test(errorMessage);
+
+            if (isNetwork && orderData) {
+                // Queue for replay on reconnect (server dedupes via clientOrderId).
+                try {
+                    await addToOutbox({ clientOrderId: orderData.clientOrderId, orderData, createdAt: Date.now() });
+                    if (typeof window !== 'undefined') window.dispatchEvent(new Event('outbox:changed'));
+                } catch (queueError) {
+                    console.error('Failed to queue offline order:', queueError);
+                }
+                clearCart();
+                setOrderError('You appear to be offline — your order is queued and will be sent automatically.');
+                setOrderConfirmation(null);
+                throw new Error('Your order is queued and will be sent when you are back online.');
+            }
+
             setOrderError(errorMessage);
             setOrderConfirmation(null);
             throw new Error(errorMessage);
