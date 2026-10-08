@@ -29,7 +29,7 @@ const PageHeader = ({ title, subtitle, icon, actions, back = false, sx }) => {
                 flexShrink: 0,
                 borderRadius: '50%',
                 bgcolor: (t) => alpha(t.palette.primary.main, 0.12),
-                color: 'primary.main',
+                color: (t) => t.brand?.primaryText || t.palette.primary.main,
               }}
             >
               {icon}

@@ -62,7 +62,7 @@ const SearchForm = styled('form')(({ theme }) => ({
 
 const NavButton = styled(Button, { shouldForwardProp: (prop) => prop !== 'active' })(
   ({ theme, active }) => ({
-    color: active ? theme.palette.primary.main : theme.palette.text.primary,
+    color: active ? (theme.brand?.primaryText || theme.palette.primary.main) : theme.palette.text.primary,
     fontWeight: active ? 700 : 500,
     px: 1.5,
     minWidth: 0,
