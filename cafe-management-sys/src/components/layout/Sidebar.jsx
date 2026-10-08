@@ -13,7 +13,7 @@ import Badge from '@mui/material/Badge';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import { styled, alpha } from '@mui/material/styles';
-import Coffee from '@mui/icons-material/Coffee';
+import StorefrontIcon from '@mui/icons-material/Storefront';
 import CloseIcon from '@mui/icons-material/Close';
 import Logout from '@mui/icons-material/Logout';
 import { useAuth } from '../../contexts/AuthContext';
@@ -116,11 +116,11 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, rail = false }) => {
             mr: 2,
           }}
         >
-          <Coffee sx={{ color: '#fff', fontSize: 24 }} />
+          <StorefrontIcon sx={{ color: '#fff', fontSize: 24 }} />
         </Box>
         <Box sx={{ minWidth: 0 }}>
           <Typography variant="h6" noWrap sx={{ fontWeight: 700 }}>
-            {brand?.title || 'Cafe'}
+            {brand?.title || 'Restaurant'}
           </Typography>
           <Typography variant="body2" sx={{ opacity: 0.85 }}>
             Admin Panel

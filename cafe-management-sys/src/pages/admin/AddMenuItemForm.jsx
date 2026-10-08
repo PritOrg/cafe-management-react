@@ -34,7 +34,8 @@ import Warning from '@mui/icons-material/Warning';
 import AddCircleOutline from '@mui/icons-material/AddCircleOutline';
 
 const categoryOptions = [
-    "Coffee", "Tea", "Pastries", "Breakfast", "Lunch", "Desserts", "Seasonal", "Specials"
+    "Starters", "Mains", "Sides", "Breakfast", "Lunch", "Dinner",
+    "Desserts", "Beverages", "Coffee", "Tea", "Seasonal", "Specials"
 ];
 
 const commonAllergens = [

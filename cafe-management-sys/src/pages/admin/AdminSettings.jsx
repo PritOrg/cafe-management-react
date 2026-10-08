@@ -29,7 +29,7 @@ const AdminSettings = () => {
   const [confirmDialog, setConfirmDialog] = useState({ open: false, action: '', title: '', message: '' });
 
   const [brand, setBrand] = useState({
-    title: 'Cafe Management',
+    title: 'Restaurant Management',
     logoUrl: '',
     primaryColor: '#ff6b35',
     accentColor: '#f7931e',
@@ -224,11 +224,11 @@ const AdminSettings = () => {
 
   // General Settings State
   const [generalSettings, setGeneralSettings] = useState({
-    cafeName: 'Brew & Bite Cafe',
-    address: '123 Coffee Street, Bean City, BC 12345',
+    restaurantName: 'My Restaurant',
+    address: '123 Main Street, City',
     phone: '+1 (555) 123-4567',
-    email: 'info@brewandbite.com',
-    website: 'www.brewandbite.com',
+    email: 'info@example.com',
+    website: 'www.example.com',
     timezone: 'America/New_York',
     currency: 'USD',
     taxRate: 8.5,
@@ -518,15 +518,15 @@ const AdminSettings = () => {
         <TabPanel value={activeTab} index={2}>
           <CardContent>
             <Typography variant="h6" gutterBottom>
-              Cafe Information
+              Restaurant Information
             </Typography>
             <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  label="Cafe Name"
-                  value={generalSettings.cafeName}
-                  onChange={(e) => setGeneralSettings({ ...generalSettings, cafeName: e.target.value })}
+                  label="Restaurant Name"
+                  value={generalSettings.restaurantName}
+                  onChange={(e) => setGeneralSettings({ ...generalSettings, restaurantName: e.target.value })}
                 />
               </Grid>
               <Grid item xs={12} md={6}>

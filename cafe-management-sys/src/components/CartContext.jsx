@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { menuAPI, ordersAPI } from '../services/api';
+import { findMenuItem } from '../hooks/useMenuData';
 
 const CartContext = createContext();
 
@@ -48,15 +49,22 @@ export const CartProvider = ({ children }) => {
             .join('|')}`;
     }, []);
 
-    const addToCart = useCallback(async (id, selectedOptions = {}, selectedSize = 'medium') => {
+    const addToCart = useCallback(async (itemOrId, selectedOptions = {}, selectedSize = 'medium') => {
         setIsLoading(true);
         try {
-            const body = await menuAPI.getById(id);
-            const item = body?.data ?? body;
+            // Fast path: use the item we already have (from the card/dialog or the
+            // session menu cache) instead of a network round-trip on every add.
+            let item = typeof itemOrId === 'object' && itemOrId ? itemOrId : findMenuItem(itemOrId);
+            if (!item) {
+                const id = typeof itemOrId === 'object' ? itemOrId?._id : itemOrId;
+                const body = await menuAPI.getById(id);
+                item = body?.data ?? body;
+            }
             if (!item || !item._id) {
                 throw new Error('Menu item not found');
             }
 
+            const id = item._id;
             const size = resolveSize(item, selectedSize);
             const cartItemId = generateCartItemId(id, size, selectedOptions);
 
@@ -84,6 +92,8 @@ export const CartProvider = ({ children }) => {
                     }
                 ];
             });
+
+            return cartItemId;
         } catch (error) {
             console.error('Error adding to cart:', error.message);
             throw error;
@@ -164,6 +174,12 @@ export const CartProvider = ({ children }) => {
             }
             if (options.tipAmount != null && options.tipAmount !== '') {
                 orderData.tipAmount = Number(options.tipAmount) || 0;
+            }
+            if (options.phone) {
+                orderData.phone = String(options.phone).trim();
+            }
+            if (options.customerName) {
+                orderData.customerName = String(options.customerName).trim();
             }
 
             const body = await ordersAPI.create(orderData);

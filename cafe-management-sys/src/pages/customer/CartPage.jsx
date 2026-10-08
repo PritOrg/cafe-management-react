@@ -1,17 +1,17 @@
-import React, { useContext } from 'react';
+import React, { useCallback, useContext } from 'react';
 import { Container } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import CartContext from '../../components/CartContext';
 import CheckoutStepper from '../../components/CartComponents/CheckoutStepper';
 import CartItems from '../../components/CartComponents/CartItems';
-import ShippingForm from '../../components/CartComponents/ShippingForm';
+import CustomerDetailsForm from '../../components/CartComponents/CustomerDetailsForm';
 import PaymentForm from '../../components/CartComponents/PaymentForm';
 import OrderReview from '../../components/CartComponents/OrderReview';
 import OrderConfirmationDialog from '../../components/CartComponents/OrderConfirmationDialog';
 import EmptyCart from '../../components/CartComponents/EmptyCart';
 import PageHeader from '../../components/common/PageHeader';
 import { useCheckoutFlow } from '../../hooks/useCheckoutFlow';
-
+import { useCustomer } from '../../contexts/CustomerContext';
 
 const CartPage = () => {
   const {
@@ -25,23 +25,25 @@ const CartPage = () => {
     orderConfirmation,
     orderError,
     isLoading,
-    cartCount
+    cartCount,
   } = useContext(CartContext);
+
+  const { phone, name, tableNumber, setCustomer, setTable } = useCustomer();
 
   const {
     activeStep,
-    shippingInfo,
     paymentMethod,
     openDialog,
     handleNext,
     handleBack,
-    handleShippingChange,
-    setPaymentMethod,
+    customerInfo,
+    handleCustomerChange,
     handleCheckout,
-    setOpenDialog
-  } = useCheckoutFlow(createOrder);
+    setOpenDialog,
+    setPaymentMethod,
+  } = useCheckoutFlow(createOrder, { name, phone, tableNumber });
 
-  const steps = ['Cart', 'Shipping', 'Payment', 'Review'];
+  const steps = ['Cart', 'Details', 'Payment', 'Review'];
 
   const handleQuantityChange = (cartItemId, newQuantity) => {
     if (newQuantity < 1) return;
@@ -51,6 +53,13 @@ const CartPage = () => {
   const handleUpdateCustomization = (cartItemId, customizationUpdates) => {
     updateCartItem(cartItemId, customizationUpdates);
   };
+
+  const placeOrder = useCallback(async () => {
+    // Remember the customer so their phone links future order history.
+    setCustomer({ phone: customerInfo.phone, name: customerInfo.name });
+    setTable(customerInfo.tableNumber);
+    await handleCheckout();
+  }, [customerInfo, handleCheckout, setCustomer, setTable]);
 
   if (cartItems.length === 0 && activeStep === 0) {
     return <EmptyCart />;
@@ -75,9 +84,9 @@ const CartPage = () => {
         );
       case 1:
         return (
-          <ShippingForm
-            shippingInfo={shippingInfo}
-            onShippingChange={handleShippingChange}
+          <CustomerDetailsForm
+            customerInfo={customerInfo}
+            onCustomerChange={handleCustomerChange}
             total={total}
             cartCount={cartCount}
             totalPrepTime={totalPrepTime}
@@ -95,7 +104,7 @@ const CartPage = () => {
             cartCount={cartCount}
             totalPrepTime={totalPrepTime}
             onBack={handleBack}
-            onNext={handleCheckout}
+            onNext={handleNext}
             isLoading={isLoading}
           />
         );
@@ -103,13 +112,13 @@ const CartPage = () => {
         return (
           <OrderReview
             cartItems={cartItems}
-            shippingInfo={shippingInfo}
+            customerInfo={customerInfo}
             paymentMethod={paymentMethod}
             total={total}
             cartCount={cartCount}
             totalPrepTime={totalPrepTime}
             onBack={handleBack}
-            onNext={handleCheckout}
+            onNext={placeOrder}
             isLoading={isLoading}
           />
         );

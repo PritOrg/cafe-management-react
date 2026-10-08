@@ -1,455 +1,214 @@
-import React, { useState } from 'react';
-import { Card, CardActionArea, CardMedia, CardContent, Typography, CardActions, IconButton, Button, Chip, Box, Tooltip, Zoom, Stack } from '@mui/material';
+import React, { memo, useCallback, useContext, useState } from 'react';
+import {
+  Card,
+  CardActionArea,
+  CardMedia,
+  CardContent,
+  Typography,
+  CardActions,
+  IconButton,
+  Button,
+  Chip,
+  Box,
+  Tooltip,
+  Stack,
+  alpha,
+} from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import TuneIcon from '@mui/icons-material/Tune';
 import InfoIcon from '@mui/icons-material/Info';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
-import ShareIcon from '@mui/icons-material/Share';
-import TimeIcon from '@mui/icons-material/AccessTime';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import StarIcon from '@mui/icons-material/Star';
-import CategoryIcon from '@mui/icons-material/RestaurantMenu';
-import TrendingIcon from '@mui/icons-material/TrendingUp';
+import ImageIcon from '@mui/icons-material/Image';
+import CartContext from '../CartContext';
+import { useToast } from '../ui';
+import useFavourites from '../../hooks/useFavourites';
 import CustomizationDialog from './CustomizationDialog';
 import MenuItemInfoDialog from './MenuItemInfoDialog';
 
-const MenuItemCard = ({ menuItem, addToCart }) => {
-  const [openInfoDialog, setOpenInfoDialog] = useState(false);
-  const [openCustomizationDialog, setOpenCustomizationDialog] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
-  
-  const { title, subTitle, price, category, imageUrl, preparationTime, rating, tags } = menuItem;
+const formatMoney = (value) => `₹${Number(value || 0).toFixed(0)}`;
 
-  const handleAddToCartClick = (e) => {
-    e.stopPropagation();
-    setOpenCustomizationDialog(true);
+const MenuItemCard = ({ menuItem }) => {
+  const { addToCart } = useContext(CartContext);
+  const toast = useToast();
+  const { isFavourite, toggleFavourite } = useFavourites();
+
+  const [openInfo, setOpenInfo] = useState(false);
+  const [openCustomize, setOpenCustomize] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  const id = menuItem._id || menuItem.id;
+  const favourite = isFavourite(id);
+
+  const sizes = menuItem.sizes || [];
+  const hasSizes = sizes.length > 1;
+  const hasModifiers =
+    (menuItem.modifierGroups?.length || 0) > 0 || (menuItem.customizationOptions?.length || 0) > 0;
+  const needsDialog = hasSizes || hasModifiers;
+
+  const priceLabel = sizes.length
+    ? `${formatMoney(sizes[0].price)} onwards`
+    : menuItem.price?.large && menuItem.price.large !== menuItem.price.medium
+      ? `${formatMoney(menuItem.price.medium)} – ${formatMoney(menuItem.price.large)}`
+      : formatMoney(menuItem.price?.medium ?? menuItem.price?.large ?? 0);
+
+  const handleAdd = useCallback(async (event) => {
+    event.stopPropagation();
+    if (needsDialog) {
+      setOpenCustomize(true);
+      return;
+    }
+    try {
+      await addToCart(menuItem);
+      toast.success(`${menuItem.title} added to cart`);
+    } catch (error) {
+      toast.error(error.message || 'Could not add to cart');
+    }
+  }, [addToCart, menuItem, needsDialog, toast]);
+
+  const handleFavourite = (event) => {
+    event.stopPropagation();
+    toggleFavourite(id);
   };
 
-  const handleInfoClick = (e) => {
-    e.stopPropagation();
-    setOpenInfoDialog(true);
-  };
-
-  const handleFavoriteClick = (e) => {
-    e.stopPropagation();
-    setIsFavorite(!isFavorite);
-  };
-
-  const handleShareClick = (e) => {
-    e.stopPropagation();
-    // Add share functionality
+  const handleShare = (event) => {
+    event.stopPropagation();
     if (navigator.share) {
-      navigator.share({
-        title: title,
-        text: `Check out this amazing ${title} at our restaurant!`,
-        url: window.location.href,
-      });
+      navigator.share({ title: menuItem.title, url: window.location.href }).catch(() => {});
     }
   };
 
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-    }).format(price);
-  };
-
-  const isPopular = rating >= 4.5;
-  const isTrending = tags.includes('Popular') || tags.includes('Trending');
+  const isPopular = menuItem.rating >= 4.5;
 
   return (
     <>
-      <Zoom in timeout={400}>
-        <Card 
-          sx={{ 
-            maxWidth: 340, 
-            position: 'relative',
-            background: 'linear-gradient(145deg, #FFFFFF 0%, #FAF7F2 100%)',
-            borderRadius: '20px',
-            overflow: 'hidden',
-            boxShadow: '0px 4px 20px rgba(139, 69, 19, 0.08)',
-            transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-            border: '1px solid rgba(139, 69, 19, 0.06)',
-            '&:hover': {
-              transform: 'translateY(-8px)',
-              boxShadow: '0px 12px 40px rgba(139, 69, 19, 0.15)',
-              border: '1px solid rgba(139, 69, 19, 0.12)',
-              '& .card-image': {
-                transform: 'scale(1.08)',
-              },
-              '& .floating-actions': {
-                opacity: 1,
-                transform: 'translateY(0)',
-              },
-              '& .price-badge': {
-                transform: 'translateY(-2px)',
-              },
-              '& .add-btn': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0px 8px 24px rgba(139, 69, 19, 0.35)',
-              }
-            }
-          }}
-        >
-          {/* Trending/Popular Badge */}
-          {(isPopular || isTrending) && (
-            <Box sx={{
-              position: 'absolute',
-              top: 0,
-              left: 16,
-              zIndex: 10,
-              background: 'linear-gradient(135deg, #D4A574 0%, #F4A460 100%)',
-              color: '#2C1810',
-              padding: '8px 16px',
-              borderRadius: '0 0 16px 16px',
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.5,
-              boxShadow: '0px 4px 12px rgba(139, 69, 19, 0.2)',
-            }}>
-              <TrendingIcon sx={{ fontSize: 14 }} />
-              {isPopular ? 'Popular' : 'Trending'}
-            </Box>
-          )}
-
-          <CardActionArea>
-            <Box sx={{ 
-              position: 'relative', 
-              overflow: 'hidden',
-              height: 200,
-              background: 'linear-gradient(45deg, #F5F2ED 0%, #FAF7F2 100%)',
-            }}>
+      <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <CardActionArea onClick={() => setOpenInfo(true)} sx={{ flexGrow: 1, alignItems: 'stretch' }}>
+          <Box
+            sx={{
+              position: 'relative',
+              pt: '62%',
+              bgcolor: (t) => alpha(t.palette.primary.main, 0.06),
+            }}
+          >
+            {menuItem.imageUrl && !imageError ? (
               <CardMedia
                 component="img"
-                height="200"
-                image={imageUrl}
-                alt={title}
-                className="card-image"
-                onLoad={() => setImageLoaded(true)}
-                sx={{ 
-                  objectFit: 'cover',
-                  transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                  opacity: imageLoaded ? 1 : 0,
-                }}
+                image={menuItem.imageUrl}
+                alt={menuItem.title}
+                onError={() => setImageError(true)}
+                sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
               />
-              
-              {/* Subtle Gradient Overlay */}
-              <Box sx={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'linear-gradient(180deg, rgba(44,24,16,0) 0%, rgba(44,24,16,0.05) 70%, rgba(44,24,16,0.15) 100%)',
-                pointerEvents: 'none',
-              }} />
+            ) : (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: (t) => alpha(t.palette.primary.main, 0.5),
+                }}
+              >
+                <ImageIcon sx={{ fontSize: 44 }} />
+              </Box>
+            )}
 
-              {/* Category & Rating */}
-              <Box sx={{
-                position: 'absolute',
-                top: 12,
-                left: 12,
-                right: 12,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-              }}>
-                <Chip 
-                  icon={<CategoryIcon sx={{ fontSize: '14px !important' }} />}
-                  label={category} 
-                  size="small" 
-                  sx={{ 
-                    background: 'rgba(44, 24, 16, 0.85)',
-                    backdropFilter: 'blur(10px)',
-                    color: '#FFFFFF',
-                    fontWeight: 600,
-                    fontSize: '0.75rem',
-                    '& .MuiChip-icon': { color: '#FFFFFF' }
-                  }} 
+            <Box sx={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 1 }}>
+              {menuItem.category && (
+                <Chip
+                  size="small"
+                  label={menuItem.category}
+                  sx={{ bgcolor: 'rgba(0,0,0,0.55)', color: '#fff', fontWeight: 600 }}
                 />
-
-                <Box sx={{
-                  background: 'linear-gradient(135deg, rgba(212, 165, 116, 0.95) 0%, rgba(244, 164, 96, 0.95) 100%)',
-                  backdropFilter: 'blur(10px)',
-                  borderRadius: '20px',
-                  padding: '4px 10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.5,
-                  border: '1px solid rgba(255,255,255,0.3)',
-                }}>
-                  <StarIcon sx={{ fontSize: 16, color: '#2C1810' }} />
-                  <Typography variant="caption" sx={{ color: '#2C1810', fontWeight: 700 }}>
-                    {rating}
-                  </Typography>
-                </Box>
-              </Box>
-
-              {/* Floating Action Buttons */}
-              <Box sx={{
-                position: 'absolute',
-                bottom: 12,
-                right: 12,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 1,
-                opacity: 0,
-                transform: 'translateY(10px)',
-                transition: 'all 0.3s ease',
-              }}
-              className="floating-actions">
-                <Tooltip title="More Info" arrow placement="left">
-                  <IconButton
-                    onClick={handleInfoClick}
-                    size="small"
-                    sx={{
-                      background: 'rgba(255,255,255,0.95)',
-                      backdropFilter: 'blur(10px)',
-                      color: '#8B4513',
-                      width: 36,
-                      height: 36,
-                      boxShadow: '0px 4px 12px rgba(139, 69, 19, 0.15)',
-                      transition: 'all 0.3s ease',
-                      '&:hover': { 
-                        background: '#8B4513',
-                        color: 'white',
-                        transform: 'scale(1.1)',
-                      },
-                    }}
-                  >
-                    <InfoIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-
-                <Tooltip title="Share" arrow placement="left">
-                  <IconButton 
-                    onClick={handleShareClick}
-                    size="small"
-                    sx={{ 
-                      background: 'rgba(255,255,255,0.95)',
-                      backdropFilter: 'blur(10px)',
-                      color: '#5D4E37',
-                      width: 36,
-                      height: 36,
-                      boxShadow: '0px 4px 12px rgba(139, 69, 19, 0.15)',
-                      transition: 'all 0.3s ease',
-                      '&:hover': { 
-                        background: '#D4A574',
-                        color: '#2C1810',
-                        transform: 'scale(1.1)',
-                      },
-                    }}
-                  >
-                    <ShareIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-            </Box>
-
-            <CardContent sx={{ padding: '20px 20px 16px' }}>
-              <Box sx={{ mb: 2 }}>
-                <Typography 
-                  variant="h6" 
-                  component="div" 
-                  sx={{ 
-                    color: '#2C1810', 
-                    fontWeight: 800, 
-                    fontSize: '1.25rem',
-                    lineHeight: 1.2,
-                    mb: 0.5,
-                    letterSpacing: '-0.5px',
-                  }}
-                >
-                  {title}
-                </Typography>
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    color: '#5D4E37', 
-                    fontSize: '0.9rem',
-                    lineHeight: 1.4,
-                    opacity: 0.9,
-                  }}
-                >
-                  {subTitle}
-                </Typography>
-              </Box>
-
-              {/* Price Badge */}
-              <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'space-between',
-                mb: 2,
-              }}
-              className="price-badge">
-                <Box sx={{
-                  background: 'linear-gradient(135deg, #8B4513 0%, #A67B5B 100%)',
-                  color: 'white',
-                  padding: '10px 18px',
-                  borderRadius: '16px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  minWidth: '120px',
-                  boxShadow: '0px 4px 16px rgba(139, 69, 19, 0.25)',
-                  transition: 'all 0.3s ease',
-                }}>
-                  <Typography 
-                    variant="body1" 
-                    sx={{ 
-                      fontWeight: 800, 
-                      fontSize: '0.9rem',
-                      lineHeight: 1,
-                    }}
-                  >
-                    {(() => {
-                        if (menuItem?.sizes?.length) {
-                            return `${formatPrice(menuItem.sizes[0].price)} onwards`;
-                        }
-                        return `${formatPrice(price.medium)} - ${formatPrice(price.large)}`;
-                    })()}
-                  </Typography>
-                  <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.7rem' }}>
-                    {menuItem?.sizes?.length
-                        ? menuItem.sizes.map((s) => s.label).join(' / ')
-                        : 'Medium - Large'}
-                  </Typography>
-                </Box>
-                
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 0.5,
-                  background: 'rgba(139, 69, 19, 0.08)',
-                  padding: '8px 14px',
-                  borderRadius: '16px',
-                  border: '1px solid rgba(139, 69, 19, 0.12)',
-                }}>
-                  <TimeIcon sx={{ fontSize: 16, color: '#8B4513' }} />
-                  <Typography variant="caption" sx={{ 
-                    color: '#8B4513', 
-                    fontWeight: 600,
-                    fontSize: '0.8rem',
-                  }}>
-                    {preparationTime}m
-                  </Typography>
-                </Box>
-              </Box>
-
-              {/* Tags */}
-              {tags.length > 0 && (
-                <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', gap: 0.5 }}>
-                  {tags.slice(0, 3).map((tag, index) => (
-                    <Chip 
-                      key={tag}
-                      label={tag} 
-                      size="small" 
-                      sx={{ 
-                        backgroundColor: 'rgba(139, 69, 19, 0.06)',
-                        color: '#8B4513',
-                        fontSize: '0.7rem',
-                        fontWeight: 600,
-                        border: '1px solid rgba(139, 69, 19, 0.12)',
-                        '&:hover': {
-                          backgroundColor: 'rgba(139, 69, 19, 0.12)',
-                          transform: 'scale(1.05)',
-                        },
-                        transition: 'all 0.2s ease',
-                      }} 
-                    />
-                  ))}
-                  {tags.length > 3 && (
-                    <Chip 
-                      label={`+${tags.length - 3}`} 
-                      size="small" 
-                      sx={{ 
-                        backgroundColor: '#8B4513',
-                        color: '#FFFFFF',
-                        fontSize: '0.7rem',
-                        fontWeight: 700,
-                      }} 
-                    />
-                  )}
-                </Stack>
               )}
-            </CardContent>
-          </CardActionArea>
-
-          <CardActions sx={{ 
-            padding: '0 20px 20px', 
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}>
-            <Box sx={{ display: 'flex', gap: 0.5 }}>
-              <Tooltip title={isFavorite ? "Remove from favorites" : "Add to favorites"} arrow>
-                <IconButton 
-                  onClick={handleFavoriteClick}
-                  sx={{ 
-                    color: isFavorite ? '#F44336' : '#A0937A',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    '&:hover': { 
-                      transform: 'scale(1.2)',
-                      color: '#F44336',
-                    },
-                  }}
-                >
-                  {isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
-                </IconButton>
-              </Tooltip>
             </Box>
 
-            <Button
-              variant="contained"
-              startIcon={<ShoppingCartIcon />}
-              onClick={handleAddToCartClick}
-              className="add-btn"
-              sx={{
-                background: 'linear-gradient(135deg, #8B4513 0%, #A67B5B 100%)',
-                borderRadius: '16px',
-                textTransform: 'none',
-                fontWeight: 700,
-                padding: '12px 24px',
-                fontSize: '0.875rem',
-                boxShadow: '0px 4px 16px rgba(139, 69, 19, 0.25)',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                letterSpacing: '0.3px',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #6A3400 0%, #8B4513 100%)',
-                  boxShadow: '0px 8px 24px rgba(139, 69, 19, 0.35)',
-                },
-              }}
-            >
-              Add to Cart
-            </Button>
-          </CardActions>
-        </Card>
-      </Zoom>
+            {isPopular && (
+              <Chip
+                size="small"
+                icon={<StarIcon sx={{ color: '#fff !important' }} />}
+                label="Popular"
+                sx={{ position: 'absolute', top: 10, right: 10, bgcolor: 'warning.main', color: '#fff', fontWeight: 700 }}
+              />
+            )}
+          </Box>
 
-      {/* Info Dialog */}
+          <CardContent sx={{ flexGrow: 1 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700 }} noWrap>
+              {menuItem.title}
+            </Typography>
+            {menuItem.subTitle && (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: 40 }}
+              >
+                {menuItem.subTitle}
+              </Typography>
+            )}
+
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 1.5 }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                {priceLabel}
+              </Typography>
+              {menuItem.preparationTime ? (
+                <Stack direction="row" spacing={0.5} alignItems="center" sx={{ color: 'text.secondary' }}>
+                  <AccessTimeIcon sx={{ fontSize: 16 }} />
+                  <Typography variant="caption">{menuItem.preparationTime}m</Typography>
+                </Stack>
+              ) : null}
+            </Stack>
+          </CardContent>
+        </CardActionArea>
+
+        <CardActions sx={{ px: 1.5, pb: 1.5, pt: 0, justifyContent: 'space-between' }}>
+          <Stack direction="row" spacing={0.5}>
+            <Tooltip title={favourite ? 'Remove from favourites' : 'Add to favourites'}>
+              <IconButton onClick={handleFavourite} aria-label="Toggle favourite" color={favourite ? 'error' : 'default'}>
+                {favourite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Details">
+              <IconButton onClick={(e) => { e.stopPropagation(); setOpenInfo(true); }} aria-label="View details">
+                <InfoIcon />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+
+          <Button
+            variant="contained"
+            startIcon={needsDialog ? <TuneIcon /> : <ShoppingCartIcon />}
+            onClick={handleAdd}
+            sx={{ px: 2.5 }}
+          >
+            {needsDialog ? 'Customize' : 'Add'}
+          </Button>
+        </CardActions>
+      </Card>
+
       <MenuItemInfoDialog
-        open={openInfoDialog}
-        onClose={() => setOpenInfoDialog(false)}
+        open={openInfo}
+        onClose={() => setOpenInfo(false)}
         onAddToCart={() => {
-          setOpenInfoDialog(false);
-          setOpenCustomizationDialog(true);
+          setOpenInfo(false);
+          if (needsDialog) setOpenCustomize(true);
+          else handleAdd({ stopPropagation() {} });
         }}
         menuItem={menuItem}
       />
 
-      {/* Customization Dialog */}
-      <CustomizationDialog
-        open={openCustomizationDialog}
-        onClose={() => setOpenCustomizationDialog(false)}
-        menuItem={menuItem}
-        addToCart={addToCart}
-      />
+      {needsDialog && (
+        <CustomizationDialog
+          open={openCustomize}
+          onClose={() => setOpenCustomize(false)}
+          menuItem={menuItem}
+        />
+      )}
     </>
   );
 };
 
-export default MenuItemCard;
+export default memo(MenuItemCard);

@@ -76,7 +76,17 @@
 - Admin shell: `AdminLayout.jsx` (title/breadcrumbs from `matchAdminNav`), `Sidebar.jsx` (config-driven, low-stock badge), `Header.jsx` (real `useThemeContext` toggle). No fake notification/search widgets.
 - Theme: `contexts/ThemeContext.jsx` exposes `{ mode, isDarkMode, toggleMode, setThemeMode }` (persisted to `localStorage.themeMode`, follows system until set); `common/ThemeProvider.jsx` builds the theme via `utils/m3Theme.js` (**Material 3** flavour: tonal surfaces, Outfit, filled buttons, pill list items, nav-bar active indicator). Both contexts memoize their value. **Typeface is Outfit**, self-hosted via `@fontsource-variable/outfit` (imported in `index.jsx`; no Google CDN).
 - Shared primitives: `components/common/PageHeader.jsx` (M3 page title/subtitle/icon/actions) and `components/common/EmptyState.jsx` (tonal icon disc + action). Prefer these over bespoke headers. `components/ui/*` now only exports the providers (Toast/Loading/Confirm); the old unused Button/Card/Modal/Input/Badge/Tooltip/LoadingSpinner/EmptyState primitives were deleted — use MUI directly.
-- Perf baseline: route-level `lazy()` for every page (incl. `CartPage`), `React.memo` on shell components, module-scope styled components/nav arrays, no barrel icon imports. Main bundle ~209 kB (58 kB gzip).
+- Perf baseline: route-level `lazy()` for every page (incl. `CartPage`), `React.memo` on shell components, module-scope styled components/nav arrays, no barrel icon imports. **No `components/index.js` barrel** — import components directly (the barrel pulled every component into the initial bundle). Main bundle ~225 kB (~69 kB gzip).
+
+## Customer storefront (ordering)
+- **Phone-based identity**: `contexts/CustomerContext.jsx` (`useCustomer`) stores `{ phone, name, tableNumber }` in `localStorage` — no password. `common/CustomerSignInDialog.jsx` (lazy-loaded from the Navbar) captures just a phone. Orders are linked by `phone` + `customerName` (`CartContext.createOrder` → `POST /orders`), so `GET /orders/history?phone=` works end-to-end.
+- **Checkout**: 4 steps Cart → **Details (name/phone/table)** → Payment → Review. `CartComponents/CustomerDetailsForm.jsx` (+ `useCheckoutFlow`) replaced the bogus shipping form. Placing an order persists the customer.
+- **Fast add-to-cart**: `CartContext.addToCart(itemOrId, options, size)` uses the item object / session menu cache (`findMenuItem`) — **no per-add `/menu/:id` round-trip**. Items with no choices get a one-tap Add; others open the customization dialog.
+- **Favourites**: `utils/favouritesStore.js` (localStorage, `useSyncExternalStore`) + `hooks/useFavourites.js`; heart on `MenuItemCard`, "Favourites" filter chip on `MenuPage`.
+- **Table / QR ordering**: `?table=N` anywhere is captured by the Navbar and shown as a chip; prefills checkout.
+- **My Orders** (`pages/customer/OrderHistoryPage.jsx`): phone lookup, **status tracking**, and **Reorder** (re-adds via the menu cache).
+- **Menus are vertical-agnostic** (any restaurant/café): categories are derived from the tenant's own data (MenuPage + AdminMenu). Demo items in `server/db/seeds/001_demo.js` are seeded idempotently by title.
+- **API host follows the tenant subdomain** (`services/api.js`): on `cafe2.localhost:3000` the API is called at `cafe2.localhost:4969` so the server resolves tenant `cafe2`. No-op for `localhost`/IPs/`www`; prod keeps true subdomains.
 
 ## Order pipeline contract (Phase 0, verified)
 - Order line: `{ menuItemId|menuItem, size: 'medium'|'large', quantity ≥1 int, options: [{name, priceDelta}]|selectedOptions, specialInstructions }`. Legacy keys (`selectedSize`/`selectedOptions`) are still accepted; prices are always computed server-side from `MenuItem.price[size]` (client totals ignored).
