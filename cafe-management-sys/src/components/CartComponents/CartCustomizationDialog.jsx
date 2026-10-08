@@ -1,280 +1,160 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, Button, Checkbox, FormControlLabel, Radio, RadioGroup, Box, Divider, IconButton, Paper, Slide, FormControl, FormLabel } from '@mui/material';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Typography,
+  Button,
+  Checkbox,
+  FormControlLabel,
+  Radio,
+  RadioGroup,
+  Box,
+  IconButton,
+  Paper,
+  Chip,
+  Stack,
+  Divider,
+} from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
-import CancelIcon from '@mui/icons-material/Cancel';
 
-const Transition = React.forwardRef(function Transition(props, ref) {
-  return <Slide direction="up" ref={ref} {...props} />;
-});
+const formatMoney = (value) => `₹${Number(value || 0).toFixed(2)}`;
+
+const buildSizes = (item) => (
+  item?.sizes?.length
+    ? item.sizes.map((s) => ({ value: s.label, label: s.label, price: Number(s.price) || 0, isDefault: s.isDefault }))
+    : [
+        { value: 'medium', label: 'Medium', price: Number(item?.price?.medium) || 0 },
+        { value: 'large', label: 'Large', price: Number(item?.price?.large) || 0 },
+      ]
+);
 
 const CartCustomizationDialog = ({ open, onClose, item, onUpdateCustomization }) => {
+  const sizeOptions = useMemo(() => buildSizes(item), [item]);
+  const modifierGroups = item?.modifierGroups || [];
+
   const [selectedSize, setSelectedSize] = useState('medium');
-  const [selectedCustomizations, setSelectedCustomizations] = useState({});
-  const [totalPrice, setTotalPrice] = useState(0);
+  const [selectedOptions, setSelectedOptions] = useState({});
 
-  const calculateTotalPrice = useCallback((size, customizations) => {
-    if (!item || !item.price) return;
-
-    const basePrice = item.price[size?.toLowerCase()] || item.price.medium || 0;
-    const extraCost = Object.keys(customizations).length * 10;
-    setTotalPrice((basePrice + extraCost) * item.quantity);
-  }, [item]);
-
-  // Initialize state when dialog opens
   useEffect(() => {
     if (open && item) {
-      setSelectedSize(item.selectedSize || 'medium');
-      setSelectedCustomizations(item.selectedOptions || {});
-      calculateTotalPrice(item.selectedSize || 'medium', item.selectedOptions || {});
+      setSelectedSize(item.selectedSize || sizeOptions[0]?.value || 'medium');
+      setSelectedOptions(item.selectedOptions || {});
     }
-  }, [open, item, calculateTotalPrice]);
-
-  const handleSizeChange = (event) => {
-    const newSize = event.target.value;
-    setSelectedSize(newSize);
-    calculateTotalPrice(newSize, selectedCustomizations);
-  };
-
-  const handleCustomizationChange = (event) => {
-    const option = event.target.name;
-    const isChecked = event.target.checked;
-
-    const updatedCustomizations = { ...selectedCustomizations };
-
-    if (isChecked) {
-      updatedCustomizations[option] = true;
-    } else {
-      delete updatedCustomizations[option];
-    }
-
-    setSelectedCustomizations(updatedCustomizations);
-    calculateTotalPrice(selectedSize, updatedCustomizations);
-  };
-
-  const handleSaveChanges = () => {
-    if (onUpdateCustomization) {
-      onUpdateCustomization(item.cartItemId, {
-        selectedSize,
-        selectedOptions: selectedCustomizations
-      });
-    }
-    onClose();
-  };
-
-  const handleCancel = () => {
-    // Reset to original values
-    if (item) {
-      setSelectedSize(item.selectedSize || 'medium');
-      setSelectedCustomizations(item.selectedOptions || {});
-    }
-    onClose();
-  };
+  }, [open, item, sizeOptions]);
 
   if (!item) return null;
 
-  // Mock customization options (in real app, this would come from the menu item data)
-  const customizationOptions = {
-    milk: ['Regular Milk', 'Almond Milk', 'Soy Milk', 'Oat Milk'],
-    sweetness: ['No Sugar', 'Less Sweet', 'Regular', 'Extra Sweet'],
-    temperature: ['Hot', 'Iced'],
-    extras: ['Extra Shot', 'Decaf', 'Extra Foam', 'Whipped Cream', 'Vanilla Syrup', 'Caramel Syrup']
+  const basePrice = Number(sizeOptions.find((s) => s.value === selectedSize)?.price || 0);
+  const delta = Object.values(selectedOptions).reduce((sum, v) => sum + (Number(v) || 0), 0);
+  const total = (basePrice + delta) * item.quantity;
+
+  const toggleOption = (name, priceDelta, checked) => {
+    setSelectedOptions((prev) => {
+      const next = { ...prev };
+      if (checked) next[name] = Number(priceDelta) || 0;
+      else delete next[name];
+      return next;
+    });
   };
 
-  const sizeOptions = ['Small', 'Medium', 'Large'];
+  const handleSave = () => {
+    onUpdateCustomization?.(item.cartItemId, { selectedSize, selectedOptions });
+    onClose();
+  };
 
   return (
-    <Dialog
-      open={open}
-      onClose={handleCancel}
-      TransitionComponent={Transition}
-      maxWidth="md"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-          background: 'linear-gradient(145deg, #FFFFFF 0%, #FAF7F2 100%)',
-        }
-      }}
-    >
-      <DialogTitle sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        pb: 1,
-        borderBottom: '1px solid',
-        borderColor: 'divider'
-      }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <EditIcon color="primary" />
-          <Typography variant="h6" component="div">
-            Edit Customization
-          </Typography>
-        </Box>
-        <IconButton onClick={handleCancel} size="small">
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" PaperProps={{ sx: { borderRadius: 4 } }}>
+      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 700 }}>
+        Edit {item.title || item.name}
+        <IconButton onClick={onClose} aria-label="Close">
           <CloseIcon />
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ pt: 3 }}>
-        {/* Item Info */}
-        <Paper sx={{ p: 2, mb: 3, backgroundColor: 'background.secondary' }}>
-          <Typography variant="h6" gutterBottom>
-            {item.name}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Current quantity: {item.quantity}
-          </Typography>
-        </Paper>
-
-        {/* Size Selection */}
-        <Box sx={{ mb: 3 }}>
-          <FormControl component="fieldset">
-            <FormLabel component="legend" sx={{ mb: 1, fontWeight: 600 }}>
+      <DialogContent dividers>
+        <Stack spacing={3}>
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
               Size
-            </FormLabel>
-            <RadioGroup
-              row
-              value={selectedSize}
-              onChange={handleSizeChange}
-            >
-              {sizeOptions.map((size) => (
-                <FormControlLabel
-                  key={size}
-                  value={size}
-                  control={<Radio />}
-                  label={size}
-                  sx={{ mr: 3 }}
-                />
-              ))}
-            </RadioGroup>
-          </FormControl>
-        </Box>
-
-        <Divider sx={{ my: 2 }} />
-
-        {/* Customization Options */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-            Customizations
-          </Typography>
-          
-          {/* Milk Options */}
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
-              Milk Type
             </Typography>
-            <RadioGroup
-              row
-              value={selectedCustomizations.milk || 'Regular Milk'}
-              onChange={(e) => setSelectedCustomizations(prev => ({ ...prev, milk: e.target.value }))}
-            >
-              {customizationOptions.milk.map((option) => (
-                <FormControlLabel
-                  key={option}
-                  value={option}
-                  control={<Radio size="small" />}
-                  label={option}
-                  sx={{ mr: 2 }}
-                />
-              ))}
-            </RadioGroup>
+            <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 3 }}>
+              <RadioGroup value={selectedSize} onChange={(e) => setSelectedSize(e.target.value)}>
+                {sizeOptions.map((opt) => (
+                  <FormControlLabel
+                    key={opt.value}
+                    value={opt.value}
+                    control={<Radio />}
+                    label={
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                        <Typography variant="body1">{opt.label}</Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 600 }}>{formatMoney(opt.price)}</Typography>
+                      </Box>
+                    }
+                    sx={{ width: '100%', m: 0 }}
+                  />
+                ))}
+              </RadioGroup>
+            </Paper>
           </Box>
 
-          {/* Sweetness */}
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
-              Sweetness Level
-            </Typography>
-            <RadioGroup
-              row
-              value={selectedCustomizations.sweetness || 'Regular'}
-              onChange={(e) => setSelectedCustomizations(prev => ({ ...prev, sweetness: e.target.value }))}
-            >
-              {customizationOptions.sweetness.map((option) => (
-                <FormControlLabel
-                  key={option}
-                  value={option}
-                  control={<Radio size="small" />}
-                  label={option}
-                  sx={{ mr: 2 }}
-                />
-              ))}
-            </RadioGroup>
-          </Box>
-
-          {/* Temperature */}
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
-              Temperature
-            </Typography>
-            <RadioGroup
-              row
-              value={selectedCustomizations.temperature || 'Hot'}
-              onChange={(e) => setSelectedCustomizations(prev => ({ ...prev, temperature: e.target.value }))}
-            >
-              {customizationOptions.temperature.map((option) => (
-                <FormControlLabel
-                  key={option}
-                  value={option}
-                  control={<Radio size="small" />}
-                  label={option}
-                  sx={{ mr: 2 }}
-                />
-              ))}
-            </RadioGroup>
-          </Box>
-
-          {/* Extra Options */}
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
-              Extra Options (+₹10 each)
-            </Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-              {customizationOptions.extras.map((option) => (
-                <FormControlLabel
-                  key={option}
-                  control={
-                    <Checkbox
-                      checked={selectedCustomizations[option] || false}
-                      onChange={handleCustomizationChange}
-                      name={option}
-                      size="small"
-                    />
-                  }
-                  label={option}
-                  sx={{ mr: 1 }}
-                />
-              ))}
+          {modifierGroups.length > 0 && (
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                Options
+              </Typography>
+              <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 3 }}>
+                <Stack spacing={1.5}>
+                  {modifierGroups.map((group) => (
+                    <Box key={group._id || group.name}>
+                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                        {group.name}
+                      </Typography>
+                      {group.options?.map((opt) => (
+                        <FormControlLabel
+                          key={opt._id || opt.name}
+                          control={
+                            <Checkbox
+                              checked={selectedOptions[opt.name] !== undefined}
+                              onChange={(e) => toggleOption(opt.name, opt.priceDelta, e.target.checked)}
+                            />
+                          }
+                          label={
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                              <Typography variant="body2">{opt.name}</Typography>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                {Number(opt.priceDelta) > 0 ? `+${formatMoney(opt.priceDelta)}` : 'Free'}
+                              </Typography>
+                            </Box>
+                          }
+                          sx={{ width: '100%', mr: 0 }}
+                        />
+                      ))}
+                    </Box>
+                  ))}
+                </Stack>
+              </Paper>
             </Box>
-          </Box>
-        </Box>
+          )}
 
-        {/* Price Summary */}
-        <Paper sx={{ p: 2, backgroundColor: 'primary.light', color: 'primary.contrastText' }}>
-          <Typography variant="h6" sx={{ textAlign: 'center' }}>
-            Updated Total: ₹{totalPrice.toFixed(2)}
-          </Typography>
-        </Paper>
+          <Divider />
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+              Updated total
+            </Typography>
+            <Chip color="primary" label={formatMoney(total)} sx={{ fontWeight: 700, fontSize: '1rem' }} />
+          </Stack>
+        </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ p: 3, gap: 1 }}>
-        <Button
-          onClick={handleCancel}
-          variant="outlined"
-          startIcon={<CancelIcon />}
-          sx={{ minWidth: 120 }}
-        >
+      <DialogActions sx={{ p: 2 }}>
+        <Button onClick={onClose} color="inherit">
           Cancel
         </Button>
-        <Button
-          onClick={handleSaveChanges}
-          variant="contained"
-          startIcon={<SaveIcon />}
-          sx={{ minWidth: 120 }}
-        >
-          Save Changes
+        <Button onClick={handleSave} variant="contained" startIcon={<SaveIcon />}>
+          Save changes
         </Button>
       </DialogActions>
     </Dialog>

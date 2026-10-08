@@ -26,7 +26,11 @@ describe('useCheckoutFlow', () => {
         await act(async () => {
             await result.current.handleCheckout();
         });
-        expect(createOrder).toHaveBeenCalledWith('cash');
+        expect(createOrder).toHaveBeenCalledWith('cash', {
+            phone: '',
+            customerName: '',
+            tableNumber: '',
+        });
         expect(result.current.openDialog).toBe(true);
     });
 });

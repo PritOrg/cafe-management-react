@@ -2,8 +2,15 @@ import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Box } from '@mui/material';
 
-// Components and layouts
-import { Layout, AdminLayout, AdminRoute, ErrorBoundary, ToastProvider, LoadingProvider, ConfirmProvider } from './components';
+// Components and layouts (direct imports — avoids pulling the whole component
+// barrel into the initial bundle)
+import Layout from './components/layout/Layout';
+import AdminLayout from './components/layout/AdminLayout';
+import AdminRoute from './components/common/AdminRoute';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import { ToastProvider } from './components/ui/Toast';
+import { LoadingProvider } from './components/ui/GlobalLoading';
+import { ConfirmProvider } from './components/ui/ConfirmDialog';
 
 // Lazy pages — smaller first load on mobile
 const LandingPage = lazy(() => import('./pages/customer/LandingPage.jsx').then((m) => ({ default: m.LandingPage || m.default })));

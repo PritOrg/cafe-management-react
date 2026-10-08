@@ -34,7 +34,7 @@ describe('BrandContext white-label', () => {
         getPublic.mockRejectedValue(new Error('offline'));
         const { result } = renderBrand();
         await waitFor(() => expect(result.current.loading).toBe(false));
-        expect(result.current.brand.title).toBe('Cafe Management');
+        expect(result.current.brand.title).toBe('Restaurant');
         expect(result.current.brand.primaryColor).toBe('#ff6b35');
     });
 });

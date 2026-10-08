@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import {
   Box,
   Container,
@@ -15,11 +15,16 @@ import {
 } from '@mui/material';
 import PhoneIcon from '@mui/icons-material/Phone';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import LocalCafeIcon from '@mui/icons-material/LocalCafe';
 import SearchIcon from '@mui/icons-material/Search';
+import ReplayIcon from '@mui/icons-material/Replay';
 import { ordersAPI, unwrap } from '../../services/api';
 import PageHeader from '../../components/common/PageHeader';
 import EmptyState from '../../components/common/EmptyState';
+import { useToast } from '../../components/ui';
+import CartContext from '../../components/CartContext';
+import { useCustomer } from '../../contexts/CustomerContext';
+import { useNavigate } from 'react-router-dom';
+import { findMenuItem, prefetchMenu } from '../../hooks/useMenuData';
 
 const STATUS_META = {
   pending: { label: 'Pending', color: 'warning' },
@@ -29,25 +34,62 @@ const STATUS_META = {
   cancelled: { label: 'Cancelled', color: 'error' },
 };
 
+const ORDER_STEPS = ['pending', 'preparing', 'ready', 'served'];
+
 const formatMoney = (value) => `₹${Number(value || 0).toFixed(2)}`;
 
 const formatDate = (value) => {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return date.toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+};
+
+const normalizeOptions = (customizations) => {
+  if (Array.isArray(customizations)) {
+    return Object.fromEntries(
+      customizations.map((c) => (typeof c === 'string' ? [c, 0] : [c.name, Number(c.priceDelta) || 0]))
+    );
+  }
+  return customizations || {};
+};
+
+const StatusTrack = ({ status }) => {
+  const activeIndex = ORDER_STEPS.indexOf(status);
+  if (status === 'cancelled') {
+    return <Chip size="small" color="error" label="Cancelled" />;
+  }
+  return (
+    <Stack direction="row" spacing={0.5} alignItems="center">
+      {ORDER_STEPS.map((step, index) => (
+        <React.Fragment key={step}>
+          <Box
+            sx={{
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              bgcolor: index <= activeIndex ? 'primary.main' : 'action.disabledBackground',
+            }}
+          />
+          {index < ORDER_STEPS.length - 1 && (
+            <Box sx={{ width: 18, height: 2, bgcolor: index < activeIndex ? 'primary.main' : 'action.disabledBackground' }} />
+          )}
+        </React.Fragment>
+      ))}
+    </Stack>
+  );
 };
 
 const OrderHistoryPage = () => {
-  const [phone, setPhone] = useState(() => localStorage.getItem('customerPhone') || '');
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { addToCart } = useContext(CartContext) || {};
+  const { phone: savedPhone, setCustomer } = useCustomer();
+
+  const [phone, setPhone] = useState(savedPhone || '');
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [reorderingId, setReorderingId] = useState(null);
   const [error, setError] = useState(null);
   const [searched, setSearched] = useState(false);
 
@@ -64,14 +106,14 @@ const OrderHistoryPage = () => {
       const data = unwrap(body) || {};
       setOrders(Array.isArray(data.orders) ? data.orders : []);
       setSearched(true);
-      localStorage.setItem('customerPhone', trimmed);
+      setCustomer({ phone: trimmed, name: data.customer?.name || '' });
     } catch (err) {
       setError(err.message || 'Could not load your orders. Please try again.');
       setOrders([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [setCustomer]);
 
   useEffect(() => {
     if (phone) load(phone);
@@ -81,6 +123,31 @@ const OrderHistoryPage = () => {
   const handleSubmit = (event) => {
     event.preventDefault();
     load(phone);
+  };
+
+  const handleReorder = async (order) => {
+    setReorderingId(order._id || order.orderNumber);
+    try {
+      await prefetchMenu();
+      let added = 0;
+      for (const item of order.items || []) {
+        const menuItem = findMenuItem(item.menuItem) || findMenuItem(item.menuItemDoc?._id);
+        if (!menuItem) continue;
+        // eslint-disable-next-line no-await-in-loop
+        await addToCart(menuItem, normalizeOptions(item.customizations), item.size || 'medium');
+        added += 1;
+      }
+      if (added > 0) {
+        toast.success(`Added ${added} item${added === 1 ? '' : 's'} to your cart`);
+        navigate('/cart');
+      } else {
+        toast.warning('Those items are no longer on the menu');
+      }
+    } catch (err) {
+      toast.error('Could not reorder. Please try again.');
+    } finally {
+      setReorderingId(null);
+    }
   };
 
   return (
@@ -105,13 +172,7 @@ const OrderHistoryPage = () => {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             inputProps={{ inputMode: 'tel', autoComplete: 'tel' }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <PhoneIcon color="action" />
-                </InputAdornment>
-              ),
-            }}
+            InputProps={{ startAdornment: (<InputAdornment position="start"><PhoneIcon color="action" /></InputAdornment>) }}
           />
           <Button
             type="submit"
@@ -119,22 +180,18 @@ const OrderHistoryPage = () => {
             size="large"
             startIcon={<SearchIcon />}
             disabled={loading}
-            sx={{ minWidth: 140, minHeight: 56 }}
+            sx={{ minWidth: 150, minHeight: 56 }}
           >
             {loading ? <CircularProgress size={22} color="inherit" /> : 'Find orders'}
           </Button>
         </Stack>
       </Paper>
 
-      {error && (
-        <Alert severity="warning" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
+      {error && <Alert severity="warning" sx={{ mb: 3 }}>{error}</Alert>}
 
       {!loading && searched && orders.length === 0 && !error && (
         <EmptyState
-          icon={<LocalCafeIcon />}
+          icon={<ReceiptLongIcon />}
           title="No orders found"
           description="We couldn't find any orders for that number. Double-check it and try again."
         />
@@ -144,27 +201,24 @@ const OrderHistoryPage = () => {
         {orders.map((order) => {
           const meta = STATUS_META[order.status] || { label: order.status, color: 'default' };
           const itemCount = (order.items || []).reduce((sum, i) => sum + (i.quantity || 1), 0);
+          const busy = reorderingId === (order._id || order.orderNumber);
           return (
-            <Paper
-              key={order._id || order.orderNumber}
-              elevation={0}
-              sx={{ p: 2.5, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}
-            >
+            <Paper key={order._id || order.orderNumber} elevation={0} sx={{ p: 2.5, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
                 <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
-                    {order.orderNumber}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {formatDate(order.placedAt || order.createdAt)}
-                  </Typography>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>{order.orderNumber}</Typography>
+                  <Typography variant="caption" color="text.secondary">{formatDate(order.placedAt || order.createdAt)}</Typography>
                 </Box>
                 <Chip size="small" label={meta.label} color={meta.color} />
               </Stack>
 
-              <Divider sx={{ my: 1.5 }} />
+              <Box sx={{ my: 1.5 }}>
+                <StatusTrack status={order.status} />
+              </Box>
 
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Divider sx={{ mb: 1.5 }} />
+
+              <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
                 <Typography variant="body2" color="text.secondary">
                   {itemCount} item{itemCount === 1 ? '' : 's'}
                   {order.tableNumber ? ` · Table ${order.tableNumber}` : ''}
@@ -183,12 +237,22 @@ const OrderHistoryPage = () => {
                     </Typography>
                   ))}
                   {order.items.length > 4 && (
-                    <Typography variant="caption" color="text.secondary">
-                      +{order.items.length - 4} more
-                    </Typography>
+                    <Typography variant="caption" color="text.secondary">+{order.items.length - 4} more</Typography>
                   )}
                 </Box>
               )}
+
+              <Stack direction="row" justifyContent="flex-end" sx={{ mt: 2 }}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={busy ? <CircularProgress size={16} /> : <ReplayIcon />}
+                  onClick={() => handleReorder(order)}
+                  disabled={busy}
+                >
+                  Reorder
+                </Button>
+              </Stack>
             </Paper>
           );
         })}

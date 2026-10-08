@@ -6,7 +6,7 @@ import ShoppingCart from '@mui/icons-material/ShoppingCart';
 import AttachMoney from '@mui/icons-material/AttachMoney';
 import Inventory from '@mui/icons-material/Inventory';
 import Add from '@mui/icons-material/Add';
-import Coffee from '@mui/icons-material/Coffee';
+import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import BarChart from '@mui/icons-material/BarChart';
 import Schedule from '@mui/icons-material/Schedule';
 import Warning from '@mui/icons-material/Warning';
@@ -92,7 +92,7 @@ const AlertCard = styled(Paper)(({ theme, severity = 'info' }) => {
 });
 
 const quickActions = [
-  { title: 'Add Menu Item', icon: Coffee, color: 'primary' },
+  { title: 'Add Menu Item', icon: RestaurantMenuIcon, color: 'primary' },
   { title: 'Process Orders', icon: ShoppingCart, color: 'secondary' },
   { title: 'View Reports', icon: BarChart, color: 'info' },
   { title: 'Manage Inventory', icon: Inventory, color: 'warning' },

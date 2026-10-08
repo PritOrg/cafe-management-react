@@ -11,13 +11,13 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import ShoppingCart from '@mui/icons-material/ShoppingCart';
-import LocalShipping from '@mui/icons-material/LocalShipping';
+import Person from '@mui/icons-material/Person';
 import Payment from '@mui/icons-material/Payment';
 import RateReview from '@mui/icons-material/RateReview';
 
 const StyledStepper = styled(Stepper)(({ theme }) => ({
   padding: theme.spacing(3),
-  background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.tertiary} 100%)`,
+  background: theme.palette.background.paper,
   borderRadius: theme.spacing(2),
   boxShadow: theme.shadows[1],
   border: `1px solid ${theme.palette.divider}`,
@@ -25,7 +25,7 @@ const StyledStepper = styled(Stepper)(({ theme }) => ({
 
 const stepIcons = {
   0: ShoppingCart,
-  1: LocalShipping,
+  1: Person,
   2: Payment,
   3: RateReview,
 };
