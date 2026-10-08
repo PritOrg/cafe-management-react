@@ -5,13 +5,13 @@ import {
   Container,
   Typography,
   Button,
-  Grid,
   Stack,
   Chip,
   Card,
   CardContent,
   useTheme,
 } from '@mui/material';
+import Grid2 from '@mui/material/Unstable_Grid2';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import LocalCafeIcon from '@mui/icons-material/LocalCafe';
@@ -107,9 +107,9 @@ const LandingPage = () => {
         <Typography variant="h5" fontWeight={700} sx={{ mb: 3 }}>
           Everything the floor needs
         </Typography>
-        <Grid container spacing={{ xs: 2, md: 3 }}>
+        <Grid2 container spacing={{ xs: 2, md: 3 }}>
           {FEATURES.map((f) => (
-            <Grid item xs={12} sm={6} md={4} key={f.title}>
+            <Grid2 xs={12} sm={6} md={4} key={f.title}>
               <Card sx={{ height: '100%' }}>
                 <CardContent>
                   <Box sx={{ color: 'primary.main', mb: 1 }}>{f.icon}</Box>
@@ -117,9 +117,9 @@ const LandingPage = () => {
                   <Typography variant="body2" color="text.secondary">{f.text}</Typography>
                 </CardContent>
               </Card>
-            </Grid>
+            </Grid2>
           ))}
-        </Grid>
+        </Grid2>
 
         <Box
           sx={{

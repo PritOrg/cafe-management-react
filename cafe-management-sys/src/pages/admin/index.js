@@ -8,7 +8,6 @@ export { default as AdminInventory } from './AdminInventory';
 export { default as AdminAnalytics } from './AdminAnalytics';
 export { default as AdminSettings } from './AdminSettings';
 export { default as AddMenuItemForm } from './AddMenuItemForm';
-export { default as AdminSidebarItem } from './AdminSidebarItem';
 export { default as AdminTenants } from './AdminTenants';
 export { default as AdminCustomers } from './AdminCustomers';
 export { default as AdminKitchen } from './AdminKitchen';

@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
-import { Container, Typography, Box } from '@mui/material';
+import { Container } from '@mui/material';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import CartContext from '../../components/CartContext';
 import CheckoutStepper from '../../components/CartComponents/CheckoutStepper';
 import CartItems from '../../components/CartComponents/CartItems';
@@ -8,6 +9,7 @@ import PaymentForm from '../../components/CartComponents/PaymentForm';
 import OrderReview from '../../components/CartComponents/OrderReview';
 import OrderConfirmationDialog from '../../components/CartComponents/OrderConfirmationDialog';
 import EmptyCart from '../../components/CartComponents/EmptyCart';
+import PageHeader from '../../components/common/PageHeader';
 import { useCheckoutFlow } from '../../hooks/useCheckoutFlow';
 
 
@@ -117,33 +119,14 @@ const CartPage = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box mb={4}>
-        <Typography 
-          variant="h3" 
-          gutterBottom 
-          sx={{ 
-            textAlign: 'center',
-            color: 'text.primary',
-            fontWeight: 700,
-            mb: 1
-          }}
-        >
-          ☕ Your Coffee Cart
-        </Typography>
-        <Typography 
-          variant="subtitle1" 
-          sx={{ 
-            textAlign: 'center',
-            color: 'text.secondary',
-            mb: 4
-          }}
-        >
-          Brewing the perfect order for you
-        </Typography>
-        
-        <CheckoutStepper activeStep={activeStep} steps={steps} />
-      </Box>
+    <Container maxWidth="lg" sx={{ py: { xs: 2, md: 4 } }}>
+      <PageHeader
+        title="Your cart"
+        icon={<ShoppingCartIcon fontSize="small" />}
+        subtitle="Review your items and complete your order"
+      />
+
+      <CheckoutStepper activeStep={activeStep} steps={steps} />
 
       {renderStepContent()}
 
