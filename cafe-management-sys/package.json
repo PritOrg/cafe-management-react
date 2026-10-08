@@ -24,7 +24,9 @@
     "test": "vitest",
     "test:run": "vitest run",
     "lint": "eslint src --ext .js,.jsx",
-    "verify": "bash ../scripts/verify.sh"
+    "verify": "bash ../scripts/verify.sh",
+    "dev:clean": "rm -rf /tmp/cafe-vite-cache && vite",
+    "clean": "rm -rf /tmp/cafe-vite-cache build node_modules/.vite"
   },
   "eslintConfig": {
     "root": true,
