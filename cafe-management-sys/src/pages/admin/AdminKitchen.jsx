@@ -6,8 +6,6 @@ import {
   CardContent,
   Chip,
   Button,
-  Alert,
-  LinearProgress,
   Grid,
   Paper,
 } from '@mui/material';
@@ -16,6 +14,8 @@ import AccessTime from '@mui/icons-material/AccessTime';
 import LocalDining from '@mui/icons-material/LocalDining';
 import Whatshot from '@mui/icons-material/Whatshot';
 import { kitchenAPI, ordersAPI, unwrap } from '../../services/api';
+import LoadingState from '../../components/common/LoadingState';
+import ErrorState from '../../components/common/ErrorState';
 
 const statusColor = (s) => (s === 'pending' ? 'warning' : s === 'preparing' ? 'info' : 'success');
 
@@ -63,12 +63,13 @@ const AdminKitchen = () => {
         <Button variant="outlined" startIcon={<Refresh />} onClick={fetchOrders}>Refresh</Button>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      {loading && !orders.length && <LinearProgress sx={{ mb: 2 }} />}
-
-      {orders.length === 0 && !loading && (
+      {loading && !orders.length ? (
+        <LoadingState label="Loading kitchen tickets…" rows={3} />
+      ) : error && !orders.length ? (
+        <ErrorState title="Couldn't load the kitchen board" message={error} onRetry={fetchOrders} />
+      ) : orders.length === 0 ? (
         <Card><CardContent><Typography color="text.secondary">No active kitchen tickets</Typography></CardContent></Card>
-      )}
+      ) : null}
 
       <Grid container spacing={2}>
         {orders.map((order) => (

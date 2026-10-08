@@ -30,11 +30,13 @@ import Visibility from '@mui/icons-material/Visibility';
 import FilterList from '@mui/icons-material/FilterList';
 import { useNavigate } from 'react-router-dom';
 import { menuAPI, activityAPI, unwrap } from '../../services/api';
+import ErrorState from '../../components/common/ErrorState';
 
 const AdminMenu = () => {
   const navigate = useNavigate();
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [selectedItem, setSelectedItem] = useState(null);
@@ -75,11 +77,13 @@ const AdminMenu = () => {
   const fetchMenuItems = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await menuAPI.getAll();
       const menuData = response?.data || response || [];
       setMenuItems(Array.isArray(menuData) ? menuData : []);
-    } catch (error) {
-      console.error('Error fetching menu items:', error);
+    } catch (err) {
+      console.error('Error fetching menu items:', err);
+      setError(err.message || 'Failed to load menu items');
       setMenuItems([]);
     } finally {
       setLoading(false);
@@ -152,6 +156,10 @@ const AdminMenu = () => {
           Add New Item
         </Button>
       </Box>
+
+      {error && (
+        <ErrorState title="Couldn't load menu items" message={error} onRetry={fetchMenuItems} />
+      )}
 
       {/* Search and Filters */}
       <Card sx={{ mb: 3 }}>

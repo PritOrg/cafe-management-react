@@ -9,11 +9,13 @@ import Cancel from '@mui/icons-material/Cancel';
 import Schedule from '@mui/icons-material/Schedule';
 import LocalShipping from '@mui/icons-material/LocalShipping';
 import { ordersAPI, activityAPI, unwrap } from '../../services/api';
+import ErrorState from '../../components/common/ErrorState';
 import { adaptOrder } from '../../adapters';
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -35,6 +37,7 @@ const AdminOrders = () => {
   const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       const params = {};
       if (statusFilter !== 'all') {
         params.status = statusFilter;
@@ -43,8 +46,9 @@ const AdminOrders = () => {
       const response = await ordersAPI.getAll(params);
       const ordersData = unwrap(response) || [];
       setOrders((Array.isArray(ordersData) ? ordersData : []).map(adaptOrder));
-    } catch (error) {
-      console.error('Error fetching orders:', error);
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+      setError(err.message || 'Failed to load orders');
       setOrders([]);
     } finally {
       setLoading(false);
@@ -140,6 +144,10 @@ const AdminOrders = () => {
       <Typography variant="h4" sx={{ mb: 3, fontWeight: 600 }}>
         Order Management
       </Typography>
+
+      {error && (
+        <ErrorState title="Couldn't load orders" message={error} onRetry={fetchOrders} />
+      )}
 
       {/* Status Tabs */}
       <Card sx={{ mb: 3 }}>

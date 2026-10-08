@@ -19,6 +19,7 @@ import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import MenuItemCard from '../../components/menu/MenuItemCard';
 import PageHeader from '../../components/common/PageHeader';
 import EmptyState from '../../components/common/EmptyState';
+import ErrorState from '../../components/common/ErrorState';
 import useMenuData from '../../hooks/useMenuData';
 import useFavourites from '../../hooks/useFavourites';
 
@@ -28,7 +29,7 @@ const MenuPage = () => {
   const [searchQuery, setSearchQuery] = useState(queryParam);
   const [categoryFilter, setCategoryFilter] = useState('');
   const [favOnly, setFavOnly] = useState(false);
-  const { items, loading } = useMenuData();
+  const { items, loading, error, reload } = useMenuData();
   const { favourites } = useFavourites();
 
   // Navbar search lands here as ?q=; keep the field in sync with it.
@@ -167,6 +168,12 @@ const MenuPage = () => {
       <Box sx={{ mt: 2 }}>
         {loading ? (
           renderSkeletonCards()
+        ) : error && items.length === 0 ? (
+          <ErrorState
+            title="Couldn't load the menu"
+            message={error.message || 'Please check your connection and try again.'}
+            onRetry={() => reload()}
+          />
         ) : filteredItems.length > 0 ? (
           <Grid2 container spacing={2}>
             {filteredItems.map((item) => (
@@ -192,7 +199,7 @@ const MenuPage = () => {
 
       {!loading && filteredItems.length > 0 && hasFilters && (
         <Stack alignItems="center" sx={{ mt: 3 }}>
-          <Button onClick={clearAllFilters} color="primary">
+          <Button onClick={clearAllFilters} sx={{ color: (t) => t.brand?.primaryText || t.palette.primary.main }}>
             Clear filters
           </Button>
         </Stack>

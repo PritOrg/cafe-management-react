@@ -27,7 +27,7 @@ const EmptyState = ({ icon, title, description, actionLabel, onAction, actionPro
           alignItems: 'center',
           justifyContent: 'center',
           bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
-          color: 'primary.main',
+          color: (t) => t.brand?.primaryText || t.palette.primary.main,
           '& .MuiSvgIcon-root': { fontSize: 44 },
         }}
       >
