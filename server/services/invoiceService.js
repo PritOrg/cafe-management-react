@@ -5,6 +5,7 @@ const invoiceRepo = require('../repositories/invoiceRepo');
 const settingsRepo = require('../repositories/settingsRepo');
 const orderRepo = require('../repositories/orderRepo');
 const activityRepo = require('../repositories/activityRepo');
+const events = require('./events');
 
 const GSTIN_RE = /^\d{2}[A-Z]{5}\d{4}[A-Z]\dZ\d$/;
 
@@ -144,6 +145,13 @@ const issueForOrder = async (tenantId, orderId, { interState = false, actorId, a
         entity: 'invoice',
         entityId: saved.id,
         meta: { invoiceNumber: saved.invoice_number, orderId: order._id, grandTotal: grand },
+    });
+
+    events.emit('invoice:issued', {
+        tenantId,
+        orderId: order._id,
+        invoiceId: saved.id,
+        invoiceNumber: saved.invoice_number,
     });
 
     return {
