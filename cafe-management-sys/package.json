@@ -2,6 +2,7 @@
   "name": "cafe-management-sys",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "dependencies": {
     "@emotion/react": "^11.11.4",
@@ -15,7 +16,6 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.23.1",
-    "styled-components": "^6.1.11",
     "sweetalert2": "^11.11.1"
   },
   "scripts": {
