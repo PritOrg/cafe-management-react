@@ -112,6 +112,10 @@ describe('HTTP controllers integration', () => {
     });
 
     it('invoice controller issue/list/pdf/void', async () => {
+        const settingsRepo = (await import('../repositories/settingsRepo.js'));
+        // Clear GST so placement does NOT auto-issue, then exercise explicit inter-state issuance.
+        await settingsRepo.update(tenant._id, { gst: { ...settingsRepo.DEFAULTS.gst } });
+
         const phone = `9${Date.now().toString().slice(-9)}`;
         const place = mockRes();
         await orderController.placeOrder({
@@ -119,7 +123,6 @@ describe('HTTP controllers integration', () => {
         }, place);
         const orderId = place.body.data.order._id;
 
-        const settingsRepo = (await import('../repositories/settingsRepo.js'));
         await settingsRepo.update(tenant._id, {
             gst: { ...settingsRepo.DEFAULTS.gst, gstin: '27AAAAA0000A1Z5', legalName: 'LLP', legalAddress: 'Addr', stateCode: '27' },
         });
