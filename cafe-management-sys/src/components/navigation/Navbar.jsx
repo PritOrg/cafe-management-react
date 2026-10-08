@@ -1,307 +1,291 @@
-import * as React from 'react';
-import { styled, alpha } from '@mui/material/styles';
+import React, {
+  memo,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import { Link as RouterLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
-import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
+import Badge from '@mui/material/Badge';
+import Avatar from '@mui/material/Avatar';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Divider from '@mui/material/Divider';
+import Tooltip from '@mui/material/Tooltip';
 import InputBase from '@mui/material/InputBase';
-import MenuIcon from '@mui/icons-material/Menu';
+import { styled, alpha } from '@mui/material/styles';
+
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
-import Button from '@mui/material/Button';
-import { Link, useLocation } from 'react-router-dom';
-import { Avatar, Badge, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Stack, useMediaQuery, useTheme } from '@mui/material';
-import LocalCafeIcon from '@mui/icons-material/LocalCafe';
-import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-import HomeIcon from '@mui/icons-material/Home';
-import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
 import LoginIcon from '@mui/icons-material/Login';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
-import InfoIcon from '@mui/icons-material/Info';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import LogoutIcon from '@mui/icons-material/Logout';
+import LocalCafeIcon from '@mui/icons-material/LocalCafe';
+
+import CartContext from '../CartContext';
 import { useBrand } from '../../contexts/BrandContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { useThemeContext } from '../../contexts/ThemeContext';
+import { CUSTOMER_TEXT_NAV } from '../../constants/navigation';
+import { prefetchMenu } from '../../hooks/useMenuData';
 
-const Search = styled('div')(({ theme }) => ({
-  position: 'relative',
-  borderRadius: 30,
-  backgroundColor: alpha(theme.palette.common.black, 0.05),
-  '&:hover': {
-    backgroundColor: alpha(theme.palette.common.black, 0.08),
-  },
-  transition: 'all 0.3s ease',
-  marginRight: theme.spacing(2),
-  marginLeft: 'auto',
-  width: '100%',
-  [theme.breakpoints.up('sm')]: {
-    marginLeft: theme.spacing(1),
-    width: 'auto',
-  },
-}));
-
-const SearchIconWrapper = styled('div')(({ theme }) => ({
-  padding: theme.spacing(0, 2),
-  height: '100%',
-  position: 'absolute',
-  pointerEvents: 'none',
+const SearchForm = styled('form')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'center',
-  color: theme.palette.text.secondary,
-}));
-
-const StyledInputBase = styled(InputBase)(({ theme }) => ({
-  color: theme.palette.text.primary,
-  width: '100%',
-  '& .MuiInputBase-input': {
-    padding: theme.spacing(1.25, 1, 1.25, 0),
-    paddingLeft: `calc(1em + ${theme.spacing(4)})`,
-    transition: theme.transitions.create('width'),
-    [theme.breakpoints.up('sm')]: {
-      width: '12ch',
-      '&:focus': {
-        width: '20ch',
-        backgroundColor: alpha(theme.palette.common.black, 0.05),
-      },
-    },
+  gap: theme.spacing(0.5),
+  flex: 1,
+  maxWidth: 420,
+  ml: 3,
+  px: 2,
+  py: 0.5,
+  borderRadius: 999,
+  backgroundColor: alpha(theme.palette.text.primary, 0.06),
+  transition: theme.transitions.create(['background-color', 'box-shadow']),
+  '&:focus-within': {
+    backgroundColor: alpha(theme.palette.text.primary, 0.09),
+    boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.3)}`,
   },
 }));
 
-const NavLink = styled(Link)(({ theme, active }) => ({
+const NavButton = styled(Button, { shouldForwardProp: (prop) => prop !== 'active' })(
+  ({ theme, active }) => ({
+    color: active ? theme.palette.primary.main : theme.palette.text.primary,
+    fontWeight: active ? 700 : 500,
+    px: 1.5,
+    minWidth: 0,
+    borderRadius: 8,
+    '&:hover': { backgroundColor: alpha(theme.palette.primary.main, 0.08) },
+  })
+);
+
+const BrandLink = styled(RouterLink)({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
   textDecoration: 'none',
   color: 'inherit',
-  position: 'relative',
-  '&::after': active ? {
-    content: '""',
-    position: 'absolute',
-    width: '70%',
-    height: '3px',
-    bottom: '-8px',
-    left: '15%',
-    backgroundColor: theme.palette.primary.main,
-    borderRadius: '2px',
-  } : {},
-}));
+  minWidth: 0,
+});
 
-const NavButton = styled(Button)(({ theme, active }) => ({
-  color: active ? theme.palette.primary.main : theme.palette.text.primary,
-  fontWeight: active ? 600 : 500,
-  padding: '6px 16px',
-  borderRadius: '8px',
-  transition: 'all 0.2s ease',
-  '&:hover': {
-    backgroundColor: alpha(theme.palette.primary.main, 0.08),
-  },
-}));
-
-export default function Navbar() {
-  const [mobileOpen, setMobileOpen] = React.useState(false);
-  const [showSearch, setShowSearch] = React.useState(false);
-  const theme = useTheme();
-  const location = useLocation();
+const Navbar = () => {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
   const { brand } = useBrand();
+  const { isAuthenticated, user, isStaff, logout } = useAuth();
+  const { isDarkMode, toggleMode } = useThemeContext();
+  const { cartCount = 0 } = useContext(CartContext) || {};
+
+  const [query, setQuery] = useState('');
+  const [mobileSearch, setMobileSearch] = useState(false);
+  const [accountAnchor, setAccountAnchor] = useState(null);
+
   const brandTitle = brand?.title || 'Cafe';
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const cartCount = 2; // This would come from your state management
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
+  // Keep the search box in sync with `?q=` (e.g. after landing on /menu).
+  useEffect(() => {
+    setQuery(searchParams.get('q') || '');
+  }, [searchParams]);
 
-  const isActive = (path) => {
-    return location.pathname === path;
-  };
+  const submitSearch = useCallback(
+    (event) => {
+      event.preventDefault();
+      const q = query.trim();
+      navigate(q ? `/menu?q=${encodeURIComponent(q)}` : '/menu');
+      setMobileSearch(false);
+    },
+    [navigate, query]
+  );
 
-  // Navigation items with icons for both desktop and mobile
-  const navItems = [
-    { text: 'Home', path: '/', icon: <HomeIcon /> },
-    { text: 'Menu', path: '/menu', icon: <RestaurantMenuIcon /> },
-    { text: 'Login', path: '/login-register', icon: <LoginIcon /> },
-    { text: 'Add Item', path: '/menu/add', icon: <AddCircleIcon /> },
-    { text: 'Cart', path: '/cart', icon: <ShoppingCartIcon /> },
-    { text: 'About Us', path: '/about', icon: <InfoIcon /> },
-  ];
+  const onSearchIntent = useCallback(() => {
+    prefetchMenu().catch(() => {});
+  }, []);
 
-  // Mobile drawer content
-  const drawer = (
-    <Box sx={{ width: 280, pt: 2 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 4 }}>
-        <LocalCafeIcon sx={{ mr: 1, color: 'primary.main' }} />
-        <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
-          {brandTitle}
-        </Typography>
-      </Box>
-      <List>
-        {navItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton 
-              component={Link} 
-              to={item.path}
-              selected={isActive(item.path)}
-              onClick={handleDrawerToggle}
-              sx={{ 
-                borderRadius: 2, 
-                mx: 1, 
-                mb: 0.5,
-                '&.Mui-selected': {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                  color: 'primary.main',
-                  '&:hover': {
-                    backgroundColor: alpha(theme.palette.primary.main, 0.12),
-                  }
-                }
-              }}
-            >
-              <ListItemIcon sx={{ color: isActive(item.path) ? 'primary.main' : 'inherit', minWidth: 40 }}>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText 
-                primary={item.text} 
-                primaryTypographyProps={{ 
-                  fontWeight: isActive(item.path) ? 600 : 500 
-                }} 
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-    </Box>
+  const handleAccount = useCallback(
+    (event) => {
+      if (isAuthenticated) setAccountAnchor(event.currentTarget);
+      else navigate('/login-register');
+    },
+    [isAuthenticated, navigate]
+  );
+
+  const handleAccountClose = useCallback(() => setAccountAnchor(null), []);
+
+  const handleLogout = useCallback(() => {
+    setAccountAnchor(null);
+    logout();
+    navigate('/');
+  }, [logout, navigate]);
+
+  const initial = useMemo(() => {
+    const source = user?.firstName || user?.email || 'A';
+    return String(source).charAt(0).toUpperCase();
+  }, [user]);
+
+  const searchField = (
+    <SearchForm onSubmit={submitSearch} role="search">
+      <SearchIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+      <InputBase
+        placeholder="Search the menu…"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onFocus={onSearchIntent}
+        inputProps={{ 'aria-label': 'Search menu', enterKeyHint: 'search' }}
+        sx={{ flex: 1, fontSize: '0.95rem' }}
+      />
+      {mobileSearch && (
+        <IconButton size="small" aria-label="Close search" onClick={() => setMobileSearch(false)}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      )}
+    </SearchForm>
   );
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="sticky" color="default" elevation={0} sx={{ 
-        backdropFilter: 'blur(10px)',
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
-        borderBottom: '1px solid',
-        borderColor: 'divider'
-      }}>
-        <Toolbar sx={{ py: { xs: 1, sm: 1.5 } }}>
-          {/* Mobile Menu Button */}
-          {isMobile && (
-            <IconButton
-              size="large"
-              edge="start"
-              color="inherit"
-              aria-label="open drawer"
-              onClick={handleDrawerToggle}
-              sx={{ mr: 1 }}
-            >
-              <MenuIcon />
-            </IconButton>
-          )}
+    <AppBar position="sticky">
+      <Toolbar sx={{ gap: { xs: 0.5, md: 1 }, minHeight: { xs: 60, md: 64 } }}>
+        {mobileSearch ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>{searchField}</Box>
+        ) : (
+          <>
+            <BrandLink to="/" aria-label={`${brandTitle} home`}>
+              <Avatar
+                sx={{
+                  bgcolor: 'primary.main',
+                  width: { xs: 34, md: 38 },
+                  height: { xs: 34, md: 38 },
+                  display: { xs: 'flex', md: 'flex' },
+                }}
+              >
+                <LocalCafeIcon fontSize="small" />
+              </Avatar>
+              <Typography
+                variant="h6"
+                noWrap
+                sx={{ fontWeight: 800, color: 'primary.main', fontSize: { xs: '1.05rem', md: '1.25rem' } }}
+              >
+                {brandTitle}
+              </Typography>
+            </BrandLink>
 
-          {/* Logo */}
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Avatar 
-              sx={{ 
-                bgcolor: 'primary.main', 
-                mr: 1.5, 
-                width: 40, 
-                height: 40,
-                display: { xs: 'none', sm: 'flex' }
-              }}
+            {/* Desktop links */}
+            <Box
+              component="nav"
+              sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', ml: 2, gap: 0.5 }}
             >
-              <LocalCafeIcon />
-            </Avatar>
-            <Typography
-              variant="h5"
-              component={Link}
-              to="/"
-              sx={{
-                fontWeight: 700,
-                textDecoration: 'none',
-                color: 'primary.main',
-                flexGrow: { xs: 1, md: 0 },
-                fontSize: { xs: '1.3rem', sm: '1.5rem' }
-              }}
-            >
-              {brandTitle}
-            </Typography>
-          </Box>
-
-          {/* Desktop Navigation */}
-          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, justifyContent: 'center', ml: 4 }}>
-            <Stack direction="row" spacing={1}>
-              {navItems.map((item) => (
-                <NavLink key={item.text} to={item.path} active={isActive(item.path) ? 1 : 0}>
-                  <NavButton active={isActive(item.path) ? 1 : 0} startIcon={item.icon}>
-                    {item.text}
-                  </NavButton>
-                </NavLink>
+              {CUSTOMER_TEXT_NAV.map((item) => (
+                <NavButton
+                  key={item.key}
+                  component={RouterLink}
+                  to={item.href}
+                  active={item.match(pathname) ? 1 : 0}
+                  onMouseEnter={item.key === 'menu' ? onSearchIntent : undefined}
+                >
+                  {item.label}
+                </NavButton>
               ))}
-            </Stack>
-          </Box>
-
-          {/* Mobile: Search & Cart */}
-          {isMobile && (
-            <Box sx={{ display: 'flex', alignItems: 'center', ml: 'auto' }}>
-              {!showSearch ? (
-                <>
-                  <IconButton color="inherit" onClick={() => setShowSearch(true)}>
-                    <SearchIcon />
-                  </IconButton>
-                  <IconButton component={Link} to="/cart" color="inherit">
-                    <Badge badgeContent={cartCount} color="primary">
-                      <ShoppingCartIcon />
-                    </Badge>
-                  </IconButton>
-                </>
-              ) : (
-                <Search sx={{ ml: 0, flex: 1 }}>
-                  <SearchIconWrapper>
-                    <SearchIcon />
-                  </SearchIconWrapper>
-                  <StyledInputBase
-                    placeholder="Search…"
-                    inputProps={{ 'aria-label': 'search' }}
-                    autoFocus
-                  />
-                  <IconButton 
-                    size="small" 
-                    sx={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)' }}
-                    onClick={() => setShowSearch(false)}
-                  >
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
-                </Search>
-              )}
             </Box>
-          )}
 
-          {/* Desktop: Search */}
-          {!isMobile && (
-            <Search>
-              <SearchIconWrapper>
+            <Box sx={{ flexGrow: 1 }} />
+
+            {/* Desktop search */}
+            <Box sx={{ display: { xs: 'none', md: 'flex' }, flex: 1, justifyContent: 'flex-end' }}>
+              {searchField}
+            </Box>
+
+            {/* Mobile search toggle */}
+            <Tooltip title="Search">
+              <IconButton
+                onClick={() => setMobileSearch(true)}
+                aria-label="Open search"
+                sx={{ display: { xs: 'inline-flex', md: 'none' } }}
+              >
                 <SearchIcon />
-              </SearchIconWrapper>
-              <StyledInputBase
-                placeholder="Search…"
-                inputProps={{ 'aria-label': 'search' }}
-              />
-            </Search>
-          )}
-        </Toolbar>
-      </AppBar>
+              </IconButton>
+            </Tooltip>
 
-      {/* Mobile Navigation Drawer */}
-      <Drawer
-        variant="temporary"
-        open={mobileOpen}
-        onClose={handleDrawerToggle}
-        ModalProps={{
-          keepMounted: true, // Better open performance on mobile
-        }}
-        sx={{
-          display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': { 
-            boxSizing: 'border-box',
-            borderTopRightRadius: 16,
-            borderBottomRightRadius: 16
-          },
-        }}
+            <Tooltip title={isDarkMode ? 'Light mode' : 'Dark mode'}>
+              <IconButton onClick={toggleMode} aria-label="Toggle color theme">
+                {isDarkMode ? <LightModeIcon /> : <DarkModeIcon />}
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Cart">
+              <IconButton
+                component={RouterLink}
+                to="/cart"
+                aria-label={`Cart, ${cartCount} items`}
+                onMouseEnter={onSearchIntent}
+              >
+                <Badge badgeContent={cartCount} color="primary" max={99} overlap="circular">
+                  <ShoppingCartIcon />
+                </Badge>
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title={isAuthenticated ? 'Account' : 'Sign in'}>
+              <IconButton onClick={handleAccount} aria-label="Account" edge="end">
+                {isAuthenticated ? (
+                  <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: '0.9rem' }}>
+                    {initial}
+                  </Avatar>
+                ) : (
+                  <LoginIcon />
+                )}
+              </IconButton>
+            </Tooltip>
+          </>
+        )}
+      </Toolbar>
+
+      <Menu
+        anchorEl={accountAnchor}
+        open={Boolean(accountAnchor)}
+        onClose={handleAccountClose}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        PaperProps={{ sx: { minWidth: 220, mt: 1, borderRadius: 2 } }}
       >
-        {drawer}
-      </Drawer>
-    </Box>
+        <Box sx={{ px: 2, py: 1.25 }}>
+          <Typography variant="subtitle2" noWrap sx={{ fontWeight: 700 }}>
+            {user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user?.email || 'Account'}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" noWrap>
+            {user?.role === 'admin' ? 'Administrator' : isAuthenticated ? 'Staff' : ''}
+          </Typography>
+        </Box>
+        <Divider />
+        {isStaff() && (
+          <MenuItem component={RouterLink} to="/admin" onClick={handleAccountClose}>
+            <ListItemIcon><DashboardIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Dashboard</ListItemText>
+          </MenuItem>
+        )}
+        <MenuItem component={RouterLink} to="/orders" onClick={handleAccountClose}>
+          <ListItemIcon><ReceiptLongIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>My Orders</ListItemText>
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
+          <ListItemIcon><LogoutIcon fontSize="small" color="error" /></ListItemIcon>
+          <ListItemText>Sign out</ListItemText>
+        </MenuItem>
+      </Menu>
+    </AppBar>
   );
-}
+};
+
+export default memo(Navbar);

@@ -60,14 +60,35 @@ const ThemeProvider = ({ children }) => {
           h6: { fontWeight: 600 },
           button: { fontWeight: 600, textTransform: 'none' },
         },
-        shape: { borderRadius: 8 },
+        shape: { borderRadius: 10 },
         components: {
-          MuiButton: {
+          MuiCssBaseline: {
+            styleOverrides: {
+              html: { colorScheme: mode },
+              body: { WebkitFontSmoothing: 'antialiased' },
+            },
+          },
+          MuiAppBar: {
+            defaultProps: { elevation: 0, color: 'default' },
             styleOverrides: {
               root: {
-                borderRadius: 8,
+                backgroundImage: 'none',
+                backdropFilter: 'saturate(180%) blur(12px)',
+                backgroundColor: mode === 'light'
+                  ? 'rgba(255,255,255,0.82)'
+                  : 'rgba(30,30,30,0.82)',
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+              },
+            },
+          },
+          MuiButton: {
+            defaultProps: { disableElevation: true },
+            styleOverrides: {
+              root: {
+                borderRadius: 10,
                 padding: '8px 16px',
-                boxShadow: mode === 'light' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
+                textTransform: 'none',
               },
             },
           },
@@ -83,8 +104,11 @@ const ThemeProvider = ({ children }) => {
           },
           MuiCard: {
             styleOverrides: {
-              root: { borderRadius: 12, overflow: 'hidden' },
+              root: { borderRadius: 14, overflow: 'hidden' },
             },
+          },
+          MuiTooltip: {
+            defaultProps: { arrow: true },
           },
         },
       }),

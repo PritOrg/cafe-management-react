@@ -1,135 +1,86 @@
-import React, { useContext } from 'react';
+import React, { memo, useCallback, useContext } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import {
-  Box,
-  BottomNavigation,
-  BottomNavigationAction,
-  Paper,
-  Badge,
-  Button,
-  Typography,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material';
-import Home from '@mui/icons-material/Home';
-import RestaurantMenu from '@mui/icons-material/RestaurantMenu';
-import ShoppingCart from '@mui/icons-material/ShoppingCart';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import Navbar from '../navigation/Navbar';
+import BottomNav from '../navigation/BottomNav';
 import Footer from '../navigation/Footer';
 import CartContext from '../CartContext';
 
+const CartBar = memo(({ count, total, onCheckout }) => (
+  <Paper
+    square
+    elevation={6}
+    sx={{
+      position: 'fixed',
+      left: 0,
+      right: 0,
+      bottom: 58,
+      zIndex: (theme) => theme.zIndex.appBar - 1,
+      px: 2,
+      py: 1,
+      display: { xs: 'flex', md: 'none' },
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 2,
+      borderTop: '1px solid',
+      borderColor: 'divider',
+    }}
+  >
+    <Box sx={{ minWidth: 0 }}>
+      <Typography variant="caption" color="text.secondary" noWrap>
+        {count} item{count === 1 ? '' : 's'} in cart
+      </Typography>
+      <Typography variant="subtitle1" fontWeight={800} noWrap>
+        ₹{Number(total || 0).toFixed(2)}
+      </Typography>
+    </Box>
+    <Button
+      variant="contained"
+      size="large"
+      startIcon={<ShoppingCartIcon />}
+      onClick={onCheckout}
+      sx={{ minHeight: 44, flexShrink: 0 }}
+    >
+      Checkout
+    </Button>
+  </Paper>
+));
+
+CartBar.displayName = 'CartBar';
+
 const Layout = () => {
-  const location = useLocation();
+  const { pathname } = useLocation();
   const navigate = useNavigate();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const path = location.pathname;
-  const cart = useContext(CartContext) || {};
-  const cartCount = cart.cartCount || 0;
-  const total = cart.total || 0;
+  const { cartCount = 0, total = 0 } = useContext(CartContext) || {};
 
-  const navValue =
-    path.startsWith('/menu') ? 1 :
-    path.startsWith('/cart') ? 2 : 0;
+  const goToCart = useCallback(() => navigate('/cart'), [navigate]);
 
-  const onCheckoutFlow = path === '/cart';
-  const showCartBar = isMobile && cartCount > 0 && (path === '/menu' || (path === '/cart' && !onCheckoutFlow));
+  const showCartBar = cartCount > 0 && pathname !== '/cart';
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
       <Navbar />
+
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          pb: isMobile ? 14 : 0,
+          width: '100%',
           px: { xs: 1.5, sm: 2, md: 3 },
+          pb: { xs: cartCount > 0 ? 18 : 10, md: 0 },
         }}
       >
         <Outlet />
       </Box>
 
-      {showCartBar && (
-        <Paper
-          square
-          elevation={6}
-          sx={{
-            position: 'fixed',
-            left: 0,
-            right: 0,
-            bottom: isMobile ? 56 : 0,
-            zIndex: theme.zIndex.appBar - 1,
-            px: 2,
-            py: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderTop: '1px solid',
-            borderColor: 'divider',
-          }}
-        >
-          <Box>
-            <Typography variant="body2" color="text.secondary">
-              {cartCount} item{cartCount === 1 ? '' : 's'}
-            </Typography>
-            <Typography variant="subtitle1" fontWeight={700}>
-              ₹{Number(total).toFixed(2)}
-            </Typography>
-          </Box>
-          <Button
-            variant="contained"
-            size="large"
-            sx={{ minWidth: 44, minHeight: 44 }}
-            onClick={() => navigate('/cart')}
-          >
-            Checkout
-          </Button>
-        </Paper>
-      )}
+      <Footer />
+      <BottomNav />
 
-      {isMobile && (
-        <Paper
-          square
-          elevation={8}
-          sx={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            zIndex: theme.zIndex.appBar,
-            pb: 'env(safe-area-inset-bottom)',
-          }}
-        >
-          <BottomNavigation
-            showLabels
-            value={navValue}
-            onChange={(_, newValue) => {
-              if (newValue === 0) navigate('/');
-              if (newValue === 1) navigate('/menu');
-              if (newValue === 2) navigate('/cart');
-            }}
-            sx={{
-              '& .MuiBottomNavigationAction-root': {
-                minWidth: 44,
-                minHeight: 56,
-                py: 1,
-              },
-            }}
-          >
-            <BottomNavigationAction label="Home" icon={<Home />} />
-            <BottomNavigationAction label="Menu" icon={<RestaurantMenu />} />
-            <BottomNavigationAction
-              label="Cart"
-              icon={
-                <Badge badgeContent={cartCount} color="primary" max={99}>
-                  <ShoppingCart />
-                </Badge>
-              }
-            />
-          </BottomNavigation>
-        </Paper>
-      )}
-      {!isMobile && <Footer />}
+      {showCartBar && <CartBar count={cartCount} total={total} onCheckout={goToCart} />}
     </Box>
   );
 };

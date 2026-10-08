@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Container, Typography, Box, TextField, Select, MenuItem, InputAdornment, Paper, Chip, Button, Zoom, Fade, Stack, FormControl, Skeleton } from '@mui/material';
 import Grid2 from '@mui/material/Unstable_Grid2';
 import MenuItemCard from '../../components/menu/MenuItemCard';
-import { menuAPI, unwrap } from '../../services/api';
+import useMenuData from '../../hooks/useMenuData';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
@@ -10,11 +11,12 @@ import ClearIcon from '@mui/icons-material/Clear';
 import LocalCafeIcon from '@mui/icons-material/LocalCafe';
 
 const MenuPage = () => {
-    const [menuItems, setMenuItems] = useState([]);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchParams, setSearchParams] = useSearchParams();
+    const queryParam = searchParams.get('q') || '';
+    const [searchQuery, setSearchQuery] = useState(queryParam);
     const [categoryFilter, setCategoryFilter] = useState('');
-    const [loading, setLoading] = useState(true);
     const [searchFocused, setSearchFocused] = useState(false);
+    const { items: menuItems, loading } = useMenuData();
     
     const categories = [
         { value: 'Coffee', icon: '☕', color: '#8B4513' },
@@ -23,31 +25,27 @@ const MenuPage = () => {
         { value: 'Beverages', icon: '🥤', color: '#A67B5B' },
         { value: 'Sandwiches', icon: '🥪', color: '#B8956A' }
     ];
-    
-    useEffect(() => {
-        setLoading(true);
-        menuAPI.getAll()
-            .then(body => {
-                const data = unwrap(body);
-                setMenuItems(Array.isArray(data) ? data : []);
-            })
-            .catch(error => {
-                console.error('There was a problem with the fetch operation:', error);
-                setMenuItems([]);
-            })
-            .finally(() => {
-                setLoading(false);
-            });
-    }, []);
 
-    const filteredItems = menuItems
-        .filter((item) => 
-            item.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+    // The navbar search lands here as ?q=; keep the field in sync with it.
+    useEffect(() => {
+        setSearchQuery(queryParam);
+    }, [queryParam]);
+
+    const updateSearch = (value) => {
+        setSearchQuery(value);
+        setSearchParams(value ? { q: value } : {}, { replace: true });
+    };
+
+    const filteredItems = useMemo(
+        () => menuItems.filter((item) =>
+            (item.title || '').toLowerCase().includes(searchQuery.toLowerCase()) &&
             (!categoryFilter || item.category === categoryFilter)
-        );
+        ),
+        [menuItems, searchQuery, categoryFilter]
+    );
 
     const clearAllFilters = () => {
-        setSearchQuery('');
+        updateSearch('');
         setCategoryFilter('');
     };
 
@@ -167,7 +165,7 @@ const MenuPage = () => {
                                     variant="outlined"
                                     placeholder="Search our delicious menu..."
                                     value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onChange={(e) => updateSearch(e.target.value)}
                                     onFocus={() => setSearchFocused(true)}
                                     onBlur={() => setSearchFocused(false)}
                                     InputProps={{
@@ -183,7 +181,7 @@ const MenuPage = () => {
                                             <InputAdornment position="end">
                                                 <Button
                                                     size="small"
-                                                    onClick={() => setSearchQuery('')}
+                                                    onClick={() => updateSearch('')}
                                                     sx={{ 
                                                         minWidth: 'auto',
                                                         p: 0.5,
@@ -286,7 +284,7 @@ const MenuPage = () => {
                                     {searchQuery && (
                                         <Chip 
                                             label={`Search: "${searchQuery}"`}
-                                            onDelete={() => setSearchQuery('')}
+                                            onDelete={() => updateSearch('')}
                                             variant="outlined"
                                             size="small"
                                             sx={{
@@ -446,7 +444,7 @@ const MenuPage = () => {
                                 <Button 
                                     variant="contained" 
                                     onClick={() => {
-                                        setSearchQuery('');
+                                        updateSearch('');
                                         setCategoryFilter('Coffee');
                                     }}
                                     size="large"
