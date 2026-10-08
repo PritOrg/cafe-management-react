@@ -151,6 +151,7 @@ const mapInventory = (row) => row && ({
     quantity: Number(row.quantity),
     unit: row.unit,
     category: row.category,
+    minQty: Number(row.min_qty != null ? row.min_qty : 0),
     lastUpdated: row.last_updated,
 });
 
