@@ -21,7 +21,7 @@
 - **DB (Phase I, live):** Knex + Postgres. `DATABASE_URL` (runtime pool) and optional `DIRECT_DATABASE_URL` (migrations in prod). Falls back to `DB_URI` then localhost Docker (`docker-compose.yml`, port **5433**, user/pass/db `cafe`). **Mongoose/mongodb deps removed**; `server/models/` deleted. Neon: same `DATABASE_URL` pointing at `postgres://…neon.tech`; `NEON_BRANCH` used by `db:reset` guard (refuses `prod`).
 
 ## Database (Knex / Phase I)
-- Config: `server/db/knexfile.js` (env `development|test|production`), pool singleton `server/db/pool.js` → `getDb()`.
+- Config: `server/db/knexfile.js` (env `development|test|production`), pool singleton `server/db/pool.js` → `getDb()`. **knexfile loads `server/.env` itself** (explicit path), so `npm run db:migrate`/`db:seed` work without exporting env first.
 - Migrations: `server/db/migrations/` — `npm run db:migrate` (from `server/`). Prod: `npm run db:deploy`. Reset: `npm run db:reset` (refuses when `NEON_BRANCH=prod` unless `ALLOW_DB_RESET=true`).
 - Seeds: `npm run db:seed` (`server/db/seeds/001_demo.js`) — tenants cafe1/cafe2, per-tenant admin `admin@cafe1.local` / `Admin123!`, platform admin from env, demo menu/tables/discount/settings.
 - Local PG: `docker compose up -d postgres` (repo root) → port 5433.
