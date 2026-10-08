@@ -364,17 +364,17 @@ Split into four workstreams; all reuse `invoiceService.issueForOrder()` (idempot
 ## M. Phase 6 — Real-time & offline (optional, ~3–4 days)
 
 ### Backend
-- [ ] `socket.io` on existing Express; namespace `/ops`; JWT handshake auth
-- [ ] Single `events.js` emitter called from services (never import socket in repos): `order:created`, `order:status`, `stock:low`, `invoice:issued`, `activity:new`
-- [ ] Socket = notification only; client refetches → keeps repos DB-agnostic
+- [x] `socket.io` on existing Express; namespace `/ops`; JWT handshake auth
+- [x] Single `events.js` emitter called from services (never import socket in repos): `order:created`, `order:status`, `stock:low`, `invoice:issued`, `activity:new`
+- [x] Socket = notification only; client refetches → keeps repos DB-agnostic
 
 ### Frontend
-- [ ] `services/socket.js` (connect/reconnect/subscribe)
-- [ ] AdminOrders + Dashboard refresh on event (server wins, no local merge)
-- [ ] Optional `/kds`: ticket grid by `placedAt`, age colors (<10m green, 10–15m amber, >15m red), keyboard bump `1..9`
-- [ ] Offline outbox (Odoo pattern): failed `POST /orders` → IndexedDB entry + `clientOrderId` UUID → replay on `online`; server dedupes on `orders.client_order_id` UNIQUE (C)
-- [ ] **Rule (Odoo bug #189836)**: after server ack → delete local entry; never merge
-- [ ] Offline banner: "N orders queued"
+- [x] `services/socket.js` (connect/reconnect/subscribe)
+- [x] AdminOrders + Dashboard refresh on event (server wins, no local merge)
+- [x] Optional `/kds`: ticket grid by `placedAt`, age colors (<10m green, 10–15m amber, >15m red), keyboard bump `1..9`
+- [x] Offline outbox (Odoo pattern): failed `POST /orders` → IndexedDB entry + `clientOrderId` UUID → replay on `online`; server dedupes on `orders.client_order_id` UNIQUE (C)
+- [x] **Rule (Odoo bug #189836)**: after server ack → delete local entry; never merge
+- [x] Offline banner: "N orders queued"
 
 ### Acceptance
 - [ ] Two browsers: new order appears in both without refresh
