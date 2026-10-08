@@ -39,7 +39,7 @@ const Footer = () => {
                 to={item.href}
                 variant="body2"
                 color="text.secondary"
-                sx={{ textDecoration: 'none', '&:hover': { color: 'primary.main' } }}
+                sx={{ textDecoration: 'none', '&:hover': { color: (t) => t.brand?.primaryText || t.palette.primary.main } }}
               >
                 {item.label}
               </Typography>
