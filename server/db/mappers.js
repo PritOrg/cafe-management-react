@@ -123,6 +123,7 @@ const mapOrder = (row, { customer, staff, items } = {}) => row && ({
     placedAt: row.placed_at,
     updatedAt: row.updated_at,
     createdAt: row.created_at,
+    clientOrderId: row.client_order_id || null,
 });
 
 const mapSettings = (row) => row && ({
