@@ -18,6 +18,8 @@ import {
   DialogContent,
   DialogActions,
   Pagination,
+  TextField,
+  MenuItem,
 } from '@mui/material';
 import Refresh from '@mui/icons-material/Refresh';
 import ReceiptLong from '@mui/icons-material/ReceiptLong';
@@ -36,6 +38,10 @@ const AdminInvoices = () => {
   const [limit] = useState(25);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Per-device default paper (falls back to A4). Remembered in this browser.
+  const [paper, setPaper] = useState(() => {
+    try { return localStorage.getItem('printPaper') || 'a4'; } catch { return 'a4'; }
+  });
   const [selected, setSelected] = useState(null);
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -76,7 +82,7 @@ const AdminInvoices = () => {
     }
   };
 
-  const printInvoice = (inv, mode = 'a4') => {
+  const printInvoice = (inv, mode = paper) => {
     const id = inv._id || inv.id;
     window.open(`/api/v1/invoices/${id}/print?mode=${mode}`, '_blank');
   };
@@ -92,7 +98,24 @@ const AdminInvoices = () => {
         <Typography variant="h4" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
           <ReceiptLong /> Invoices
         </Typography>
-        <Button variant="outlined" startIcon={<Refresh />} onClick={fetchInvoices}>Refresh</Button>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          <TextField
+            select
+            size="small"
+            label="Paper"
+            value={paper}
+            onChange={(e) => {
+              const next = e.target.value;
+              setPaper(next);
+              try { localStorage.setItem('printPaper', next); } catch { /* ignore */ }
+            }}
+            sx={{ minWidth: 150 }}
+          >
+            <MenuItem value="a4">A4</MenuItem>
+            <MenuItem value="thermal">Thermal 80mm</MenuItem>
+          </TextField>
+          <Button variant="outlined" startIcon={<Refresh />} onClick={fetchInvoices}>Refresh</Button>
+        </Box>
       </Box>
 
       {error && (
@@ -138,7 +161,7 @@ const AdminInvoices = () => {
                       <TableCell align="right">{formatMoney(tax)}</TableCell>
                       <TableCell align="right">{formatMoney(inv.grandTotal)}</TableCell>
                       <TableCell align="center">
-                        <Button size="small" startIcon={<Print />} onClick={() => printInvoice(inv, 'a4')}>Print</Button>
+                        <Button size="small" startIcon={<Print />} onClick={() => printInvoice(inv)}>Print</Button>
                         <Button size="small" startIcon={<Download />} onClick={() => downloadPdf(inv, 'a4')}>PDF</Button>
                       </TableCell>
                     </TableRow>
