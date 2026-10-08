@@ -35,7 +35,7 @@ const summary = async (tenantId) => {
     const yEnd = today.start;
 
     const db = getDb();
-    const [todayOrders, yOrders, statusCounts, topItems, taxAgg] = await Promise.all([
+    const [todayOrders, yOrders, statusCounts, topItems] = await Promise.all([
         db('orders')
             .where({ tenant_id: tenantId })
             .whereBetween('placed_at', [today.start, today.end])
@@ -68,16 +68,6 @@ const summary = async (tenantId) => {
             .select('mi.title', db.raw('sum(oi.quantity)::int as qty'), db.raw('sum(oi.item_price * oi.quantity)::numeric as revenue'))
             .orderBy('qty', 'desc')
             .limit(5),
-        db('order_items as oi')
-            .join('orders as o', 'o.id', 'oi.order_id')
-            .where('o.tenant_id', tenantId)
-            .whereBetween('o.placed_at', [today.start, today.end])
-            .select(
-                db.raw('coalesce(sum(oi.item_price * oi.quantity),0)::numeric as taxable_items'),
-                // tax = final - taxable base (orders store final including tax+tip); approximate via order totals
-                db.raw('0::numeric as _unused')
-            )
-            .first(),
     ]);
 
     // GST split from orders: taxable (total-discount), tax = final - taxable - tip

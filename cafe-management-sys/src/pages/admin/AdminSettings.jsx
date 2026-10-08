@@ -310,6 +310,16 @@ const AdminSettings = () => {
         </Alert>
       )}
 
+      {settingsMsg && (
+        <Alert
+          severity={/saved/i.test(settingsMsg) ? 'success' : 'error'}
+          onClose={() => setSettingsMsg('')}
+          sx={{ mb: 3 }}
+        >
+          {settingsMsg}
+        </Alert>
+      )}
+
       <Card>
         <Tabs
           value={activeTab}

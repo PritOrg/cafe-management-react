@@ -44,4 +44,32 @@ const uploadToCloudinary = (fileBuffer, originalName, _mimetype, folder = 'menu-
     });
 };
 
+/** Derive a Cloudinary public_id (folder/name) from a delivery URL, or null. */
+const publicIdFromUrl = (url) => {
+    try {
+        const parsed = new URL(url);
+        if (!parsed.hostname.endsWith('res.cloudinary.com')) return null;
+        const parts = parsed.pathname.split('/').filter(Boolean);
+        const uploadIndex = parts.indexOf('upload');
+        if (uploadIndex === -1) return null;
+        let tail = parts.slice(uploadIndex + 1);
+        if (tail[0] && /^v\d+$/.test(tail[0])) tail = tail.slice(1);
+        if (!tail.length) return null;
+        tail[tail.length - 1] = tail[tail.length - 1].replace(/\.[a-z0-9]+$/i, '');
+        return tail.join('/');
+    } catch {
+        return null;
+    }
+};
+
+/** Best-effort delete of a previously uploaded Cloudinary asset. */
+const deleteFromCloudinary = async (url) => {
+    const publicId = publicIdFromUrl(url);
+    if (!publicId) return { skipped: true };
+    const cloudinary = getClient();
+    return cloudinary.uploader.destroy(publicId);
+};
+
 module.exports = uploadToCloudinary;
+module.exports.deleteFromCloudinary = deleteFromCloudinary;
+module.exports.publicIdFromUrl = publicIdFromUrl;

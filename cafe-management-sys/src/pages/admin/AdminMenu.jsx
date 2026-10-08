@@ -99,10 +99,9 @@ const AdminMenu = () => {
 
   const handleToggleAvailability = async (itemId, available) => {
     try {
-      const item = menuItems.find(item => item._id === itemId);
-      await menuAPI.update(itemId, { ...item, available });
+      await menuAPI.update(itemId, { availability: available });
       setMenuItems(menuItems.map(item => 
-        item._id === itemId ? { ...item, available } : item
+        item._id === itemId ? { ...item, availability: available } : item
       ));
     } catch (error) {
       console.error('Error updating item availability:', error);
@@ -220,13 +219,13 @@ const AdminMenu = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   position: 'relative',
-                  opacity: item.available ? 1 : 0.7,
+                  opacity: item.availability ? 1 : 0.7,
                 }}
               >
                 <CardMedia
                   component="img"
                   height="200"
-                  image={item.image || '/api/placeholder/300/200'}
+                  image={item.imageUrl || '/logo512.png'}
                   alt={item.title}
                 />
                 
@@ -271,7 +270,7 @@ const AdminMenu = () => {
                     <FormControlLabel
                       control={
                         <Switch
-                          checked={item.available}
+                          checked={item.availability}
                           onChange={(e) => handleToggleAvailability(item._id, e.target.checked)}
                           size="small"
                         />

@@ -11,7 +11,7 @@ import BarChart from '@mui/icons-material/BarChart';
 import Schedule from '@mui/icons-material/Schedule';
 import Warning from '@mui/icons-material/Warning';
 import CheckCircle from '@mui/icons-material/CheckCircle';
-import Info from '@mui/icons-material/Info';
+
 import { styled } from '@mui/material/styles';
 
 import { analyticsAPI, ordersAPI, inventoryAPI, unwrap } from '../../services/api';
@@ -68,28 +68,6 @@ const QuickActionCard = styled(Card)(({ theme }) => ({
     borderColor: theme.palette.primary.main,
   },
 }));
-
-const AlertCard = styled(Paper)(({ theme, severity = 'info' }) => {
-  const colors = {
-    error: theme.palette.error,
-    warning: theme.palette.warning,
-    info: theme.palette.info,
-    success: theme.palette.success,
-  };
-  
-  return {
-    padding: theme.spacing(2),
-    border: `1px solid ${alpha(colors[severity].main, 0.2)}`,
-    backgroundColor: alpha(colors[severity].main, 0.05),
-    borderRadius: 12,
-    transition: 'all 0.2s ease',
-    
-    '&:hover': {
-      backgroundColor: alpha(colors[severity].main, 0.1),
-      transform: 'translateX(4px)',
-    },
-  };
-});
 
 const quickActions = [
   { title: 'Add Menu Item', icon: RestaurantMenuIcon, color: 'primary' },
@@ -203,15 +181,6 @@ export default function AdminDashboard() {
       case 'pending': return 'warning';
       case 'cancelled': return 'error';
       default: return 'default';
-    }
-  };
-
-  const getSeverityIcon = (severity) => {
-    switch (severity) {
-      case 'error': return <Warning color="error" />;
-      case 'warning': return <Info color="warning" />;
-      case 'info': return <CheckCircle color="info" />;
-      default: return <Info />;
     }
   };
 

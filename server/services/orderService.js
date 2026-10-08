@@ -1,4 +1,3 @@
-const { sendResponse } = require('../middleware/auth');
 const { PAYMENT_METHODS, ORDER_STATUSES } = require('../constants/order');
 const money = require('../utils/money');
 const { getDb } = require('../db/pool');

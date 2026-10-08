@@ -1,6 +1,5 @@
 const { sendResponse } = require('../middleware/auth');
 const invoiceService = require('../services/invoiceService');
-const invoiceRepo = require('../repositories/invoiceRepo');
 
 exports.issueForOrder = async (req, res) => {
     try {

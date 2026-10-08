@@ -1,7 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import fs from 'fs';
 import path from 'path';
-import os from 'os';
 import { hashPassword, verifyPassword } from '../services/authService.js';
 import { getTransporter, isMailConfigured } from '../middleware/nodemailer.js';
 

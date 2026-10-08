@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const ordersRouter = express.Router();
 const {
-    issueForOrder,
     listInvoices,
     getInvoice,
     getInvoicePdf,

@@ -2,7 +2,6 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { getDb, destroyDb } from '../db/pool.js';
 import tenantRepo from '../repositories/tenantRepo.js';
 import menuRepo from '../repositories/menuRepo.js';
-import staffRepo from '../repositories/staffRepo.js';
 import orderController from '../controllers/orderController.js';
 import staffController from '../controllers/staffController.js';
 import tenantController from '../controllers/tenantController.js';

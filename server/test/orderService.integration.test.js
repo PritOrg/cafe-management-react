@@ -1,18 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import path from 'path';
 import { getDb, destroyDb } from '../db/pool.js';
 import { placeOrder } from '../services/orderService.js';
 import tenantRepo from '../repositories/tenantRepo.js';
 import menuRepo from '../repositories/menuRepo.js';
 import customerRepo from '../repositories/customerRepo.js';
 import orderRepo from '../repositories/orderRepo.js';
-
-const mockRes = () => {
-    const r = { statusCode: null, body: null };
-    r.status = (c) => { r.statusCode = c; return r; };
-    r.json = (b) => { r.body = b; return r; };
-    return r;
-};
 
 let tenant;
 let menu;
