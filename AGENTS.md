@@ -48,6 +48,17 @@
 - `node_modules` is shared with Windows (repo lives on `D:`). Native `.node` binaries are PE32+ Windows DLLs → `invalid ELF header` / `ERR_DLOPEN_FAILED` when running Node from WSL. `bcrypt` is the one loaded at server boot (via `authController` → `staffAndAdmin` model).
 - Fix: `cd server && rm -rf node_modules/bcrypt && npm install bcrypt@5.1.1` under WSL (node-pre-gyp fetches the Linux binding). `npm rebuild bcrypt` alone may NOT replace the existing Windows binary. Audit other native deps the same way if boot fails on a different `.node` file.
 
+## Vite on WSL / `D:` (dev-server stability)
+- Symptom: `[vite] server connection lost. Polling for restart...`, `ERR_EMPTY_RESPONSE` on `/node_modules/.vite/deps/*`, blank white page after a few minutes.
+- Cause: Vite's dep optimizer writing into the Windows mount hangs; a killed run leaves `node_modules/.vite/deps_temp_*` and no `deps/`, so every start re-bundles and stalls.
+- Fix (already in `vite.config.js`): `cacheDir: '/tmp/cafe-vite-cache'` (Linux-native), `optimizeDeps.noDiscovery: true` + explicit `include` (core deps only — **do not** add the whole `@mui/icons-material` barrel), and `server.watch.ignored` for `node_modules`/`build`/`coverage`.
+- Scripts: `npm run dev:clean` (clear cache + start), `npm run clean` (cache + build + `.vite`).
+- If deps get inconsistent: `npm run clean && npm start`, then wait once for the optimizer to finish before relying on HMR.
+
+## Graceful shutdown
+- Backend `node index.js` handles `SIGINT`/`SIGTERM`: closes the HTTP server then `destroyDb()` (Knex pool) via `middleware/errorHandler.gracefulShutdown` (8s force-exit safety net). Kill with a single Ctrl+C; a second Ctrl+C forces exit.
+
+
 ## Frontend API layer
 - Real client: `src/services/api.js` (fetch, injects `Bearer` token from `sessionStorage.token` + **`X-Request-Id`**). Base URL: **`/api/v1`** (`VITE_API_URL=http://localhost:4969/api/v1`). Exports `unwrap(body)` → `body.data` when envelope present. Analytics endpoints are real (`/analytics/summary|sales|orders|top-items|category-mix`) — no silent mocks. `src/utils/formatMoney.js` for INR display. `src/adapters/` for API→view models.
 - `components/CartContext.jsx` and `pages/customer/MenuPage.jsx` go through `services/api.js` (no direct axios/fetch for menu/orders).
