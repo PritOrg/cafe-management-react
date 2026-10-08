@@ -1,6 +1,6 @@
 const toPublic = (row) => {
     if (!row) return row;
-    const { password, ...rest } = row;
+    const { password: _password, ...rest } = row;
     return rest;
 };
 

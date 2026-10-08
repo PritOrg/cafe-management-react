@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { menuAPI } from '../../services/api';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { menuAPI, unwrap } from '../../services/api';
 import {
     Container,
     Typography,
@@ -44,6 +45,9 @@ const commonAllergens = [
 
 const AddMenuItemForm = () => {
     const theme = useTheme();
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const isEdit = Boolean(id);
     
     const [formData, setFormData] = useState({
         title: '',
@@ -80,6 +84,40 @@ const AddMenuItemForm = () => {
         severity: 'success'
     });
     const [formErrors, setFormErrors] = useState({});
+
+    // Edit mode: load the existing item into the form (including its image preview).
+    useEffect(() => {
+        if (!isEdit) return () => {};
+        let active = true;
+        (async () => {
+            try {
+                const body = await menuAPI.getById(id);
+                const item = unwrap(body) || {};
+                if (!active) return;
+                setFormData({
+                    title: item.title || '',
+                    subTitle: item.subTitle || '',
+                    priceMedium: item.price?.medium ?? '',
+                    priceLarge: item.price?.large ?? '',
+                    category: item.category || '',
+                    calories: item.calories ?? '',
+                    preparationTime: item.preparationTime ?? '',
+                    customizationOptions: item.customizationOptions || [],
+                    tags: item.tags || [],
+                    allergens: item.allergens || [],
+                });
+                if (Array.isArray(item.sizes) && item.sizes.length) {
+                    setUseCustomSizes(true);
+                    setSizes(item.sizes.map((s) => ({ label: s.label, price: s.price, isDefault: !!s.isDefault })));
+                }
+                setPreviewUrl(item.imageUrl || '');
+            } catch (err) {
+                console.error('Failed to load menu item:', err);
+                setSnackbar({ open: true, message: 'Could not load this menu item.', severity: 'error' });
+            }
+        })();
+        return () => { active = false; };
+    }, [id, isEdit]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -181,8 +219,19 @@ const AddMenuItemForm = () => {
         if (file) submitData.append('file', file);
 
         try {
+            if (isEdit) {
+                await menuAPI.updateForm(id, submitData);
+                setSnackbar({
+                    open: true,
+                    message: 'Menu item updated successfully!',
+                    severity: 'success'
+                });
+                setTimeout(() => navigate('/admin/menu'), 800);
+                return;
+            }
+
             await menuAPI.create(submitData);
-            
+
             // Reset form
             setFormData({
                 title: '',
@@ -198,17 +247,17 @@ const AddMenuItemForm = () => {
             });
             setFile(null);
             setPreviewUrl('');
-            
+
             setSnackbar({
                 open: true,
                 message: 'Menu item added successfully!',
                 severity: 'success'
             });
         } catch (err) {
-            console.error('Error adding menu item:', err);
+            console.error('Error saving menu item:', err);
             setSnackbar({
                 open: true,
-                message: 'Failed to add menu item. Please try again.',
+                message: `Failed to ${isEdit ? 'update' : 'add'} menu item. Please try again.`,
                 severity: 'error'
             });
         }
@@ -246,7 +295,7 @@ const AddMenuItemForm = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                         <RestaurantMenu sx={{ fontSize: 32, mr: 2, color: theme.palette.primary.main }} />
                         <Typography variant="h4" component="h1" fontWeight="bold">
-                            Add New Menu Item
+                            {isEdit ? 'Edit Menu Item' : 'Add New Menu Item'}
                         </Typography>
                     </Box>
                     
@@ -287,7 +336,7 @@ const AddMenuItemForm = () => {
                                     <Grid item xs={12} sm={6}>
                                         <TextField
                                             fullWidth
-                                            label="Description"
+                                            label="Description (optional)"
                                             name="subTitle"
                                             value={formData.subTitle}
                                             onChange={handleChange}
@@ -328,7 +377,7 @@ const AddMenuItemForm = () => {
                                         <TextField
                                             fullWidth
                                             type="number"
-                                            label="Calories"
+                                            label="Calories (optional)"
                                             name="calories"
                                             value={formData.calories}
                                             onChange={handleChange}
@@ -425,7 +474,7 @@ const AddMenuItemForm = () => {
                                                 <TextField
                                                     fullWidth
                                                     type="number"
-                                                    label="Large Size Price"
+                                                    label="Large Size Price (optional)"
                                                     name="priceLarge"
                                                     value={formData.priceLarge}
                                                     onChange={handleChange}
@@ -448,7 +497,7 @@ const AddMenuItemForm = () => {
                                         <TextField
                                             fullWidth
                                             type="number"
-                                            label="Preparation Time"
+                                            label="Preparation Time (optional)"
                                             name="preparationTime"
                                             value={formData.preparationTime}
                                             onChange={handleChange}
@@ -493,7 +542,7 @@ const AddMenuItemForm = () => {
                                                 <TextField
                                                     {...params}
                                                     variant="outlined"
-                                                    label="Customization Options"
+                                                    label="Customization Options (optional)"
                                                     placeholder="Add and press Enter"
                                                     helperText="E.g. Extra shot, Skim milk, Sugar-free"
                                                 />
@@ -523,7 +572,7 @@ const AddMenuItemForm = () => {
                                                 <TextField
                                                     {...params}
                                                     variant="outlined"
-                                                    label="Tags"
+                                                    label="Tags (optional)"
                                                     placeholder="Add and press Enter"
                                                     helperText="E.g. Vegan, Popular, New"
                                                 />
@@ -553,7 +602,7 @@ const AddMenuItemForm = () => {
                                                 <TextField
                                                     {...params}
                                                     variant="outlined"
-                                                    label="Allergens"
+                                                    label="Allergens (optional)"
                                                     placeholder="Select allergens"
                                                     helperText="Select all that apply"
                                                 />
@@ -634,6 +683,11 @@ const AddMenuItemForm = () => {
                                             {file.name} ({Math.round(file.size / 1024)} KB)
                                         </Typography>
                                     )}
+                                    {isEdit && file && (
+                                        <Typography variant="caption" color="warning.main" sx={{ mt: 0.5 }}>
+                                            The current image will be replaced and deleted.
+                                        </Typography>
+                                    )}
                                 </Box>
                             </Card>
                         </Grid>
@@ -654,7 +708,7 @@ const AddMenuItemForm = () => {
                                 boxShadow: theme.shadows[4]
                             }}
                         >
-                            Add to Menu
+                            {isEdit ? 'Update Menu Item' : 'Add to Menu'}
                         </Button>
                     </Box>
                 </Paper>

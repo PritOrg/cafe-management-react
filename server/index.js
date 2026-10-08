@@ -15,7 +15,7 @@ const { getDb } = require('./db/pool');
 
 // Import middleware
 const { globalErrorHandler, handleNotFound, handleUncaughtException, handleUnhandledRejection, handleSigterm } = require('./middleware/errorHandler');
-const { requestLogger, logger, securityLogger } = require('./middleware/logger');
+const { requestLogger, logger } = require('./middleware/logger');
 const { generalRateLimiter } = require('./middleware/auth');
 const { attachApiResponse, responseTimeTracker } = require('./middleware/apiResponse');
 const { trackRequestMetrics, healthCheckHandler, metricsHandler } = require('./middleware/healthMonitor');
@@ -159,6 +159,7 @@ app.use(`${API_PREFIX}/menu`, menuItemsRoutes);
 
 // Enhanced health check endpoints (unversioned — infra)
 app.get('/health', healthCheckHandler);
+app.get(`${API_PREFIX}/health`, healthCheckHandler);
 app.get('/metrics', metricsHandler);
 
 // API info endpoint

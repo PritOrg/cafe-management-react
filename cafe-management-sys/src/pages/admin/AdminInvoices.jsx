@@ -3,7 +3,6 @@ import {
   Box,
   Typography,
   Card,
-  CardContent,
   Table,
   TableBody,
   TableCell,
@@ -25,7 +24,6 @@ import Refresh from '@mui/icons-material/Refresh';
 import ReceiptLong from '@mui/icons-material/ReceiptLong';
 import Print from '@mui/icons-material/Print';
 import Download from '@mui/icons-material/Download';
-import Block from '@mui/icons-material/Block';
 import { invoicesAPI, activityAPI, unwrap } from '../../services/api';
 import { formatMoney } from '../../utils/formatMoney';
 

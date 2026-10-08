@@ -228,7 +228,7 @@ exports.down = async (knex) => {
     for (const i of INDEXES) {
         await knex.raw(`DROP INDEX IF EXISTS ${i.name}`);
     }
-    for (const u of UNIQUE_INDEXES) {
+    for (const _u of UNIQUE_INDEXES) {
         // leave unique indexes in place — dropping them weakens data integrity
     }
     for (const f of FKS) {

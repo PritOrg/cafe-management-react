@@ -188,6 +188,14 @@ export const menuAPI = {
       method: 'PUT',
       body: JSON.stringify(menuData),
     }),
+
+  // Multipart update (supports an image file on edit/replace)
+  updateForm: (id, formData) =>
+    apiRequest(`/menu/${id}`, {
+      method: 'PUT',
+      body: formData,
+      isFormData: true,
+    }),
     
   delete: (id) => 
     apiRequest(`/menu/${id}`, {

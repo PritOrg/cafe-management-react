@@ -241,7 +241,7 @@ const AdminRevenue = () => {
                 Recent Daily Revenue
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {revenueData?.dailyRevenue?.slice(-5).map((day, index) => (
+                {revenueData?.dailyRevenue?.slice(-5).map((day) => (
                   <Box key={day.date} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Typography variant="body2" color="text.secondary">
                       {new Date(day.date).toLocaleDateString()}
