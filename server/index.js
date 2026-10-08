@@ -11,7 +11,9 @@ const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const path = require('path');
 const compression = require('compression');
+const http = require('http');
 const { getDb } = require('./db/pool');
+const { initSocket } = require('./services/socket');
 
 // Import middleware
 const { globalErrorHandler, handleNotFound, handleUncaughtException, handleUnhandledRejection, handleSigterm } = require('./middleware/errorHandler');
@@ -196,7 +198,9 @@ getDb().raw('SELECT 1')
     console.log(`   pool:  ${pool && typeof pool.numUsed === 'function' ? pool.numUsed() : 0} active`);
     console.log('──────────────────────────────────────────────');
 
-    const server = app.listen(PORT, () => {
+    const server = http.createServer(app);
+    initSocket(server);
+    server.listen(PORT, () => {
       const addr = server.address();
       const boundPort = typeof addr === 'object' && addr ? addr.port : PORT;
       console.log('');
