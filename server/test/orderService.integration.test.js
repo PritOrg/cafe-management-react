@@ -24,17 +24,15 @@ describe('orderService.placeOrder integration', () => {
         if (!tenant) {
             tenant = await tenantRepo.create({ slug: 'cafe1', name: 'Cafe One' });
         }
-        const menus = await menuRepo.findAll(tenant._id);
-        menu = menus.find((m) => m.title === 'House Latte') || menus[0];
-        if (!menu) {
-            menu = await menuRepo.create(tenant._id, {
-                title: 'House Latte',
-                subTitle: 'Hot',
-                category: 'Coffee',
-                price: { medium: 100, large: 150 },
-                preparationTime: 5,
-            });
-        }
+        // Dedicated item so the test does not depend on demo-seed contents and
+        // stays deterministic when test files run in parallel.
+        menu = await menuRepo.create(tenant._id, {
+            title: `Integration Latte ${Date.now()}`,
+            subTitle: 'Hot',
+            category: 'Coffee',
+            price: { medium: 100, large: 150 },
+            preparationTime: 5,
+        });
     });
 
     afterAll(async () => {
