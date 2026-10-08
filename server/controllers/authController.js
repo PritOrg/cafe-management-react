@@ -1,7 +1,7 @@
 const { sendResponse } = require('../middleware/auth');
 const { securityLogger } = require('../middleware/logger');
 const generateToken = require('../utils/generateToken');
-const uploadToFirebase = require('../utils/firebaseUpload');
+const uploadToStorage = require('../utils/storage');
 const staffRepo = require('../repositories/staffRepo');
 const authService = require('../services/authService');
 const { toPublic, mapStaff } = require('../db/mappers');
@@ -59,7 +59,7 @@ exports.registerStaffOrAdmin = async (req, res) => {
 
         let profilePhotoUrl = '';
         if (req.file) {
-            profilePhotoUrl = await uploadToFirebase(req.file.buffer, req.file.originalname, req.file.mimetype, 'profile-photos');
+            profilePhotoUrl = await uploadToStorage(req.file.buffer, req.file.originalname, req.file.mimetype, 'profile-photos');
         }
 
         const staff = await staffRepo.create(req.tenantId, {

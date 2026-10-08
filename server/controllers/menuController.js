@@ -1,6 +1,6 @@
 const { sendResponse } = require('../middleware/auth');
 const handleError = require('../utils/handleError');
-const uploadToFirebase = require('../utils/firebaseUpload');
+const uploadToStorage = require('../utils/storage');
 const menuRepo = require('../repositories/menuRepo');
 const activityRepo = require('../repositories/activityRepo');
 
@@ -14,7 +14,7 @@ exports.createMenuItem = async (req, res) => {
         } = req.body;
 
         const imageUrl = req.file
-            ? await uploadToFirebase(req.file.buffer, req.file.originalname, req.file.mimetype, 'menu-img')
+            ? await uploadToStorage(req.file.buffer, req.file.originalname, req.file.mimetype, 'menu-img')
             : '';
 
         let parsedSizes = [];

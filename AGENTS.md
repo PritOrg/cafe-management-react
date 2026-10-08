@@ -13,7 +13,7 @@
 - Ports: server **4969**. Product API: **`/api/v1`** (e.g. `http://localhost:4969/api/v1/auth/login`). Unversioned: `/health`, `/metrics`, `/api` (info). Docs: `/api/v1/docs`.
 - Startup console logs **Cafe API listening on http://localhost:PORT** with Health/API/Docs URLs after Postgres ping; failures print `❌ Postgres connection failed`.
 - Access logs: `request` + `response` lines include **`requestId`**, `userId`, `tenantId`, `tenantSlug`, method, url, status, `durationMs`. Every response carries **`X-Request-Id`** (echoes client value if sent). JSONL files in `server/logs/`. Login security events logged separately.
-- Frontend `.env`: `VITE_API_URL=http://localhost:4969/api/v1`. Server will not boot without Postgres; Firebase/SMTP optional (`STORAGE_DRIVER`, `SMTP_HOST`). Local uploads: `STORAGE_DRIVER=local` serves `/uploads`.
+- Frontend `.env`: `VITE_API_URL=http://localhost:4969/api/v1`. Server will not boot without Postgres; Cloudinary/SMTP optional (`STORAGE_DRIVER`, `SMTP_HOST`). Uploads: **`STORAGE_DRIVER=cloudinary`** (default when `CLOUDINARY_CLOUD_NAME` is set) or `STORAGE_DRIVER=local` serves `/uploads`.
 
 ## Env
 - `server/.env` and `cafe-management-sys/.env` are **local-only (untracked since 2026-10-06)** — root `.gitignore` covers `.env`/`.env.*`. Template: `server/.env.example` (key names only). Don't recreate tracked env files; don't print their contents.
@@ -41,7 +41,7 @@
 - Money helpers: `server/utils/money.js` (minor units, `applyBps`, `splitCgstSgst`, `TAX_BPS=500`).
 - Settings: `GET /api/settings/public`, `GET/PUT /api/settings` (admin). Activity log via `activityRepo.log`.
 - Customer auth **removed**. `POST /api/orders` public+tenant-scoped (`phone`+`customerName` upsert guest). History: `GET /api/orders/history?phone=`. Staff login only (`authService.verifyPassword`). Frontend AuthContext staff-only; `AdminTenants` at `/admin/tenants`.
-- Lazy drivers: `STORAGE_DRIVER=local|firebase`; mail only if `SMTP_HOST` set. Rate limiters no-op when `NODE_ENV=test`.
+- Lazy drivers: `STORAGE_DRIVER=local|cloudinary` (Cloudinary used when configured); mail only if `SMTP_HOST` set. Rate limiters no-op when `NODE_ENV=test`.
 - Bcrypt hashing: `services/authService.js` (called explicitly from staffRepo.create / login — no pre-save hook).
 
 ## Native modules / WSL
@@ -127,6 +127,6 @@
 - Lint gate: `npx eslint src --ext .js,.jsx` — 0 errors expected.
 
 ## Secrets / git
-- `.env` files are **not tracked** (untracked 2026-10-06; see root `.gitignore` + `server/.env.example`). Still tracked and sensitive: Firebase service-account JSON (`server/firebase/*.json`), Google OAuth client-secret JSON (`server/mail/*.json`), `server/logs/*.log`. Never echo secrets, never add new credentials, keep `logs/` out of commits unless asked.
+- `.env` files are **not tracked** (untracked 2026-10-06; see root `.gitignore` + `server/.env.example`). Still tracked and sensitive: Google OAuth client-secret JSON (`server/mail/*.json`) and `server/logs/*.log`. Cloudinary credentials live only in `server/.env` (`CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET`). Never echo secrets, never add new credentials, keep `logs/` out of commits unless asked.
 
 

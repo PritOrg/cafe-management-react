@@ -122,7 +122,8 @@ const { resolveTenant } = require('./middleware/tenant');
 app.use(API_PREFIX, resolveTenant);
 
 // Local storage driver serves uploads statically
-if ((process.env.STORAGE_DRIVER || 'firebase') === 'local') {
+const { resolveStorageDriver } = require('./utils/storage');
+if (resolveStorageDriver() === 'local') {
     app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 }
 
