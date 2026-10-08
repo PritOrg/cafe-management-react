@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 const AuthContext = createContext();
 
@@ -30,26 +30,23 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const checkAuthStatus = () => {
-      try {
-        const { token, rawUser, userType } = readStored();
-        if (token && rawUser) {
-          const parsedUser = JSON.parse(rawUser);
-          if (userType) parsedUser.userType = userType;
-          setUser(parsedUser);
-          setIsAuthenticated(true);
-        }
-      } catch (error) {
-        console.error('Error checking auth status:', error);
-        clearStored();
-      } finally {
-        setLoading(false);
+    try {
+      const { token, rawUser, userType } = readStored();
+      if (token && rawUser) {
+        const parsedUser = JSON.parse(rawUser);
+        if (userType) parsedUser.userType = userType;
+        setUser(parsedUser);
+        setIsAuthenticated(true);
       }
-    };
-    checkAuthStatus();
+    } catch (error) {
+      console.error('Error checking auth status:', error);
+      clearStored();
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const login = (userData, token, userType) => {
+  const login = useCallback((userData, token, userType) => {
     try {
       const nextUser = { ...userData, userType: userType || userData?.userType || 'staffOrAdmin' };
       sessionStorage.setItem('token', token);
@@ -65,65 +62,56 @@ export const AuthProvider = ({ children }) => {
       console.error('Error during login:', error);
       return false;
     }
-  };
+  }, []);
 
-  const logout = () => {
-    try {
-      clearStored();
-      setUser(null);
-      setIsAuthenticated(false);
-      return true;
-    } catch (error) {
-      console.error('Error during logout:', error);
-      return false;
-    }
-  };
+  const logout = useCallback(() => {
+    clearStored();
+    setUser(null);
+    setIsAuthenticated(false);
+    return true;
+  }, []);
 
-  const updateUser = (updatedUserData) => {
-    try {
-      const newUserData = { ...user, ...updatedUserData };
-      sessionStorage.setItem('user', JSON.stringify(newUserData));
-      localStorage.setItem('user', JSON.stringify(newUserData));
-      setUser(newUserData);
-      return true;
-    } catch (error) {
-      console.error('Error updating user:', error);
-      return false;
-    }
-  };
+  const updateUser = useCallback((updatedUserData) => {
+    setUser((prev) => {
+      const newUserData = { ...prev, ...updatedUserData };
+      try {
+        sessionStorage.setItem('user', JSON.stringify(newUserData));
+        localStorage.setItem('user', JSON.stringify(newUserData));
+      } catch (error) {
+        console.error('Error updating user:', error);
+        return prev;
+      }
+      return newUserData;
+    });
+    return true;
+  }, []);
 
-  const getAuthToken = () => sessionStorage.getItem('token') || localStorage.getItem('token');
-
-  const isPlatformAdmin = () => !!(user && user.isPlatformAdmin);
-
-  const isAdmin = () => {
-    if (!user) return false;
-    return user.role === 'admin' || user.isPlatformAdmin === true;
-  };
-
-  const isStaff = () => {
-    if (!user) return false;
-    return user.role === 'admin' || user.role === 'staff' || user.isPlatformAdmin === true;
-  };
-
-  const value = {
-    user,
-    loading,
-    isAuthenticated,
-    login,
-    logout,
-    updateUser,
-    getAuthToken,
-    isAdmin,
-    isStaff,
-    isPlatformAdmin,
-  };
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+  const getAuthToken = useCallback(
+    () => sessionStorage.getItem('token') || localStorage.getItem('token'),
+    []
   );
+
+  const value = useMemo(() => {
+    const isPlatformAdmin = () => !!(user && user.isPlatformAdmin);
+    const isAdmin = () => !!user && (user.role === 'admin' || user.isPlatformAdmin === true);
+    const isStaff = () => !!user && (
+      user.role === 'admin' || user.role === 'staff' || user.isPlatformAdmin === true
+    );
+    return {
+      user,
+      loading,
+      isAuthenticated,
+      login,
+      logout,
+      updateUser,
+      getAuthToken,
+      isAdmin,
+      isStaff,
+      isPlatformAdmin,
+    };
+  }, [user, loading, isAuthenticated, login, logout, updateUser, getAuthToken]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export default AuthContext;
