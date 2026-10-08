@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { settingsAPI, unwrap } from '../services/api';
 
+const env = import.meta.env || {};
+
 const DEFAULT_BRAND = {
-  title: 'Restaurant',
+  title: env.VITE_DEFAULT_BRAND_NAME || 'Restaurant',
   logoUrl: '',
-  primaryColor: '#ff6b35',
-  accentColor: '#f7931e',
+  primaryColor: env.VITE_DEFAULT_PRIMARY_COLOR || '#ff6b35',
+  accentColor: env.VITE_DEFAULT_ACCENT_COLOR || '#f7931e',
 };
 
 const BrandContext = createContext({
@@ -16,10 +18,67 @@ const BrandContext = createContext({
 
 export const useBrand = () => useContext(BrandContext);
 
-const applyDocumentTitle = (title) => {
-  if (typeof document !== 'undefined' && title) {
-    document.title = title;
+const isBrowser = typeof document !== 'undefined' && typeof window !== 'undefined';
+
+const applyTitle = (title) => {
+  if (isBrowser && title) document.title = title;
+};
+
+const applyThemeColor = (color) => {
+  if (!isBrowser || !color) return;
+  let meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta) {
+    meta = document.createElement('meta');
+    meta.setAttribute('name', 'theme-color');
+    document.head.appendChild(meta);
   }
+  meta.setAttribute('content', color);
+};
+
+const applyFavicon = (logoUrl) => {
+  if (!isBrowser || !logoUrl) return;
+  let link = document.querySelector('link[rel="icon"]');
+  if (!link) {
+    link = document.createElement('link');
+    link.setAttribute('rel', 'icon');
+    document.head.appendChild(link);
+  }
+  link.setAttribute('href', logoUrl);
+};
+
+let manifestUrl = null;
+const applyManifest = (brand) => {
+  if (!isBrowser || typeof Blob === 'undefined' || !window.URL?.createObjectURL) return;
+  const manifest = {
+    name: brand.title || 'Restaurant',
+    short_name: (brand.title || 'Restaurant').slice(0, 12),
+    start_url: '.',
+    display: 'standalone',
+    theme_color: brand.primaryColor || DEFAULT_BRAND.primaryColor,
+    background_color: '#ffffff',
+    icons: [
+      { src: '/logo192.png', type: 'image/png', sizes: '192x192' },
+      { src: '/logo512.png', type: 'image/png', sizes: '512x512' },
+    ],
+  };
+  const nextUrl = window.URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' }));
+  let link = document.querySelector('link[rel="manifest"]');
+  if (!link) {
+    link = document.createElement('link');
+    link.setAttribute('rel', 'manifest');
+    document.head.appendChild(link);
+  }
+  link.setAttribute('href', nextUrl);
+  if (manifestUrl) window.URL.revokeObjectURL(manifestUrl);
+  manifestUrl = nextUrl;
+};
+
+/** Runtime white-label: title, theme-color, favicon and PWA manifest from settings. */
+const applyBrandToDocument = (brand) => {
+  applyTitle(brand.title);
+  applyThemeColor(brand.primaryColor);
+  applyFavicon(brand.logoUrl);
+  applyManifest(brand);
 };
 
 export const BrandProvider = ({ children }) => {
@@ -31,15 +90,12 @@ export const BrandProvider = ({ children }) => {
       setLoading(true);
       const body = await settingsAPI.getPublic();
       const data = unwrap(body) || {};
-      const next = {
-        ...DEFAULT_BRAND,
-        ...(data.brand || {}),
-      };
+      const next = { ...DEFAULT_BRAND, ...(data.brand || {}) };
       setBrand(next);
-      applyDocumentTitle(next.title);
+      applyBrandToDocument(next);
     } catch (err) {
       console.error('Failed to load brand settings:', err);
-      applyDocumentTitle(DEFAULT_BRAND.title);
+      applyBrandToDocument(DEFAULT_BRAND);
     } finally {
       setLoading(false);
     }
