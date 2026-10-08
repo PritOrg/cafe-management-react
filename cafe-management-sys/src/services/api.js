@@ -345,6 +345,11 @@ export const settingsAPI = {
   getPublic: () => apiRequest('/settings/public', { auth: false }),
   get: () => apiRequest('/settings'),
   update: (data) => apiRequest('/settings', { method: 'PUT', body: JSON.stringify(data) }),
+  getIntegrations: () => apiRequest('/settings/integrations'),
+  sendTestEmail: (to) => apiRequest('/settings/integrations/test-email', {
+    method: 'POST',
+    body: JSON.stringify({ to }),
+  }),
 };
 
 // Dashboard/Analytics API — real /api/v1/analytics endpoints (no silent mocks)
