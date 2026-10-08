@@ -238,6 +238,16 @@ const Navbar = () => {
         )}
       </Toolbar>
 
+      {/* Screen-reader live region for cart changes */}
+      <Box
+        component="span"
+        role="status"
+        aria-live="polite"
+        sx={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' }}
+      >
+        {cartCount} item{cartCount === 1 ? '' : 's'} in cart
+      </Box>
+
       <Menu
         anchorEl={accountAnchor}
         open={Boolean(accountAnchor)}

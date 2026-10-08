@@ -38,6 +38,7 @@ const MenuItemCard = ({ menuItem }) => {
   const [openInfo, setOpenInfo] = useState(false);
   const [openCustomize, setOpenCustomize] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const id = menuItem._id || menuItem.id;
   const favourite = isFavourite(id);
@@ -50,6 +51,7 @@ const MenuItemCard = ({ menuItem }) => {
   const hasLegacySizes =
     menuItem.price?.large != null && Number(menuItem.price.large) !== Number(menuItem.price.medium);
   const needsDialog = hasSizes || hasModifiers || hasLegacySizes;
+  const soldOut = menuItem.availability === false;
 
   const priceLabel = sizes.length
     ? `${formatMoney(sizes[0].price)} onwards`
@@ -94,8 +96,19 @@ const MenuItemCard = ({ menuItem }) => {
                 component="img"
                 image={menuItem.imageUrl}
                 alt={menuItem.title}
+                loading="lazy"
+                decoding="async"
+                onLoad={() => setImageLoaded(true)}
                 onError={() => setImageError(true)}
-                sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  opacity: imageLoaded ? 1 : 0,
+                  transition: 'opacity .3s ease',
+                }}
               />
             ) : (
               <Box
@@ -109,6 +122,21 @@ const MenuItemCard = ({ menuItem }) => {
                 }}
               >
                 <ImageIcon sx={{ fontSize: 44 }} />
+              </Box>
+            )}
+
+            {soldOut && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  bgcolor: 'rgba(0,0,0,0.55)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Chip label="Sold out" sx={{ fontWeight: 700, bgcolor: 'background.paper' }} />
               </Box>
             )}
 
@@ -147,7 +175,7 @@ const MenuItemCard = ({ menuItem }) => {
             )}
 
             <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 1.5 }}>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: (t) => t.brand?.primaryText || t.palette.primary.main }}>
                 {priceLabel}
               </Typography>
               {menuItem.preparationTime ? (
@@ -178,9 +206,10 @@ const MenuItemCard = ({ menuItem }) => {
             variant="contained"
             startIcon={needsDialog ? <TuneIcon /> : <ShoppingCartIcon />}
             onClick={handleAdd}
+            disabled={soldOut}
             sx={{ px: 2.5 }}
           >
-            {needsDialog ? 'Customize' : 'Add'}
+            {soldOut ? 'Sold out' : needsDialog ? 'Customize' : 'Add'}
           </Button>
         </CardActions>
       </Card>

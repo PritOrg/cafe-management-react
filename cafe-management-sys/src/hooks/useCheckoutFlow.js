@@ -13,6 +13,7 @@ export const useCheckoutFlow = (createOrder, initialCustomer = {}) => {
     name: initialCustomer.name || '',
     phone: initialCustomer.phone || '',
     tableNumber: initialCustomer.tableNumber || '',
+    orderType: initialCustomer.orderType || 'dinein',
   });
 
   const handleNext = () => setActiveStep((prev) => prev + 1);

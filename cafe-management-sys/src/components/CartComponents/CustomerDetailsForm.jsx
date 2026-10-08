@@ -8,6 +8,8 @@ import {
   TextField,
   Box,
   Paper,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import Grid2 from '@mui/material/Unstable_Grid2';
 import PersonIcon from '@mui/icons-material/Person';
@@ -28,7 +30,19 @@ const CustomerDetailsForm = ({
   isLoading,
 }) => {
   const phoneDigits = String(customerInfo.phone || '').replace(/\D/g, '');
-  const isFormValid = customerInfo.name.trim().length >= 2 && phoneDigits.length >= 10;
+  const orderType = customerInfo.orderType || 'dinein';
+  const isDineIn = orderType === 'dinein';
+  const isFormValid = customerInfo.name.trim().length >= 2
+    && phoneDigits.length >= 10
+    && (!isDineIn || String(customerInfo.tableNumber || '').trim() !== '');
+
+  const setField = (name, value) => onCustomerChange({ target: { name, value } });
+
+  const handleOrderType = (_event, next) => {
+    if (!next) return;
+    setField('orderType', next);
+    if (next === 'takeaway') setField('tableNumber', '');
+  };
 
   return (
     <Grid2 container spacing={3}>
@@ -38,6 +52,18 @@ const CustomerDetailsForm = ({
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
               Your details
             </Typography>
+
+            <ToggleButtonGroup
+              fullWidth
+              exclusive
+              value={orderType}
+              onChange={handleOrderType}
+              sx={{ mb: 2 }}
+            >
+              <ToggleButton value="dinein">Dine-in</ToggleButton>
+              <ToggleButton value="takeaway">Takeaway</ToggleButton>
+            </ToggleButtonGroup>
+
             <Grid2 container spacing={2}>
               <Grid2 xs={12}>
                 <TextField
@@ -53,7 +79,7 @@ const CustomerDetailsForm = ({
                   }}
                 />
               </Grid2>
-              <Grid2 xs={12} sm={7}>
+              <Grid2 xs={12} sm={isDineIn ? 7 : 12}>
                 <TextField
                   required
                   fullWidth
@@ -68,19 +94,22 @@ const CustomerDetailsForm = ({
                   }}
                 />
               </Grid2>
-              <Grid2 xs={12} sm={5}>
-                <TextField
-                  fullWidth
-                  label="Table number"
-                  name="tableNumber"
-                  value={customerInfo.tableNumber}
-                  onChange={onCustomerChange}
-                  inputProps={{ inputMode: 'numeric' }}
-                  InputProps={{
-                    startAdornment: <TableRestaurantIcon color="action" sx={{ mr: 1 }} />,
-                  }}
-                />
-              </Grid2>
+              {isDineIn && (
+                <Grid2 xs={12} sm={5}>
+                  <TextField
+                    required
+                    fullWidth
+                    label="Table number"
+                    name="tableNumber"
+                    value={customerInfo.tableNumber}
+                    onChange={onCustomerChange}
+                    inputProps={{ inputMode: 'numeric' }}
+                    InputProps={{
+                      startAdornment: <TableRestaurantIcon color="action" sx={{ mr: 1 }} />,
+                    }}
+                  />
+                </Grid2>
+              )}
             </Grid2>
           </CardContent>
         </Card>
