@@ -1,117 +1,73 @@
-// customerMail.js
-const nodemailer = require('nodemailer');
+// Brand-aware transactional email templates.
+// Uses the shared SMTP driver (see middleware/nodemailer.js) — no hardcoded creds.
+const { sendMail } = require('../middleware/nodemailer');
 
-// Configure OAuth2 transport
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    type: 'OAuth2',
-    user: 'tech.developersteam.service@gmail.com',
-    clientId: '281215278806-cf0avpp4kamislc6cms5g43e8jmgvpp8.apps.googleusercontent.com',
-    clientSecret: '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',
-    // refreshToken: 'your-refresh-token',
-  },
-});
+const escapeHtml = (value) => String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 
-// Welcome Email Template
-const getWelcomeEmailTemplate = (firstName) => `
-<!DOCTYPE html>
+const shell = (brand, title, bodyHtml) => {
+    const name = escapeHtml(brand?.title || 'Restaurant');
+    const primary = brand?.primaryColor || '#ff6b35';
+    const logo = brand?.logoUrl
+        ? `<img src="${escapeHtml(brand.logoUrl)}" alt="${name}" style="height:40px;margin-bottom:8px" />`
+        : '';
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome</title>
-    <style>
-        .container { padding: 20px; font-family: Arial, sans-serif; }
-        .header { background-color: #4CAF50; color: white; padding: 10px 0; text-align: center; }
-        .content { margin: 20px 0; }
-        .footer { margin-top: 20px; font-size: 12px; color: gray; text-align: center; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${escapeHtml(title)}</title>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Welcome to Our Service, ${firstName}!</h1>
-        </div>
-        <div class="content">
-            <p>Dear ${firstName},</p>
-            <p>Thank you for registering with us. We're excited to have you on board!</p>
-            <p>Best regards,</p>
-            <p>Your Company Team</p>
-        </div>
-        <div class="footer">
-            <p>&copy; ${new Date().getFullYear()} Your Company. All rights reserved.</p>
-        </div>
+<body style="margin:0;background:#f5f5f5;font-family:Arial,Helvetica,sans-serif">
+  <div style="max-width:560px;margin:0 auto;padding:24px">
+    <div style="background:${escapeHtml(primary)};color:#fff;padding:20px;text-align:center;border-radius:12px 12px 0 0">
+      ${logo}
+      <h1 style="margin:0;font-size:20px">${name}</h1>
     </div>
-</body>
-</html>
-`;
-
-// Login Notification Email Template
-const getLoginNotificationEmailTemplate = () => `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Notification</title>
-    <style>
-        .container { padding: 20px; font-family: Arial, sans-serif; }
-        .header { background-color: #FFA500; color: white; padding: 10px 0; text-align: center; }
-        .content { margin: 20px 0; }
-        .footer { margin-top: 20px; font-size: 12px; color: gray; text-align: center; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Login Notification</h1>
-        </div>
-        <div class="content">
-            <p>Dear User,</p>
-            <p>We noticed a login to your account. If this wasn't you, please contact support immediately.</p>
-            <p>Best regards,</p>
-            <p>Your Company Team</p>
-        </div>
-        <div class="footer">
-            <p>&copy; ${new Date().getFullYear()} Your Company. All rights reserved.</p>
-        </div>
+    <div style="background:#fff;padding:24px;border-radius:0 0 12px 12px;color:#1d1b20;line-height:1.6">
+      ${bodyHtml}
     </div>
+    <p style="text-align:center;color:#888;font-size:12px;margin-top:16px">
+      &copy; ${new Date().getFullYear()} ${name}
+    </p>
+  </div>
 </body>
-</html>
-`;
-
-const sendEmail = (to, subject, htmlContent) => {
-  const mailOptions = {
-    from: 'your-email@gmail.com',
-    to,
-    subject,
-    html: htmlContent,
-  };
-
-  return transporter.sendMail(mailOptions);
+</html>`;
 };
 
-const sendWelcomeEmail = (to, firstName) => {
-  const subject = 'Welcome to Our Service!';
-  const htmlContent = getWelcomeEmailTemplate(firstName);
-  try{
-
-    return sendEmail(to, subject, htmlContent);
-  }
-  catch(error){
-    console.error(`Error sending welcome email to ${to}:`, error);
-    return error;
-  }
+const welcomeTemplate = (firstName, brand) => {
+    const name = escapeHtml(brand?.title || 'Restaurant');
+    const who = escapeHtml(firstName || 'there');
+    return shell(brand, `Welcome to ${name}`, `
+      <p>Dear ${who},</p>
+      <p>Thank you for registering with us. We're excited to have you on board!</p>
+      <p>Best regards,<br />The ${name} team</p>
+    `);
 };
 
-const sendLoginNotificationEmail = (to) => {
-  const subject = 'Login Notification';
-  const htmlContent = getLoginNotificationEmailTemplate();
-  return sendEmail(to, subject, htmlContent);
+const loginNotificationTemplate = (brand) => {
+    const name = escapeHtml(brand?.title || 'Restaurant');
+    return shell(brand, 'Login notification', `
+      <p>We noticed a login to your account.</p>
+      <p>If this wasn't you, please contact support immediately.</p>
+      <p>Best regards,<br />The ${name} team</p>
+    `);
 };
 
-module.exports = {
-  sendWelcomeEmail,
-  sendLoginNotificationEmail,
-};
+const sendWelcomeEmail = (to, firstName, brand) =>
+    sendMail({
+        to,
+        subject: `Welcome to ${brand?.title || 'us'}!`,
+        html: welcomeTemplate(firstName, brand),
+    });
+
+const sendLoginNotificationEmail = (to, brand) =>
+    sendMail({
+        to,
+        subject: 'Login notification',
+        html: loginNotificationTemplate(brand),
+    });
+
+module.exports = { sendWelcomeEmail, sendLoginNotificationEmail };
