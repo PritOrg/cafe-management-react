@@ -60,7 +60,6 @@ const create = async (tenantId, data) => {
     }
 
     let mapped = mapMenuItem(row);
-    const sizeRepo = require('./sizeRepo');
     mapped = await withSizes(tenantId, mapped);
     if (Array.isArray(data.modifierGroupIds)) {
         const modifierRepo = require('./modifierRepo');

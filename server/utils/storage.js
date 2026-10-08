@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const uploadToCloudinary = require('./cloudinaryUpload');
+const { deleteFromCloudinary } = uploadToCloudinary;
 
 const LOCAL_UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
 
@@ -35,5 +36,27 @@ const uploadToStorage = async (fileBuffer, originalName, mimetype, folder = 'men
     return uploadLocal(fileBuffer, originalName);
 };
 
+/**
+ * Best-effort removal of a previously stored image (used when replacing an
+ * image so we don't accumulate orphaned assets). Never throws.
+ */
+const deleteStoredImage = async (url) => {
+    if (!url || typeof url !== 'string') return;
+    try {
+        if (/res\.cloudinary\.com/.test(url)) {
+            return await deleteFromCloudinary(url);
+        }
+        if (url.includes('/uploads/')) {
+            const filename = path.basename(url.split('/uploads/').pop() || '');
+            const filePath = path.join(LOCAL_UPLOAD_DIR, filename);
+            if (filename && fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        }
+    } catch (err) {
+        console.error('deleteStoredImage failed:', err.message);
+    }
+    return undefined;
+};
+
 module.exports = uploadToStorage;
 module.exports.resolveStorageDriver = resolveStorageDriver;
+module.exports.deleteStoredImage = deleteStoredImage;

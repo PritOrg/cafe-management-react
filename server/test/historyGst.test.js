@@ -9,13 +9,6 @@ import { placeOrder } from '../services/orderService.js';
 let tenant;
 let orderId;
 
-const mockRes = () => {
-    const r = { statusCode: null, body: null };
-    r.status = (c) => { r.statusCode = c; return r; };
-    r.json = (b) => { r.body = b; return r; };
-    return r;
-};
-
 describe('order history tab + analytics GST split', () => {
     beforeAll(async () => {
         await getDb().raw('select 1');

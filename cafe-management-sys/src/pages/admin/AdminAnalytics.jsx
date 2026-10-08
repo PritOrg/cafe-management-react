@@ -4,7 +4,6 @@ import TrendingUp from '@mui/icons-material/TrendingUp';
 import TrendingDown from '@mui/icons-material/TrendingDown';
 import BarChart from '@mui/icons-material/BarChart';
 import AttachMoney from '@mui/icons-material/AttachMoney';
-import CheckCircle from '@mui/icons-material/CheckCircle';
 import Download from '@mui/icons-material/Download';
 import Refresh from '@mui/icons-material/Refresh';
 import PieChart from '@mui/icons-material/PieChart';

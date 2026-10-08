@@ -90,7 +90,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, rail = false }) => {
   const { brand } = useBrand();
   const lowStockCount = useLowStockCount();
 
-  const items = useMemo(() => adminNavItems(isPlatformAdmin()), [isPlatformAdmin, user]);
+  const items = useMemo(() => adminNavItems(isPlatformAdmin()), [isPlatformAdmin]);
 
   const handleLogout = useCallback(async () => {
     try {

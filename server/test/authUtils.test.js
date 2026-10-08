@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import jwt from 'jsonwebtoken';
 import generateToken from '../utils/generateToken.js';
 import handleError from '../utils/handleError.js';

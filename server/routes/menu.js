@@ -18,8 +18,8 @@ router.get('/', getAllMenuItems);
 router.get('/:id', getMenuItemById);
 
 // Protected admin routes
-router.post('/', ensureAuthenticated, ensureAdmin,upload.single('file'), createMenuItem);
-router.put('/:id', ensureAuthenticated, ensureAdmin, updateMenuItem);
+router.post('/', ensureAuthenticated, ensureAdmin, upload.single('file'), createMenuItem);
+router.put('/:id', ensureAuthenticated, ensureAdmin, upload.single('file'), updateMenuItem);
 router.delete('/:id', ensureAuthenticated, ensureAdmin, deleteMenuItem);
 
 module.exports = router;

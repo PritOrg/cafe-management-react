@@ -166,7 +166,6 @@ describe('professional kitchen: categories, modifiers, recipes, alerts, kitchen 
             preparationTime: 2,
             modifierGroupIds: [group._id],
         });
-        const res = mockRes();
         // orderService computes from menu price + options priceDelta in canonical payload
         const { placeOrder: place } = await import('../services/orderService.js');
         const result = await place({
