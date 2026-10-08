@@ -17,7 +17,7 @@
 
 ## Env
 - `server/.env` and `cafe-management-sys/.env` are **local-only (untracked since 2026-10-06)** — root `.gitignore` covers `.env`/`.env.*`. Template: `server/.env.example` (key names only). Don't recreate tracked env files; don't print their contents.
-- Frontend `.env` has only `VITE_API_URL=http://localhost:4969/api/v1`. Vite exposes **only `VITE_*`** vars via `import.meta.env.VITE_*`. **`process.env` and `REACT_APP_*` are banned in `src/`** — they crash the browser bundle. Gate: `grep -rn "process\.\|REACT_APP" src` → 0.
+- Frontend `.env`: `VITE_API_URL` + optional first-paint brand `VITE_DEFAULT_BRAND_NAME`/`VITE_DEFAULT_PRIMARY_COLOR`/`VITE_DEFAULT_ACCENT_COLOR` (template `cafe-management-sys/.env.example`). Vite exposes **only `VITE_*`** via `import.meta.env`. **`process.env` and `REACT_APP_*` are banned in `src/`** — gate: `grep -rn "process\.\|REACT_APP" src` → 0.
 - **DB (Phase I, live):** Knex + Postgres. `DATABASE_URL` (runtime pool) and optional `DIRECT_DATABASE_URL` (migrations in prod). Falls back to `DB_URI` then localhost Docker (`docker-compose.yml`, port **5433**, user/pass/db `cafe`). **Mongoose/mongodb deps removed**; `server/models/` deleted. Neon: same `DATABASE_URL` pointing at `postgres://…neon.tech`; `NEON_BRANCH` used by `db:reset` guard (refuses `prod`).
 
 ## Database (Knex / Phase I)
@@ -41,7 +41,7 @@
 - Money helpers: `server/utils/money.js` (minor units, `applyBps`, `splitCgstSgst`, `TAX_BPS=500`).
 - Settings: `GET /api/settings/public`, `GET/PUT /api/settings` (admin). Activity log via `activityRepo.log`.
 - Customer auth **removed**. `POST /api/orders` public+tenant-scoped (`phone`+`customerName` upsert guest). History: `GET /api/orders/history?phone=`. Staff login only (`authService.verifyPassword`). Frontend AuthContext staff-only; `AdminTenants` at `/admin/tenants`.
-- Lazy drivers: `STORAGE_DRIVER=local|cloudinary` (Cloudinary used when configured); mail only if `SMTP_HOST` set. Rate limiters no-op when `NODE_ENV=test`.
+- Lazy drivers: `STORAGE_DRIVER=local|cloudinary` (Cloudinary used when configured); mail only if `SMTP_HOST` set. Rate limiters no-op when `NODE_ENV=test`. Backend tests refuse to run against a non-local DB host unless `ALLOW_REMOTE_TEST_DB=true` (`server/test/setup.js`).
 - Bcrypt hashing: `services/authService.js` (called explicitly from staffRepo.create / login — no pre-save hook).
 
 ## Native modules / WSL
@@ -99,7 +99,7 @@
 - JWT Bearer token; guards live in `server/middleware/auth.js`: `ensureAuthenticated`, `ensureAdmin`, `ensureAdminOrStaff`. Backend roles are only `staff` and `admin` (enum in `models/staffAndAdmin.js`).
 - Frontend `AuthContext.isAdmin/isStaff` also accept `manager`, `waiter`, and `userType === 'staffOrAdmin'` — client-side only; the backend rejects anything but `admin`/`staff`.
 - Staff model requires `firstName`/`lastName` (not `name`); AdminStaff page aligned to that + `staff`/`admin` roles + `isActive`/`registrationDate` fields.
-- Rate limits are aggressive: auth endpoints 5 req/15 min per IP, all `/api` 100 req/15 min. Scripted/manual API testing trips 429s fast; reset requires waiting or restarting the server. Under `NODE_ENV=test` these should be disabled (not done yet — plan Phase F).
+- Rate limits are aggressive: auth endpoints 5 req/15 min per IP, all `/api` 100 req/15 min. Scripted/manual API testing trips 429s fast; under `NODE_ENV=test` the limiters are disabled.
 
 ## Tests / verification
 - Backend: `npm test` is `echo "Error: no test specified" && exit 1` — it always fails; there is no test suite. `server/test-*.js` are throwaway manual debug scripts, not a framework.
@@ -114,7 +114,7 @@
 
 ## N foundations + O-part1 (2026-10-06)
 - `index.html`: Bootstrap CDN **removed**, decorative Google fonts removed, title `Cafe Management` (brand strings in Navbar still hardcoded until O/settings white-label).
-- `LICENSE` (MIT) added at repo root; server package.json still says ISC (align later).
+- `LICENSE` (MIT) at repo root; both `package.json`s declare `"license": "MIT"`. Repo hygiene: `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `CHANGELOG.md`, `.github/` PR + issue templates.
 - `server/logs/*` untracked via `git rm --cached`; `.gitignore` covers logs + env.
 - `server/.env.example` documents all keys (no secrets).
 - PWA `manifest.json` name → Cafe POS / Cafe Management System.
