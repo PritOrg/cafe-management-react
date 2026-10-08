@@ -10,6 +10,7 @@ import Schedule from '@mui/icons-material/Schedule';
 import LocalShipping from '@mui/icons-material/LocalShipping';
 import { ordersAPI, activityAPI, unwrap } from '../../services/api';
 import ErrorState from '../../components/common/ErrorState';
+import useOpsEvents from '../../hooks/useOpsEvents';
 import { adaptOrder } from '../../adapters';
 
 const AdminOrders = () => {
@@ -58,6 +59,9 @@ const AdminOrders = () => {
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+
+  // Realtime: refetch when this tenant's orders change elsewhere (server wins).
+  useOpsEvents({ 'order:created': fetchOrders, 'order:status': fetchOrders });
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {

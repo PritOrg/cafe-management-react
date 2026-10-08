@@ -1,4 +1,5 @@
 const { PAYMENT_METHODS, ORDER_STATUSES } = require('../constants/order');
+const events = require('./events');
 const money = require('../utils/money');
 const { getDb } = require('../db/pool');
 const menuRepo = require('../repositories/menuRepo');
@@ -253,6 +254,13 @@ const placeOrder = async (req) => {
     }
 
     const fullOrder = await orderRepo.findByIdForOwner(tenantId, saved._id);
+
+    events.emit('order:created', {
+        tenantId,
+        order: fullOrder || saved,
+        orderNumber: saved.orderNumber,
+        status: saved.status,
+    });
 
     return {
         status: 201,
