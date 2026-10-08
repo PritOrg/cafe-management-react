@@ -14,6 +14,7 @@ import Print from '@mui/icons-material/Print';
 import Settings from '@mui/icons-material/Settings';
 import { useThemeContext } from '../../contexts/ThemeContext';
 import { settingsAPI, unwrap } from '../../services/api';
+import { onColor } from '../../utils/m3Theme';
 import { useBrand } from '../../contexts/BrandContext';
 
 const isValidHex = (c) => /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(c || '');
@@ -387,10 +388,50 @@ const AdminSettings = () => {
                     />
                   </Grid>
                   <Grid item xs={12}>
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                      <Box sx={{ width: 48, height: 48, borderRadius: 1, bgcolor: brand.primaryColor, border: '1px solid divider' }} />
-                      <Box sx={{ width: 48, height: 48, borderRadius: 1, bgcolor: brand.accentColor, border: '1px solid divider' }} />
-                      <Typography variant="body2" color="text.secondary">Preview</Typography>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                      Live preview
+                    </Typography>
+                    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, overflow: 'hidden' }}>
+                      {/* Mock app header */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+                        {brand.logoUrl ? (
+                          <Box component="img" src={brand.logoUrl} alt="" sx={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
+                        ) : (
+                          <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: brand.primaryColor }} />
+                        )}
+                        <Typography sx={{ fontWeight: 800, color: brand.primaryColor }}>
+                          {brand.title || 'Restaurant'}
+                        </Typography>
+                        <Box sx={{ flexGrow: 1 }} />
+                        <Box
+                          sx={{
+                            px: 2,
+                            py: 0.5,
+                            borderRadius: 999,
+                            bgcolor: brand.primaryColor,
+                            color: onColor(brand.primaryColor),
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                          }}
+                        >
+                          Add to cart
+                        </Box>
+                      </Box>
+                      {/* Mock invoice header */}
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          px: 2,
+                          py: 1.5,
+                          background: `linear-gradient(135deg, ${brand.primaryColor}, ${brand.accentColor})`,
+                          color: onColor(brand.primaryColor),
+                        }}
+                      >
+                        <Typography sx={{ fontWeight: 700 }}>{brand.title || 'Restaurant'}</Typography>
+                        <Typography variant="caption">TAX INVOICE</Typography>
+                      </Box>
                     </Box>
                   </Grid>
                   {saveError && (
