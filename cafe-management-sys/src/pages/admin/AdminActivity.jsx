@@ -27,6 +27,7 @@ import Search from '@mui/icons-material/Search';
 import History from '@mui/icons-material/History';
 import Download from '@mui/icons-material/Download';
 import { activityAPI, unwrap } from '../../services/api';
+import useOpsEvents from '../../hooks/useOpsEvents';
 import { activityToCsv, downloadCsv } from '../../utils/orderCsv';
 
 const AdminActivity = () => {
@@ -63,6 +64,9 @@ const AdminActivity = () => {
   useEffect(() => {
     fetchActivities();
   }, [fetchActivities]);
+
+  // Realtime: prepend new activity rows as they happen.
+  useOpsEvents({ 'activity:new': fetchActivities });
 
   const handleExport = async () => {
     try {
