@@ -10,16 +10,25 @@ const OPTIMIZE_DEPS = [
   'react-router-dom',
   '@mui/material',
   '@mui/material/styles',
+  '@mui/utils',
+  '@mui/system',
   '@emotion/react',
   '@emotion/styled',
   'styled-components',
   'sweetalert2',
+  // CommonJS deps that must be pre-bundled for ESM interop
+  'prop-types',
+  'react-is',
+  'hoist-non-react-statics',
+  'react-transition-group',
+  'clsx',
 ];
 
 export default defineConfig({
   plugins: [react()],
-  // On WSL/D: the optimizer writing into the Windows mount hangs. Cache on the
-  // Linux-native fs (/tmp) and skip source crawling (explicit include list only).
+  // On WSL/D: the optimizer writing into the Windows mount hangs, and crawling
+  // node_modules (discovery) is very slow. Cache on Linux-native /tmp and skip
+  // discovery, listing every dep MUI/React need (incl. CJS: prop-types, react-is).
   cacheDir: process.env.VITE_CACHE_DIR || '/tmp/cafe-vite-cache',
   optimizeDeps: {
     noDiscovery: true,
