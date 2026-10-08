@@ -1,6 +1,8 @@
 import React from 'react';
 import { Breadcrumbs as MuiBreadcrumbs, Typography, Link, Box } from '@mui/material';
-import { NavigateNext as NavigateNextIcon, Home as HomeIcon, Dashboard as DashboardIcon } from '@mui/icons-material';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import HomeIcon from '@mui/icons-material/Home';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 import { styled } from '@mui/material/styles';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 

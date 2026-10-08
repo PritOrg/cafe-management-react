@@ -23,7 +23,9 @@ import {
   Alert,
   LinearProgress,
 } from '@mui/material';
-import { Refresh, Search, DeleteOutline } from '@mui/icons-material';
+import Refresh from '@mui/icons-material/Refresh';
+import Search from '@mui/icons-material/Search';
+import DeleteOutline from '@mui/icons-material/DeleteOutline';
 import { customersAPI, activityAPI, unwrap } from '../../services/api';
 import { formatMoney } from '../../utils/formatMoney';
 

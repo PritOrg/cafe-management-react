@@ -5,15 +5,13 @@ import {
   Button,
   Paper,
 } from '@mui/material';
-import {
-  Inbox as InboxIcon,
-  SearchOff as SearchOffIcon,
-  ErrorOutline as ErrorIcon,
-  CloudOff as CloudOffIcon,
-  ShoppingCart as CartIcon,
-  Restaurant as RestaurantIcon,
-  People as PeopleIcon,
-} from '@mui/icons-material';
+import InboxIcon from '@mui/icons-material/Inbox';
+import SearchOffIcon from '@mui/icons-material/SearchOff';
+import ErrorIcon from '@mui/icons-material/ErrorOutline';
+import CloudOffIcon from '@mui/icons-material/CloudOff';
+import CartIcon from '@mui/icons-material/ShoppingCart';
+import RestaurantIcon from '@mui/icons-material/Restaurant';
+import PeopleIcon from '@mui/icons-material/People';
 import { styled } from '@mui/material/styles';
 
 const StyledEmptyContainer = styled(Paper)(({ theme }) => ({

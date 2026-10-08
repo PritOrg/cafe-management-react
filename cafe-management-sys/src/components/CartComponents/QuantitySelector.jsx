@@ -1,7 +1,8 @@
 // components/QuantitySelector.jsx
 import React from 'react';
 import { Box, IconButton, TextField } from '@mui/material';
-import { Add as AddIcon, Remove as RemoveIcon } from '@mui/icons-material';
+import AddIcon from '@mui/icons-material/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
 import { styled } from '@mui/material/styles';
 
 const QuantityContainer = styled(Box)(({ theme }) => ({

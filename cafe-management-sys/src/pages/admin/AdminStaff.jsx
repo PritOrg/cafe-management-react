@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Button, TextField, InputAdornment, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Avatar, Fab } from '@mui/material';
-import { Search, Add, Edit, Delete, MoreVert, Email, Phone } from '@mui/icons-material';
+import Search from '@mui/icons-material/Search';
+import Add from '@mui/icons-material/Add';
+import Edit from '@mui/icons-material/Edit';
+import Delete from '@mui/icons-material/Delete';
+import MoreVert from '@mui/icons-material/MoreVert';
+import Email from '@mui/icons-material/Email';
+import Phone from '@mui/icons-material/Phone';
 import { staffAPI } from '../../services/api';
 
 const AdminStaff = () => {

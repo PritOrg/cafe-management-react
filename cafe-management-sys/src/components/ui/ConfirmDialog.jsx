@@ -13,14 +13,12 @@ import {
   useTheme,
   useMediaQuery,
 } from '@mui/material';
-import {
-  Close as CloseIcon,
-  Warning as WarningIcon,
-  Error as ErrorIcon,
-  Info as InfoIcon,
-  CheckCircle as SuccessIcon,
-  Help as QuestionIcon,
-} from '@mui/icons-material';
+import CloseIcon from '@mui/icons-material/Close';
+import WarningIcon from '@mui/icons-material/Warning';
+import ErrorIcon from '@mui/icons-material/Error';
+import InfoIcon from '@mui/icons-material/Info';
+import SuccessIcon from '@mui/icons-material/CheckCircle';
+import QuestionIcon from '@mui/icons-material/Help';
 
 // Confirmation Context
 const ConfirmContext = createContext();

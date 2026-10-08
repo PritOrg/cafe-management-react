@@ -21,18 +21,16 @@ import {
   Chip
 } from '@mui/material';
 import Swal from 'sweetalert2';
-import {
-  Email,
-  Lock,
-  Person,
-  Phone,
-  Visibility,
-  VisibilityOff,
-  Coffee,
-  Close,
-  ArrowForward,
-  PhotoCamera,
-} from '@mui/icons-material';
+import Email from '@mui/icons-material/Email';
+import Lock from '@mui/icons-material/Lock';
+import Person from '@mui/icons-material/Person';
+import Phone from '@mui/icons-material/Phone';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import Coffee from '@mui/icons-material/Coffee';
+import Close from '@mui/icons-material/Close';
+import ArrowForward from '@mui/icons-material/ArrowForward';
+import PhotoCamera from '@mui/icons-material/PhotoCamera';
 
 import Grid2 from '@mui/material/Unstable_Grid2';
 import { authAPI } from '../../services/api';

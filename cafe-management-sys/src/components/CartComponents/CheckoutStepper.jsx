@@ -10,12 +10,10 @@ import {
   Paper
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import {
-  ShoppingCart,
-  LocalShipping,
-  Payment,
-  RateReview
-} from '@mui/icons-material';
+import ShoppingCart from '@mui/icons-material/ShoppingCart';
+import LocalShipping from '@mui/icons-material/LocalShipping';
+import Payment from '@mui/icons-material/Payment';
+import RateReview from '@mui/icons-material/RateReview';
 
 const StyledStepper = styled(Stepper)(({ theme }) => ({
   padding: theme.spacing(3),
