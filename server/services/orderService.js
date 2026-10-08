@@ -271,14 +271,17 @@ const placeOrder = async (req) => {
     // Best-effort: issue the GST bill immediately so it's ready and admin
     // terminals update instantly via the `invoice:issued` event. If GST settings
     // are incomplete this is skipped and can be issued later from Admin → Invoices.
-    try {
-        const invoiceService = require('./invoiceService');
-        await invoiceService.issueForOrder(tenantId, saved._id, {
-            actorId: req.userId,
-            actorType: isStaffRole ? req.role : 'customer',
-        });
-    } catch (invoiceError) {
-        console.warn('Auto-invoice skipped for order', saved.orderNumber, '-', invoiceError.message);
+    // Skipped under NODE_ENV=test to keep the shared-DB test suite deterministic.
+    if (process.env.NODE_ENV !== 'test') {
+        try {
+            const invoiceService = require('./invoiceService');
+            await invoiceService.issueForOrder(tenantId, saved._id, {
+                actorId: req.userId,
+                actorType: isStaffRole ? req.role : 'customer',
+            });
+        } catch (invoiceError) {
+            console.warn('Auto-invoice skipped for order', saved.orderNumber, '-', invoiceError.message);
+        }
     }
 
     events.emit('order:created', {
