@@ -4,12 +4,13 @@ import { Box } from '@mui/material';
 
 // Components and layouts
 import { Layout, AdminLayout, AdminRoute, ErrorBoundary, ToastProvider, LoadingProvider, ConfirmProvider } from './components';
-import CartPage from './pages/customer/CartPage.jsx';
 
 // Lazy pages — smaller first load on mobile
 const LandingPage = lazy(() => import('./pages/customer/LandingPage.jsx').then((m) => ({ default: m.LandingPage || m.default })));
 const LoginRegisterPage = lazy(() => import('./pages/customer/LoginRegisterPage.jsx').then((m) => ({ default: m.LoginRegisterPage || m.default })));
 const MenuPage = lazy(() => import('./pages/customer/MenuPage.jsx').then((m) => ({ default: m.MenuPage || m.default })));
+const CartPage = lazy(() => import('./pages/customer/CartPage.jsx').then((m) => ({ default: m.CartPage || m.default })));
+const OrderHistoryPage = lazy(() => import('./pages/customer/OrderHistoryPage.jsx').then((m) => ({ default: m.OrderHistoryPage || m.default })));
 const NotFound = lazy(() => import('./pages/NotFound.jsx').then((m) => ({ default: m.NotFound || m.default })));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard.jsx').then((m) => ({ default: m.AdminDashboard || m.default })));
 const AdminOrders = lazy(() => import('./pages/admin/AdminOrders.jsx').then((m) => ({ default: m.AdminOrders || m.default })));
@@ -40,6 +41,7 @@ const App = () => {
                   <Route path="login-register" element={<LoginRegisterPage />} />
                   <Route path="menu" element={<MenuPage />} />
                   <Route path="cart" element={<CartPage />} />
+                  <Route path="orders" element={<OrderHistoryPage />} />
                 </Route>
 
                 {/* Admin Routes */}
