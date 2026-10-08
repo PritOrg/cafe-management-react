@@ -14,7 +14,6 @@ import {
   IconButton,
   Button,
   TextField,
-  InputAdornment,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -34,7 +33,6 @@ import Refresh from '@mui/icons-material/Refresh';
 import Inventory2 from '@mui/icons-material/Inventory2';
 import MenuBook from '@mui/icons-material/MenuBook';
 import { inventoryAPI, menuAPI, unwrap } from '../../services/api';
-import { formatMoney } from '../../utils/formatMoney';
 
 const MOVEMENT_TYPES = [
   { value: 'purchase', label: 'Receive (purchase)' },

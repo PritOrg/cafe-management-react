@@ -46,7 +46,10 @@ const MenuItemCard = ({ menuItem }) => {
   const hasSizes = sizes.length > 1;
   const hasModifiers =
     (menuItem.modifierGroups?.length || 0) > 0 || (menuItem.customizationOptions?.length || 0) > 0;
-  const needsDialog = hasSizes || hasModifiers;
+  // Legacy two-price items (medium/large) also need a size choice.
+  const hasLegacySizes =
+    menuItem.price?.large != null && Number(menuItem.price.large) !== Number(menuItem.price.medium);
+  const needsDialog = hasSizes || hasModifiers || hasLegacySizes;
 
   const priceLabel = sizes.length
     ? `${formatMoney(sizes[0].price)} onwards`
@@ -71,13 +74,6 @@ const MenuItemCard = ({ menuItem }) => {
   const handleFavourite = (event) => {
     event.stopPropagation();
     toggleFavourite(id);
-  };
-
-  const handleShare = (event) => {
-    event.stopPropagation();
-    if (navigator.share) {
-      navigator.share({ title: menuItem.title, url: window.location.href }).catch(() => {});
-    }
   };
 
   const isPopular = menuItem.rating >= 4.5;

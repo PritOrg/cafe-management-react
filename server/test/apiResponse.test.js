@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { attachApiResponse, responseTimeTracker } from '../middleware/apiResponse.js';
-import { healthCheckHandler } from '../middleware/healthMonitor.js';
 
 const mockRes = () => {
     const r = { statusCode: 200, body: null, req: {} };

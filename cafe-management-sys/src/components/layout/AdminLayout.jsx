@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import { Outlet, useLocation, Link as RouterLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import CssBaseline from '@mui/material/CssBaseline';
-import Paper from '@mui/material/Paper';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Link from '@mui/material/Link';
 import Typography from '@mui/material/Typography';

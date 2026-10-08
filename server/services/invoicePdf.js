@@ -248,7 +248,7 @@ const footerWide = (doc, inv, cfg) => {
 const drawWide = (doc, inv, cfg) => {
     let y = headerWide(doc, inv, cfg);
     y = itemsWide(doc, inv, cfg, y);
-    y = totalsWide(doc, inv, cfg, y);
+    totalsWide(doc, inv, cfg, y);
     footerWide(doc, inv, cfg);
 };
 

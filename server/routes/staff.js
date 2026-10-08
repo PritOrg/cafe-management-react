@@ -6,7 +6,7 @@ const {
   updateStaff,
   removeStaff,
 } = require('../controllers/staffController');
-const { ensureAdmin, ensureAdminOrWaiter } = require('../middleware/auth');
+const { ensureAdmin } = require('../middleware/auth');
 
 // Core staff management
 router.get('/', ensureAdmin, getAllStaff);

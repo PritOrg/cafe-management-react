@@ -55,7 +55,7 @@ const sendErrorProd = (err, res) => {
     return sendResponse(res, 500, false, 'Something went wrong!');
 };
 
-const globalErrorHandler = (err, req, res, next) => {
+const globalErrorHandler = (err, req, res, _next) => {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || 'error';
 
