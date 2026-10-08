@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Box,
   Typography,
@@ -8,6 +8,7 @@ import {
   Button,
   Grid,
   Paper,
+  Stack,
 } from '@mui/material';
 import Refresh from '@mui/icons-material/Refresh';
 import AccessTime from '@mui/icons-material/AccessTime';
@@ -16,8 +17,13 @@ import Whatshot from '@mui/icons-material/Whatshot';
 import { kitchenAPI, ordersAPI, unwrap } from '../../services/api';
 import LoadingState from '../../components/common/LoadingState';
 import ErrorState from '../../components/common/ErrorState';
+import useOpsEvents from '../../hooks/useOpsEvents';
 
+// KDS age thresholds: green < 10m, amber 10–15m, red > 15m.
+const ageBorder = (m) => (m > 15 ? 'error.main' : m >= 10 ? 'warning.main' : 'success.main');
+const ageChip = (m) => (m > 15 ? 'error' : m >= 10 ? 'warning' : 'success');
 const statusColor = (s) => (s === 'pending' ? 'warning' : s === 'preparing' ? 'info' : 'success');
+const NEXT_STATUS = { pending: 'preparing', preparing: 'ready', ready: 'served' };
 
 const AdminKitchen = () => {
   const [orders, setOrders] = useState([]);
@@ -39,27 +45,52 @@ const AdminKitchen = () => {
     }
   }, []);
 
-  useEffect(() => {
-    fetchOrders();
-    const t = setInterval(fetchOrders, 15000);
-    return () => clearInterval(t);
-  }, [fetchOrders]);
-
-  const advance = async (order, next) => {
+  const advance = useCallback(async (order, next) => {
     try {
       await ordersAPI.updateStatus(order._id, next);
       fetchOrders();
     } catch (err) {
       setError(err.message || 'Failed to update status');
     }
-  };
+  }, [fetchOrders]);
+
+  useEffect(() => {
+    fetchOrders();
+    const timer = setInterval(fetchOrders, 15000);
+    return () => clearInterval(timer);
+  }, [fetchOrders]);
+
+  // Realtime: new tickets / status changes from other terminals.
+  useOpsEvents({ 'order:created': fetchOrders, 'order:status': fetchOrders });
+
+  // Keyboard bump: press 1–9 to advance the Nth ticket.
+  useEffect(() => {
+    const onKey = (event) => {
+      const target = event.target;
+      const tag = target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return;
+      const index = Number(event.key);
+      if (index >= 1 && index <= 9) {
+        const order = orders[index - 1];
+        const next = order && NEXT_STATUS[order.status];
+        if (next) advance(order, next);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [orders, advance]);
 
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <LocalDining /> Kitchen Display
-        </Typography>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <LocalDining /> Kitchen Display
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Press <strong>1–9</strong> to bump a ticket · green &lt;10m · amber 10–15m · red &gt;15m
+          </Typography>
+        </Box>
         <Button variant="outlined" startIcon={<Refresh />} onClick={fetchOrders}>Refresh</Button>
       </Box>
 
@@ -72,28 +103,37 @@ const AdminKitchen = () => {
       ) : null}
 
       <Grid container spacing={2}>
-        {orders.map((order) => (
+        {orders.map((order, index) => (
           <Grid item xs={12} sm={6} md={4} key={order._id}>
             <Paper
               elevation={3}
               sx={{
                 p: 2,
                 borderLeft: 6,
-                borderColor: order.minutesOpen > 15 ? 'error.main' : order.minutesOpen > 8 ? 'warning.main' : 'success.main',
+                borderColor: ageBorder(order.minutesOpen),
                 height: '100%',
               }}
             >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="h6" fontWeight={700}>
-                  {order.orderNumber}
-                </Typography>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  {index < 9 && (
+                    <Chip size="small" variant="outlined" label={index + 1} sx={{ fontWeight: 700 }} />
+                  )}
+                  <Typography variant="h6" fontWeight={700}>{order.orderNumber}</Typography>
+                </Stack>
                 <Chip size="small" color={statusColor(order.status)} label={order.status} />
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <AccessTime fontSize="small" color={order.minutesOpen > 15 ? 'error' : 'action'} />
-                <Typography variant="body2">{order.minutesOpen} min open</Typography>
+              </Stack>
+
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                <Chip
+                  size="small"
+                  color={ageChip(order.minutesOpen)}
+                  icon={<AccessTime />}
+                  label={`${order.minutesOpen} min`}
+                />
                 {order.tableNumber && <Chip size="small" label={`Table ${order.tableNumber}`} />}
-              </Box>
+              </Stack>
+
               {order.items.map((item, idx) => (
                 <Box key={idx} sx={{ mb: 1, pb: 1, borderBottom: '1px dashed', borderColor: 'divider' }}>
                   <Typography fontWeight={600}>
@@ -111,6 +151,7 @@ const AdminKitchen = () => {
                   )}
                 </Box>
               ))}
+
               <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
                 {order.status === 'pending' && (
                   <Button size="small" variant="contained" onClick={() => advance(order, 'preparing')}>Start</Button>

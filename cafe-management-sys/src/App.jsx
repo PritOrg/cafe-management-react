@@ -74,6 +74,7 @@ const App = () => {
                   <Route path="tenants" element={<AdminTenants />} />
                   <Route path="customers" element={<AdminCustomers />} />
                   <Route path="kitchen" element={<AdminKitchen />} />
+                  <Route path="kds" element={<Navigate to="/admin/kitchen" replace />} />
                   <Route path="activity" element={<AdminActivity />} />
                   <Route path="invoices" element={<AdminInvoices />} />
                 </Route>

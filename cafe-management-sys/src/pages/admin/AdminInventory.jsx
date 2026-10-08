@@ -33,6 +33,7 @@ import Refresh from '@mui/icons-material/Refresh';
 import Inventory2 from '@mui/icons-material/Inventory2';
 import MenuBook from '@mui/icons-material/MenuBook';
 import { inventoryAPI, menuAPI, unwrap } from '../../services/api';
+import useOpsEvents from '../../hooks/useOpsEvents';
 
 const MOVEMENT_TYPES = [
   { value: 'purchase', label: 'Receive (purchase)' },
@@ -134,6 +135,9 @@ const AdminInventory = () => {
   useEffect(() => {
     fetchItems();
   }, [fetchItems]);
+
+  // Realtime: refresh when stock becomes low elsewhere (e.g. order deduction).
+  useOpsEvents({ 'stock:low': fetchItems });
 
   const lowCount = items.filter((i) => Number(i.quantity) <= Number(i.minQty || 0)).length;
 

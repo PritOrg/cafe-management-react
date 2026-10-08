@@ -3,6 +3,7 @@ const inventoryRepo = require('../repositories/inventoryRepo');
 const recipeRepo = require('../repositories/recipeRepo');
 const menuRepo = require('../repositories/menuRepo');
 const activityRepo = require('../repositories/activityRepo');
+const events = require('../services/events');
 
 const requireAdmin = (req, res) => {
     if (req.role !== 'admin' && !req.isPlatformAdmin) {
@@ -188,6 +189,15 @@ exports.addMovement = async (req, res) => {
             entityId: item._id,
             meta: { type, delta },
         });
+        if (Number(item.quantity) <= Number(item.minQty || 0)) {
+            events.emit('stock:low', {
+                tenantId: req.tenantId,
+                itemId: item._id,
+                itemName: item.itemName,
+                quantity: item.quantity,
+                minQty: item.minQty,
+            });
+        }
         return sendResponse(res, 201, true, 'Inventory movement recorded', item);
     } catch (err) {
         console.error('Error recording inventory movement:', err);
