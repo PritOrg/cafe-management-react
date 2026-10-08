@@ -6,6 +6,10 @@ if (typeof net.setDefaultAutoSelectFamily === 'function') {
 
 const path = require('path');
 
+// Load server/.env for CLI usage (knex migrate/seed changes cwd, so use an
+// explicit path rather than relying on process.cwd()).
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+
 const runtimeUrl = process.env.DATABASE_URL || process.env.DB_URI;
 const directUrl = process.env.DIRECT_DATABASE_URL || runtimeUrl;
 
