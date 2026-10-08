@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Button, TextField, InputAdornment, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Tabs, Tab, Badge } from '@mui/material';
-import { Search, FilterList, MoreVert, Visibility, CheckCircle, Cancel, Schedule, LocalShipping } from '@mui/icons-material';
+import Search from '@mui/icons-material/Search';
+import FilterList from '@mui/icons-material/FilterList';
+import MoreVert from '@mui/icons-material/MoreVert';
+import Visibility from '@mui/icons-material/Visibility';
+import CheckCircle from '@mui/icons-material/CheckCircle';
+import Cancel from '@mui/icons-material/Cancel';
+import Schedule from '@mui/icons-material/Schedule';
+import LocalShipping from '@mui/icons-material/LocalShipping';
 import { ordersAPI, activityAPI, unwrap } from '../../services/api';
 import { adaptOrder } from '../../adapters';
 

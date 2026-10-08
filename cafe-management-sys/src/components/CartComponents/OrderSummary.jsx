@@ -10,12 +10,10 @@ import {
   Chip,
   LinearProgress
 } from '@mui/material';
-import {
-  LocalCafe as CoffeeIcon,
-  Schedule as TimeIcon,
-  LocalShipping as ShippingIcon,
-  MonetizationOn as MoneyIcon
-} from '@mui/icons-material';
+import CoffeeIcon from '@mui/icons-material/LocalCafe';
+import TimeIcon from '@mui/icons-material/Schedule';
+import ShippingIcon from '@mui/icons-material/LocalShipping';
+import MoneyIcon from '@mui/icons-material/MonetizationOn';
 import { styled } from '@mui/material/styles';
 
 const SummaryPaper = styled(Paper)(({ theme }) => ({

@@ -21,15 +21,13 @@ import {
   Switch,
   FormControlLabel,
 } from '@mui/material';
-import {
-  Search,
-  Add,
-  Edit,
-  Delete,
-  MoreVert,
-  Visibility,
-  FilterList,
-} from '@mui/icons-material';
+import Search from '@mui/icons-material/Search';
+import Add from '@mui/icons-material/Add';
+import Edit from '@mui/icons-material/Edit';
+import Delete from '@mui/icons-material/Delete';
+import MoreVert from '@mui/icons-material/MoreVert';
+import Visibility from '@mui/icons-material/Visibility';
+import FilterList from '@mui/icons-material/FilterList';
 import { useNavigate } from 'react-router-dom';
 import { menuAPI, activityAPI, unwrap } from '../../services/api';
 

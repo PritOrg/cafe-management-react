@@ -1,7 +1,8 @@
 // components/CartItemCard.jsx
 import React, { useState } from 'react';
 import { Card, CardContent, Grid, Typography, IconButton, Avatar, Chip, Box, Fade, Tooltip } from '@mui/material';
-import { Delete as DeleteIcon, Settings as SettingsIcon } from '@mui/icons-material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { styled } from '@mui/material/styles';
 import QuantitySelector from './QuantitySelector';
 import CartCustomizationDialog from './CartCustomizationDialog';

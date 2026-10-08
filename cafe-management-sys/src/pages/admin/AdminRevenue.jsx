@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Card, CardContent, Grid, Button, ButtonGroup, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, LinearProgress, Alert } from '@mui/material';
-import { TrendingUp, TrendingDown, AttachMoney, DateRange, Download, Refresh } from '@mui/icons-material';
+import TrendingUp from '@mui/icons-material/TrendingUp';
+import TrendingDown from '@mui/icons-material/TrendingDown';
+import AttachMoney from '@mui/icons-material/AttachMoney';
+import DateRange from '@mui/icons-material/DateRange';
+import Download from '@mui/icons-material/Download';
+import Refresh from '@mui/icons-material/Refresh';
 import { analyticsAPI, unwrap } from '../../services/api';
 import { formatMoney } from '../../utils/formatMoney';
 

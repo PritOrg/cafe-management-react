@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { CircularProgress, Box, Typography, Paper, Button } from '@mui/material';
-import { LockOutlined } from '@mui/icons-material';
+import LockOutlined from '@mui/icons-material/LockOutlined';
 
 /**
  * AdminRoute component that restricts access to admin users only
