@@ -1,5 +1,6 @@
 const { getDb } = require('../db/pool');
 const { mapActivity } = require('../db/mappers');
+const events = require('../services/events');
 
 const log = async ({ tenantId, actorId, actorType, action, entity, entityId, meta, requestId }) => {
     try {
@@ -13,6 +14,9 @@ const log = async ({ tenantId, actorId, actorType, action, entity, entityId, met
             meta: meta || {},
             request_id: requestId || null,
         }).returning('*');
+        if (row) {
+            events.emit('activity:new', { tenantId, action, entity, entityId, actorId });
+        }
         return row || null;
     } catch (err) {
         console.error('logActivity failed:', err.message);
