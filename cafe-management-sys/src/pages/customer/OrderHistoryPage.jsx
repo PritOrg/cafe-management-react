@@ -18,6 +18,8 @@ import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import LocalCafeIcon from '@mui/icons-material/LocalCafe';
 import SearchIcon from '@mui/icons-material/Search';
 import { ordersAPI, unwrap } from '../../services/api';
+import PageHeader from '../../components/common/PageHeader';
+import EmptyState from '../../components/common/EmptyState';
 
 const STATUS_META = {
   pending: { label: 'Pending', color: 'warning' },
@@ -82,16 +84,12 @@ const OrderHistoryPage = () => {
   };
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1 }}>
-        <ReceiptLongIcon color="primary" />
-        <Typography variant="h4" sx={{ fontWeight: 800 }}>
-          My Orders
-        </Typography>
-      </Stack>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Enter the phone number you used at checkout to see your order history.
-      </Typography>
+    <Container maxWidth="md" sx={{ py: { xs: 2, md: 4 } }}>
+      <PageHeader
+        title="My Orders"
+        icon={<ReceiptLongIcon fontSize="small" />}
+        subtitle="Enter the phone number you used at checkout to see your order history"
+      />
 
       <Paper
         component="form"
@@ -135,24 +133,11 @@ const OrderHistoryPage = () => {
       )}
 
       {!loading && searched && orders.length === 0 && !error && (
-        <Paper
-          elevation={0}
-          sx={{
-            p: 6,
-            borderRadius: 3,
-            textAlign: 'center',
-            border: '2px dashed',
-            borderColor: 'divider',
-          }}
-        >
-          <LocalCafeIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 1 }} />
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            No orders found
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            We couldn&apos;t find any orders for that number.
-          </Typography>
-        </Paper>
+        <EmptyState
+          icon={<LocalCafeIcon />}
+          title="No orders found"
+          description="We couldn't find any orders for that number. Double-check it and try again."
+        />
       )}
 
       <Stack spacing={2}>
