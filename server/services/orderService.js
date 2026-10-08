@@ -64,10 +64,22 @@ const resolveDiscount = async (tenantId, discountCode, lines, subtotalMinor) => 
 
 const placeOrder = async (req) => {
     const tenantId = req.tenantId;
-    const { tableNumber, items, tipAmount, discountCode, paymentMethod, phone, customerName } = req.body || {};
+    const { tableNumber, items, tipAmount, discountCode, paymentMethod, phone, customerName, clientOrderId } = req.body || {};
 
     if (!tenantId) {
         return { status: 400, message: 'Tenant context is required' };
+    }
+
+    // Idempotency: a replayed offline order must not create a duplicate.
+    if (clientOrderId) {
+        const existing = await orderRepo.findByClientOrderId(tenantId, clientOrderId);
+        if (existing) {
+            return {
+                status: 200,
+                message: 'Order already placed',
+                data: { order: existing, orderNumber: existing.orderNumber },
+            };
+        }
     }
     if (!Array.isArray(items) || items.length === 0) {
         return { status: 400, message: 'Order must contain at least one item' };
@@ -169,6 +181,7 @@ const placeOrder = async (req) => {
             paymentStatus: 'paid',
             totalAmount: round2(money.fromMinor(subtotalMinor)),
             finalAmount: round2(money.fromMinor(finalMinor)),
+            clientOrderId: clientOrderId || null,
         }, trx);
 
         for (const line of lines) {
