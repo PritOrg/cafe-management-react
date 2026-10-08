@@ -24,4 +24,12 @@ const getTransporter = () => {
 
 const isMailConfigured = () => !!process.env.SMTP_HOST;
 
-module.exports = { getTransporter, isMailConfigured };
+/** Send an email via the configured SMTP driver. Throws if SMTP is not configured. */
+const sendMail = async ({ to, subject, html, text, from }) => {
+    const client = getTransporter();
+    if (!client) throw new Error('SMTP is not configured');
+    const sender = from || process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@localhost';
+    return client.sendMail({ from: sender, to, subject, html, text });
+};
+
+module.exports = { getTransporter, isMailConfigured, sendMail };

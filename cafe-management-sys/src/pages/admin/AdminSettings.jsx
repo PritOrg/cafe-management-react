@@ -12,6 +12,8 @@ import Palette from '@mui/icons-material/Palette';
 import ReceiptLong from '@mui/icons-material/ReceiptLong';
 import Print from '@mui/icons-material/Print';
 import Settings from '@mui/icons-material/Settings';
+import Email from '@mui/icons-material/Email';
+import CloudUpload from '@mui/icons-material/CloudUpload';
 import { useThemeContext } from '../../contexts/ThemeContext';
 import { settingsAPI, unwrap } from '../../services/api';
 import { onColor } from '../../utils/m3Theme';
@@ -55,6 +57,32 @@ const AdminSettings = () => {
   const [printSaving, setPrintSaving] = useState(false);
   const [printTestResult, setPrintTestResult] = useState('');
   const [settingsMsg, setSettingsMsg] = useState('');
+
+  const [integrations, setIntegrations] = useState(null);
+  const [testEmailTo, setTestEmailTo] = useState('');
+  const [testEmailState, setTestEmailState] = useState({ open: false, message: '', severity: 'success' });
+
+  const loadIntegrations = useCallback(async () => {
+    try {
+      const body = await settingsAPI.getIntegrations();
+      setIntegrations(unwrap(body));
+    } catch (err) {
+      console.error('Failed to load integrations:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadIntegrations();
+  }, [loadIntegrations]);
+
+  const handleSendTestEmail = async () => {
+    try {
+      await settingsAPI.sendTestEmail(testEmailTo);
+      setTestEmailState({ open: true, message: `Test email sent to ${testEmailTo}`, severity: 'success' });
+    } catch (err) {
+      setTestEmailState({ open: true, message: err.message || 'Failed to send test email', severity: 'error' });
+    }
+  };
 
   const loadBrandSettings = useCallback(async () => {
     try {
@@ -337,6 +365,8 @@ const AdminSettings = () => {
           <Tab icon={<Backup />} label="System" />
           <Tab icon={<Print />} label="Printing" />
           <Tab icon={<Settings />} label="Operations" />
+          <Tab icon={<Email />} label="SMTP" />
+          <Tab icon={<CloudUpload />} label="Storage" />
         </Tabs>
 
         <TabPanel value={activeTab} index={0}>
@@ -1023,6 +1053,78 @@ const AdminSettings = () => {
                   </Button>
                 </Grid>
               </Grid>
+            </CardContent>
+          </Card>
+        </TabPanel>
+
+        <TabPanel value={activeTab} index={9}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>SMTP (email)</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Configured from the server environment: SMTP_HOST / SMTP_PORT / SMTP_SECURE / SMTP_USER / SMTP_PASS.
+              </Typography>
+              {integrations?.mail ? (
+                <Alert severity={integrations.mail.configured ? 'success' : 'warning'} sx={{ mb: 2 }}>
+                  {integrations.mail.configured
+                    ? `Configured — host ${integrations.mail.host}${integrations.mail.from ? `, from ${integrations.mail.from}` : ''}`
+                    : 'Not configured. Set SMTP_HOST on the server to enable email.'}
+                </Alert>
+              ) : (
+                <CircularProgress size={22} />
+              )}
+              {testEmailState.open && (
+                <Alert
+                  severity={testEmailState.severity}
+                  onClose={() => setTestEmailState((s) => ({ ...s, open: false }))}
+                  sx={{ mb: 2 }}
+                >
+                  {testEmailState.message}
+                </Alert>
+              )}
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                <TextField
+                  label="Send test email to"
+                  value={testEmailTo}
+                  onChange={(e) => setTestEmailTo(e.target.value)}
+                  size="small"
+                  sx={{ flex: 1, minWidth: 240 }}
+                />
+                <Button
+                  variant="contained"
+                  onClick={handleSendTestEmail}
+                  disabled={!testEmailTo || !integrations?.mail?.configured}
+                >
+                  Send test email
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </TabPanel>
+
+        <TabPanel value={activeTab} index={10}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Storage (image uploads)</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Set on the server via STORAGE_DRIVER (local | cloudinary). Cloudinary is used automatically when
+                configured.
+              </Typography>
+              {integrations?.storage ? (
+                <>
+                  <Alert severity={integrations.storage.driver === 'cloudinary' ? 'success' : 'info'} sx={{ mb: 2 }}>
+                    Active driver: <strong>{integrations.storage.driver}</strong>
+                    {integrations.storage.cloudinary ? ' (Cloudinary configured)' : ''}
+                  </Alert>
+                  {integrations.storage.publicUploadUrl && (
+                    <Typography variant="body2" color="text.secondary">
+                      Local uploads served from: {integrations.storage.publicUploadUrl}
+                    </Typography>
+                  )}
+                </>
+              ) : (
+                <CircularProgress size={22} />
+              )}
             </CardContent>
           </Card>
         </TabPanel>
