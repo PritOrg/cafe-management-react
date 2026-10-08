@@ -22,7 +22,10 @@ import {
   DialogContent,
   DialogActions,
 } from '@mui/material';
-import { Refresh, Search, History, Download } from '@mui/icons-material';
+import Refresh from '@mui/icons-material/Refresh';
+import Search from '@mui/icons-material/Search';
+import History from '@mui/icons-material/History';
+import Download from '@mui/icons-material/Download';
 import { activityAPI, unwrap } from '../../services/api';
 import { activityToCsv, downloadCsv } from '../../utils/orderCsv';
 

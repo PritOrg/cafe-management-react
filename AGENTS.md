@@ -49,11 +49,13 @@
 - Fix: `cd server && rm -rf node_modules/bcrypt && npm install bcrypt@5.1.1` under WSL (node-pre-gyp fetches the Linux binding). `npm rebuild bcrypt` alone may NOT replace the existing Windows binary. Audit other native deps the same way if boot fails on a different `.node` file.
 
 ## Vite on WSL / `D:` (dev-server stability)
-- Symptom: `[vite] server connection lost. Polling for restart...`, `ERR_EMPTY_RESPONSE` on `/node_modules/.vite/deps/*`, blank white page after a few minutes.
-- Cause: Vite's dep optimizer writing into the Windows mount hangs; a killed run leaves `node_modules/.vite/deps_temp_*` and no `deps/`, so every start re-bundles and stalls.
-- Fix (already in `vite.config.js`): `cacheDir: '/tmp/cafe-vite-cache'` (Linux-native), `optimizeDeps.noDiscovery: true` + explicit `include` (core deps only — **do not** add the whole `@mui/icons-material` barrel), and `server.watch.ignored` for `node_modules`/`build`/`coverage`.
+- Symptom: `[vite] server connection lost`, `ERR_EMPTY_RESPONSE` on deps, blank white page after a few minutes.
+- Causes: (1) the dep optimizer **writing into the Windows mount** hangs, leaving `node_modules/.vite/deps_temp_*` with no `deps/`; (2) bundling the **`@mui/icons-material` barrel** (thousands of icons) also stalls it.
+- Fix (in `vite.config.js`): `cacheDir: '/tmp/cafe-vite-cache'` (Linux-native fs), `optimizeDeps.include` for core/MUI/prop-types, and `server.watch.ignored` for `node_modules`/`build`/`coverage`. **Discovery stays ON.**
+- **Do NOT set `optimizeDeps.noDiscovery: true`.** MUI v5 deep modules are CommonJS on disk (`@mui/system/colorManipulator.js`, `@mui/icons-material/Add.js` have no `exports` map). Skipping pre-bundling serves raw CJS → `does not provide an export named 'darken'/'default'`. All CJS deps must go through the optimizer (VM installed; Vite/Rolldown 8).
+- **Import icons as deep paths, never the barrel:** `import MenuIcon from '@mui/icons-material/Menu'` (one file each). `import { Menu } from '@mui/icons-material'` pulls the whole barrel and hangs the optimizer. Gate: `grep -rn "from '@mui/icons-material'" src` → 0.
 - Scripts: `npm run dev:clean` (clear cache + start), `npm run clean` (cache + build + `.vite`).
-- If deps get inconsistent: `npm run clean && npm start`, then wait once for the optimizer to finish before relying on HMR.
+- If deps get inconsistent: `npm run clean && npm start`, then wait once for the optimizer to finish before relying on HMR. Cached starts are ~2s; a first/cold optimize is ~3-10s.
 
 ## Graceful shutdown
 - Backend `node index.js` handles `SIGINT`/`SIGTERM`: closes the HTTP server then `destroyDb()` (Knex pool) via `middleware/errorHandler.gracefulShutdown` (8s force-exit safety net). Kill with a single Ctrl+C; a second Ctrl+C forces exit.

@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Grid, Card, CardContent, Typography, Button, Chip, Paper, LinearProgress, Fade, Grow, alpha, Alert } from '@mui/material';
-import { TrendingUp, TrendingDown, ShoppingCart, AttachMoney, Inventory, Add, Coffee, BarChart, Schedule, Warning, CheckCircle, Info } from '@mui/icons-material';
+import TrendingUp from '@mui/icons-material/TrendingUp';
+import TrendingDown from '@mui/icons-material/TrendingDown';
+import ShoppingCart from '@mui/icons-material/ShoppingCart';
+import AttachMoney from '@mui/icons-material/AttachMoney';
+import Inventory from '@mui/icons-material/Inventory';
+import Add from '@mui/icons-material/Add';
+import Coffee from '@mui/icons-material/Coffee';
+import BarChart from '@mui/icons-material/BarChart';
+import Schedule from '@mui/icons-material/Schedule';
+import Warning from '@mui/icons-material/Warning';
+import CheckCircle from '@mui/icons-material/CheckCircle';
+import Info from '@mui/icons-material/Info';
 import { styled } from '@mui/material/styles';
 
 import { analyticsAPI, ordersAPI, inventoryAPI, unwrap } from '../../services/api';

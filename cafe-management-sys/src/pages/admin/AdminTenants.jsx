@@ -21,7 +21,10 @@ import {
   IconButton,
   MenuItem,
 } from '@mui/material';
-import { Add, Refresh, Block, CheckCircle } from '@mui/icons-material';
+import Add from '@mui/icons-material/Add';
+import Refresh from '@mui/icons-material/Refresh';
+import Block from '@mui/icons-material/Block';
+import CheckCircle from '@mui/icons-material/CheckCircle';
 import { tenantsAPI, unwrap } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 

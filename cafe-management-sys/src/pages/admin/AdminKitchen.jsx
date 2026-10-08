@@ -19,7 +19,10 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material';
-import { Refresh, AccessTime, LocalDining, Whatshot } from '@mui/icons-material';
+import Refresh from '@mui/icons-material/Refresh';
+import AccessTime from '@mui/icons-material/AccessTime';
+import LocalDining from '@mui/icons-material/LocalDining';
+import Whatshot from '@mui/icons-material/Whatshot';
 import { kitchenAPI, ordersAPI, unwrap } from '../../services/api';
 
 const statusColor = (s) => (s === 'pending' ? 'warning' : s === 'preparing' ? 'info' : 'success');

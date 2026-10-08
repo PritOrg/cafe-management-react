@@ -25,16 +25,14 @@ import {
   LinearProgress,
   MenuItem,
 } from '@mui/material';
-import {
-  Search,
-  Add,
-  Delete,
-  Warning,
-  CheckCircle,
-  Refresh,
-  Inventory2,
-  MenuBook,
-} from '@mui/icons-material';
+import Search from '@mui/icons-material/Search';
+import Add from '@mui/icons-material/Add';
+import Delete from '@mui/icons-material/Delete';
+import Warning from '@mui/icons-material/Warning';
+import CheckCircle from '@mui/icons-material/CheckCircle';
+import Refresh from '@mui/icons-material/Refresh';
+import Inventory2 from '@mui/icons-material/Inventory2';
+import MenuBook from '@mui/icons-material/MenuBook';
 import { inventoryAPI, menuAPI, unwrap } from '../../services/api';
 import { formatMoney } from '../../utils/formatMoney';
 

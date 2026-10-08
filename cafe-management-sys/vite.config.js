@@ -1,8 +1,12 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// WSL/D: note: dep pre-bundling is slow; pre-include the heavy deps so Vite
-// bundles them once (avoids runtime re-optimize -> "connection lost" / blank page).
+// WSL/D: the optimizer hangs when writing into the Windows mount and when
+// bundling the full `@mui/icons-material` barrel (thousands of icons). Icons are
+// imported as deep paths (one file each) so only the ~200 used icons are bundled.
+// Discovery stays ON: `@mui/icons-material/*.js` and MUI's `@mui/system` internals
+// are CommonJS on disk, so they MUST be pre-bundled for ESM interop (otherwise
+// the browser gets "does not provide an export named ..." for darken/prop-types).
 const OPTIMIZE_DEPS = [
   'react',
   'react-dom',
@@ -10,6 +14,7 @@ const OPTIMIZE_DEPS = [
   'react-router-dom',
   '@mui/material',
   '@mui/material/styles',
+  '@mui/material/utils',
   '@mui/utils',
   '@mui/system',
   '@emotion/react',
@@ -26,12 +31,9 @@ const OPTIMIZE_DEPS = [
 
 export default defineConfig({
   plugins: [react()],
-  // On WSL/D: the optimizer writing into the Windows mount hangs, and crawling
-  // node_modules (discovery) is very slow. Cache on Linux-native /tmp and skip
-  // discovery, listing every dep MUI/React need (incl. CJS: prop-types, react-is).
+  // Cache deps on the Linux-native fs (/tmp) instead of the Windows mount.
   cacheDir: process.env.VITE_CACHE_DIR || '/tmp/cafe-vite-cache',
   optimizeDeps: {
-    noDiscovery: true,
     include: OPTIMIZE_DEPS,
   },
   server: {

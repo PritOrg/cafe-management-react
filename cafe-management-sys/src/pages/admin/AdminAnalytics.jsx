@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Card, CardContent, Grid, Button, ButtonGroup, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, LinearProgress, IconButton, Alert } from '@mui/material';
-import { TrendingUp, TrendingDown, BarChart, AttachMoney, CheckCircle, Download, Refresh, PieChart } from '@mui/icons-material';
+import TrendingUp from '@mui/icons-material/TrendingUp';
+import TrendingDown from '@mui/icons-material/TrendingDown';
+import BarChart from '@mui/icons-material/BarChart';
+import AttachMoney from '@mui/icons-material/AttachMoney';
+import CheckCircle from '@mui/icons-material/CheckCircle';
+import Download from '@mui/icons-material/Download';
+import Refresh from '@mui/icons-material/Refresh';
+import PieChart from '@mui/icons-material/PieChart';
 import { analyticsAPI, unwrap } from '../../services/api';
 import { formatMoney } from '../../utils/formatMoney';
 
