@@ -1,0 +1,61 @@
+# Self-host the API + a local Postgres. Copy `.env.selfhost.example` to `.env` or
+# pass variables inline. The frontend is a static build — see docs/self-host.md.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-restaurant}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-restaurant}
+      POSTGRES_DB: ${POSTGRES_DB:-restaurant}
+    ports:
+      - "5432:5432"
+    volumes:
+      - restaurant_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-restaurant} -d ${POSTGRES_DB:-restaurant}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-shot: run migrations + demo seed, then exit.
+  migrate:
+    build: ./server
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-restaurant}:${POSTGRES_PASSWORD:-restaurant}@db:5432/${POSTGRES_DB:-restaurant}
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+    command: sh -c "npm run db:migrate && npm run db:seed"
+
+  server:
+    build: ./server
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      PORT: 4969
+      DATABASE_URL: postgresql://${POSTGRES_USER:-restaurant}:${POSTGRES_PASSWORD:-restaurant}@db:5432/${POSTGRES_DB:-restaurant}
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+      DEFAULT_TENANT_SLUG: ${DEFAULT_TENANT_SLUG:-cafe1}
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      # Storage (optional): cloudinary | local
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      # Mail (optional)
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+    ports:
+      - "4969:4969"
+
+volumes:
+  restaurant_pg:
