@@ -26,12 +26,12 @@ describe('nodemailer env driver', () => {
     });
 });
 
-describe('firebaseUpload local driver', () => {
+describe('storage local driver', () => {
     it('writes file and returns public URL when STORAGE_DRIVER=local', async () => {
         const prev = process.env.STORAGE_DRIVER;
         process.env.STORAGE_DRIVER = 'local';
         // re-require fresh module
-        const modPath = path.resolve('utils/firebaseUpload.js');
+        const modPath = path.resolve('utils/storage.js');
         delete require.cache[require.resolve(modPath)];
         const upload = require(modPath);
         const buf = Buffer.from('hello-pdf-bytes');
