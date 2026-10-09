@@ -13,6 +13,23 @@ Every flow is excellent at **360px** first and degrades gracefully up; admin is
 usable at speed on a **tablet**; accessibility and touch are enforced, not
 aspirational; no fake data or dead UI ships.
 
+## Progress
+
+- ✅ **N1 admin-on-touch** — shared `components/common/ResponsiveTable` (md+ sticky
+  table, 25/page pagination, card list below md) applied to **Orders**,
+  **Customers**, **Invoices**, **Inventory**; `AdminMenu` (24) + `AdminStaff` (15)
+  paginated; **bulk status change** on Orders.
+- ✅ **N2 dashboard** — stat cards 2-up on `xs`, 4-up on `md`. (No chart library is
+  bundled, so "scrollable charts" is not applicable yet.)
+- ✅ **N3 fake data / P1 bugs** — removed non-persisted AdminSettings stubs, fixed
+  `AdminRoute`, `AdminMenu` price, `$`/growth hardcodes, wired Staff Edit, dead links.
+- ✅ **Menu browsing extras (beyond plan)** — list/card view toggle, category-grouped
+  list, infinite scroll (12/page), global scroll-to-top FAB.
+- ✅ **A11y foundations** in `m3Theme` (`*:focus-visible` ring, `prefers-reduced-motion`);
+  aria-labels across components.
+- ⬜ **Remaining**: four-states audit per page, a sweep of the last bespoke controls
+  for ≥44px targets, QA screenshots per breakpoint, Lighthouse Perf ≥85 push.
+
 ## Already done (do not redo)
 
 Mobile customer shell (`Navbar`/`BottomNav`/`Footer`), admin drawer shell, M3
