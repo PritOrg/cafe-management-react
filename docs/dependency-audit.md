@@ -6,6 +6,10 @@ Snapshot of open security alerts on the default branch. Two sources:
 collapses some advisories Dependabot lists individually).
 
 > Severity mix (Dependabot): **1 critical · 27 high · 20 medium · 3 low**.
+>
+> **Status: remediated.** Server `npm audit` → **0**. Frontend `npm audit` → **0**
+> after the `react-router-dom` v7 migration (below). All items are addressed or
+> were removed as unused dependencies.
 
 ## Findings by package
 
@@ -59,8 +63,12 @@ bumps (`nodemailer` 7, `multer` 2, `sharp` 0.35) can change behavior. `bcrypt` a
 
 ## Remaining after remediation
 
-- `react-router` advisory **GHSA-wrjc-x8rr-h8h6** is only fixed in **v7** — track
-  a v7 migration separately; the other three are fixed by `^6.30.4`.
-- `sprintf-js` stays until `swagger-jsdoc` is removed or a patch appears.
+- **None.** All 51 alerts are cleared:
+  - Removed unused `sharp`, `swagger-jsdoc`, `google-auth-library`, `yamljs`.
+  - Bumped `nodemailer` (10), `multer` (2), `bcrypt` (6 — dropped `tar`),
+    `react-router-dom` (7.18), `sweetalert2`, `@babel/runtime`.
+- Re-run with
+  `gh api repos/PritOrg/cafe-management-react/dependabot/alerts?state=open`
+  to confirm the count returns to zero (Dependabot may lag a lockfile push).
 
 _Regenerate this snapshot with `gh api repos/PritOrg/cafe-management-react/dependabot/alerts?state=open`._
