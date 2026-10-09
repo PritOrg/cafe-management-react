@@ -20,6 +20,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useBrand } from '../../contexts/BrandContext';
 import { adminNavItems, isAdminNavActive } from '../../constants/navigation';
 import { inventoryAPI, unwrap } from '../../services/api';
+import useOpsEvents from '../../hooks/useOpsEvents';
 
 const DRAWER_WIDTH = 280;
 const RAIL_WIDTH = 72;
@@ -68,18 +69,18 @@ const StyledListItemButton = styled(ListItemButton)(({ theme, active }) => ({
 
 const useLowStockCount = () => {
   const [count, setCount] = useState(0);
-  useEffect(() => {
-    let cancelled = false;
-    inventoryAPI
-      .list({ lowStock: 'true' })
-      .then((body) => {
-        if (cancelled) return;
-        const data = unwrap(body) || {};
-        setCount((data.items || []).length);
-      })
-      .catch(() => { if (!cancelled) setCount(0); });
-    return () => { cancelled = true; };
+  const load = useCallback(async () => {
+    try {
+      const body = await inventoryAPI.list({ lowStock: 'true' });
+      const data = unwrap(body) || {};
+      setCount((data.items || []).length);
+    } catch {
+      setCount(0);
+    }
   }, []);
+  useEffect(() => { load(); }, [load]);
+  // Live: refresh the badge when stock changes (orders deduct, movements adjust).
+  useOpsEvents({ 'stock:low': load, 'order:created': load });
   return count;
 };
 

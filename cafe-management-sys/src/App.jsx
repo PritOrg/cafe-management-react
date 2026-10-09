@@ -31,6 +31,7 @@ const AddMenuItemForm = lazy(() => import('./pages/admin/AddMenuItemForm.jsx').t
 const AdminTenants = lazy(() => import('./pages/admin/AdminTenants.jsx').then((m) => ({ default: m.AdminTenants || m.default })));
 const AdminCustomers = lazy(() => import('./pages/admin/AdminCustomers.jsx').then((m) => ({ default: m.AdminCustomers || m.default })));
 const AdminKitchen = lazy(() => import('./pages/admin/AdminKitchen.jsx').then((m) => ({ default: m.AdminKitchen || m.default })));
+const AdminTakeOrder = lazy(() => import('./pages/admin/AdminTakeOrder.jsx').then((m) => ({ default: m.AdminTakeOrder || m.default })));
 const AdminActivity = lazy(() => import('./pages/admin/AdminActivity.jsx').then((m) => ({ default: m.AdminActivity || m.default })));
 const AdminInvoices = lazy(() => import('./pages/admin/AdminInvoices.jsx').then((m) => ({ default: m.AdminInvoices || m.default })));
 
@@ -63,6 +64,7 @@ const App = () => {
                   <Route index element={<AdminDashboard />} />
                   <Route path="dashboard" element={<Navigate to="/admin" replace />} />
                   <Route path="orders" element={<AdminOrders />} />
+                  <Route path="order" element={<AdminTakeOrder />} />
                   <Route path="menu" element={<AdminMenu />} />
                   <Route path="menu/add" element={<AddMenuItemForm />} />
                   <Route path="menu/edit/:id" element={<AddMenuItemForm />} />
