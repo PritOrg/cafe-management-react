@@ -30,7 +30,7 @@ import MenuItemInfoDialog from './MenuItemInfoDialog';
 
 const formatMoney = (value) => `₹${Number(value || 0).toFixed(0)}`;
 
-const MenuItemCard = ({ menuItem }) => {
+const MenuItemCard = ({ menuItem, variant = 'card' }) => {
   const { addToCart } = useContext(CartContext);
   const toast = useToast();
   const { isFavourite, toggleFavourite } = useFavourites();
@@ -42,6 +42,7 @@ const MenuItemCard = ({ menuItem }) => {
 
   const id = menuItem._id || menuItem.id;
   const favourite = isFavourite(id);
+  const list = variant === 'list';
 
   const sizes = menuItem.sizes || [];
   const hasSizes = sizes.length > 1;
@@ -79,6 +80,127 @@ const MenuItemCard = ({ menuItem }) => {
   };
 
   const isPopular = menuItem.rating >= 4.5;
+
+  if (list) {
+    return (
+      <>
+        <Card sx={{ display: 'flex', alignItems: 'stretch', overflow: 'hidden' }}>
+          <CardActionArea onClick={() => setOpenInfo(true)} sx={{ display: 'flex', alignItems: 'stretch', minWidth: 0 }}>
+            <Box
+              sx={{
+                position: 'relative',
+                width: 104,
+                minWidth: 104,
+                bgcolor: (t) => alpha(t.palette.primary.main, 0.06),
+              }}
+            >
+              {menuItem.imageUrl && !imageError ? (
+                <Box
+                  component="img"
+                  src={cloudinaryUrl(menuItem.imageUrl, { w: 200 })}
+                  alt={menuItem.title}
+                  loading="lazy"
+                  decoding="async"
+                  onLoad={() => setImageLoaded(true)}
+                  onError={() => setImageError(true)}
+                  sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    opacity: imageLoaded ? 1 : 0,
+                    transition: 'opacity .3s ease',
+                  }}
+                />
+              ) : (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: (t) => alpha(t.palette.primary.main, 0.4),
+                  }}
+                >
+                  <ImageIcon />
+                </Box>
+              )}
+              {soldOut && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    bgcolor: 'rgba(0,0,0,0.55)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Chip size="small" label="Sold out" sx={{ fontWeight: 700, bgcolor: 'background.paper' }} />
+                </Box>
+              )}
+            </Box>
+            <CardContent sx={{ flexGrow: 1, py: 1.5, minWidth: 0 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }} noWrap>
+                {menuItem.title}
+              </Typography>
+              {menuItem.subTitle && (
+                <Typography variant="body2" color="text.secondary" noWrap sx={{ mb: 0.5 }}>
+                  {menuItem.subTitle}
+                </Typography>
+              )}
+              <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, color: (t) => t.brand?.primaryText || t.palette.primary.main }}>
+                  {priceLabel}
+                </Typography>
+                {menuItem.preparationTime ? (
+                  <Typography variant="caption" color="text.secondary">{menuItem.preparationTime}m</Typography>
+                ) : null}
+              </Stack>
+            </CardContent>
+          </CardActionArea>
+          <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 0.5, px: 1 }}>
+            <Tooltip title={favourite ? 'Remove from favourites' : 'Add to favourites'}>
+              <IconButton size="medium" onClick={handleFavourite} aria-label="Toggle favourite" color={favourite ? 'error' : 'default'}>
+                {favourite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+              </IconButton>
+            </Tooltip>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={needsDialog ? <TuneIcon /> : <ShoppingCartIcon />}
+              onClick={handleAdd}
+              disabled={soldOut}
+              sx={{ px: 1.5, whiteSpace: 'nowrap' }}
+            >
+              {soldOut ? 'Sold out' : needsDialog ? 'Customize' : 'Add'}
+            </Button>
+          </Box>
+        </Card>
+
+        <MenuItemInfoDialog
+          open={openInfo}
+          onClose={() => setOpenInfo(false)}
+          onAddToCart={() => {
+            setOpenInfo(false);
+            if (needsDialog) setOpenCustomize(true);
+            else handleAdd({ stopPropagation() {} });
+          }}
+          menuItem={menuItem}
+        />
+
+        {needsDialog && (
+          <CustomizationDialog
+            open={openCustomize}
+            onClose={() => setOpenCustomize(false)}
+            menuItem={menuItem}
+          />
+        )}
+      </>
+    );
+  }
 
   return (
     <>

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Box,
@@ -10,12 +10,15 @@ import {
   Button,
   Skeleton,
   Stack,
+  Typography,
 } from '@mui/material';
 import Grid2 from '@mui/material/Unstable_Grid2';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import ViewListIcon from '@mui/icons-material/ViewList';
 import MenuItemCard from '../../components/menu/MenuItemCard';
 import PageHeader from '../../components/common/PageHeader';
 import EmptyState from '../../components/common/EmptyState';
@@ -57,6 +60,43 @@ const MenuPage = () => {
       ),
     [items, searchQuery, categoryFilter, favOnly, favourites]
   );
+
+  const [view, setView] = useState('grid');
+  const [visibleCount, setVisibleCount] = useState(12);
+  const PAGE = 12;
+  const sentinelRef = useRef(null);
+
+  // Reset progressive rendering whenever the filter set changes.
+  useEffect(() => {
+    setVisibleCount(PAGE);
+  }, [searchQuery, categoryFilter, favOnly, items]);
+
+  const visibleItems = filteredItems.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredItems.length;
+
+  // Infinite scroll: reveal the next page as the sentinel approaches.
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore || typeof IntersectionObserver === 'undefined') return undefined;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setVisibleCount((v) => v + PAGE);
+      },
+      { rootMargin: '500px' }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore]);
+
+  // Categorized groupings for the list view.
+  const groups = useMemo(() => {
+    const map = {};
+    visibleItems.forEach((item) => {
+      const cat = item.category || 'Other';
+      (map[cat] = map[cat] || []).push(item);
+    });
+    return Object.keys(map).sort().map((category) => ({ category, items: map[category] }));
+  }, [visibleItems]);
 
   const hasFilters = Boolean(categoryFilter || searchQuery || favOnly);
   const clearAllFilters = () => {
@@ -125,6 +165,24 @@ const MenuPage = () => {
               <ClearIcon fontSize="small" />
             </IconButton>
           )}
+          <Box sx={{ display: 'flex', gap: 0.5, ml: 0.5 }}>
+            <IconButton
+              size="medium"
+              color={view === 'grid' ? 'primary' : 'default'}
+              onClick={() => setView('grid')}
+              aria-label="Card view"
+            >
+              <ViewModuleIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+              size="medium"
+              color={view === 'list' ? 'primary' : 'default'}
+              onClick={() => setView('list')}
+              aria-label="List view"
+            >
+              <ViewListIcon fontSize="small" />
+            </IconButton>
+          </Box>
         </Paper>
 
         <Box
@@ -178,13 +236,30 @@ const MenuPage = () => {
             onRetry={() => reload()}
           />
         ) : filteredItems.length > 0 ? (
-          <Grid2 container spacing={2}>
-            {filteredItems.map((item) => (
-              <Grid2 xs={12} sm={6} md={4} lg={3} key={item._id || item.id}>
-                <MenuItemCard menuItem={item} />
-              </Grid2>
-            ))}
-          </Grid2>
+          view === 'grid' ? (
+            <Grid2 container spacing={2}>
+              {visibleItems.map((item) => (
+                <Grid2 xs={12} sm={6} md={4} lg={3} key={item._id || item.id}>
+                  <MenuItemCard menuItem={item} />
+                </Grid2>
+              ))}
+            </Grid2>
+          ) : (
+            <Stack spacing={3}>
+              {groups.map((group) => (
+                <Box key={group.category}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+                    {group.category}
+                  </Typography>
+                  <Stack spacing={1.5}>
+                    {group.items.map((item) => (
+                      <MenuItemCard key={item._id || item.id} menuItem={item} variant="list" />
+                    ))}
+                  </Stack>
+                </Box>
+              ))}
+            </Stack>
+          )
         ) : (
           <EmptyState
             icon={<RestaurantMenuIcon />}
@@ -199,6 +274,28 @@ const MenuPage = () => {
           />
         )}
       </Box>
+
+      {!loading && filteredItems.length > 0 && (
+        <Box ref={sentinelRef} sx={{ py: 2 }}>
+          {hasMore ? (
+            typeof IntersectionObserver === 'undefined' ? (
+              <Stack alignItems="center">
+                <Button onClick={() => setVisibleCount((v) => v + PAGE)}>Load more</Button>
+              </Stack>
+            ) : (
+              <Typography variant="body2" color="text.secondary" align="center">
+                Loading more…
+              </Typography>
+            )
+          ) : (
+            filteredItems.length > PAGE && (
+              <Typography variant="body2" color="text.secondary" align="center">
+                End of menu
+              </Typography>
+            )
+          )}
+        </Box>
+      )}
 
       {!loading && filteredItems.length > 0 && hasFilters && (
         <Stack alignItems="center" sx={{ mt: 3 }}>

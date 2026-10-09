@@ -9,6 +9,7 @@ import Navbar from '../navigation/Navbar';
 import BottomNav from '../navigation/BottomNav';
 import Footer from '../navigation/Footer';
 import OfflineBanner from '../navigation/OfflineBanner';
+import ScrollTop from './ScrollTop';
 import CartContext from '../CartContext';
 
 const CartBar = memo(({ count, total, onCheckout }) => (
@@ -83,6 +84,7 @@ const Layout = () => {
       <OfflineBanner />
 
       {showCartBar && <CartBar count={cartCount} total={total} onCheckout={goToCart} />}
+      <ScrollTop />
     </Box>
   );
 };
