@@ -190,11 +190,37 @@ const ensurePlatformAdmin = (req, res, next) => {
     }
 };
 
+/**
+ * Attach the user from a Bearer token when present, but never reject.
+ * Used on public endpoints (e.g. POST /orders) so staff actions are attributed
+ * while guest/customer requests (no token) still succeed.
+ */
+const attachUserIfPresent = (req, _res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) return next();
+        const token = authHeader.split(' ')[1];
+        if (!token) return next();
+        return jwt.verify(token, process.env.JWT_SECRET || 'newSecret', (err, decoded) => {
+            if (!err && decoded) {
+                req.userId = decoded.id;
+                req.userEmail = decoded.email;
+                req.role = decoded.role;
+                req.isPlatformAdmin = !!decoded.isPlatformAdmin;
+            }
+            return next();
+        });
+    } catch {
+        return next();
+    }
+};
+
 module.exports = {
     ensureAuthenticated,
     ensureAdmin,
     ensureAdminOrStaff,
     ensurePlatformAdmin,
+    attachUserIfPresent,
     authRateLimiter,
     generalRateLimiter,
     strictRateLimiter,

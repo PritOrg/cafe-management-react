@@ -20,6 +20,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useAuth } from '../../contexts/AuthContext';
 import { useThemeContext } from '../../contexts/ThemeContext';
+import RealtimeStatus from './RealtimeStatus';
 
 const DRAWER_WIDTH = 280;
 
@@ -71,6 +72,8 @@ const Header = ({ toggleDrawer, pageTitle }) => {
         </Typography>
 
         <Box sx={{ flexGrow: 1 }} />
+
+        <RealtimeStatus sx={{ mr: 1 }} />
 
         <Tooltip title={isDarkMode ? 'Light mode' : 'Dark mode'}>
           <IconButton color="inherit" onClick={toggleMode} aria-label="Toggle color theme">

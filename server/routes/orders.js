@@ -9,10 +9,10 @@ const {
   getOrdersByStatus,
   getTodaysOrders,
 } = require('../controllers/orderController');
-const { ensureAuthenticated, ensureAdminOrStaff, generalRateLimiter } = require('../middleware/auth');
+const { ensureAuthenticated, ensureAdminOrStaff, attachUserIfPresent, generalRateLimiter } = require('../middleware/auth');
 const { issueForOrder } = require('../controllers/invoiceController');
 
-router.post('/', placeOrder);
+router.post('/', attachUserIfPresent, placeOrder);
 router.post('/:id/invoice', ensureAuthenticated, ensureAdminOrStaff, issueForOrder);
 router.get('/history', generalRateLimiter, getOrderHistory);
 router.get('/orders/today', ensureAdminOrStaff, getTodaysOrders);

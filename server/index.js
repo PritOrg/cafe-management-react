@@ -43,6 +43,7 @@ const customerRoutes = require('./routes/customers');
 const staffAdminRoutes = require('./routes/staff');
 const orderRoutes = require('./routes/orders');
 const menuItemsRoutes = require('./routes/menu');
+const tableRoutes = require('./routes/tables');
 
 const app = express();
 
@@ -158,6 +159,7 @@ app.use(`${API_PREFIX}/customers`, customerRoutes);
 app.use(`${API_PREFIX}/staff-admin`, staffAdminRoutes);
 app.use(`${API_PREFIX}/orders`, orderRoutes);
 app.use(`${API_PREFIX}/menu`, menuItemsRoutes);
+app.use(`${API_PREFIX}/tables`, tableRoutes);
 
 // Enhanced health check endpoints (unversioned — infra)
 app.get('/health', healthCheckHandler);

@@ -1,11 +1,15 @@
-import { io } from 'socket.io-client';
-
 /**
  * Single Socket.IO client for the `/ops` namespace. Sockets are notification
  * only — on an event components refetch (server wins). Auth = JWT from storage.
+ * socket.io-client is imported lazily so it stays out of the initial bundle.
  */
 const listeners = new Map();
+const statusListeners = new Set();
 let socket = null;
+let initPromise = null;
+let status = 'connecting'; // 'connected' | 'connecting' | 'disconnected'
+
+const OPS_EVENTS = ['order:created', 'order:status', 'stock:low', 'invoice:issued', 'activity:new'];
 
 const socketOrigin = () => {
   const base = import.meta.env.VITE_API_URL || 'http://localhost:4969/api/v1';
@@ -16,30 +20,44 @@ const socketOrigin = () => {
   }
 };
 
-const OPS_EVENTS = ['order:created', 'order:status', 'stock:low', 'invoice:issued', 'activity:new'];
+const setStatus = (next) => {
+  if (status === next) return;
+  status = next;
+  statusListeners.forEach((handler) => handler());
+};
 
 const ensureSocket = () => {
   if (socket) return socket;
   const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-  if (!token) return null;
-
-  socket = io(`${socketOrigin()}/ops`, {
-    auth: { token },
-    withCredentials: true,
-    transports: ['websocket', 'polling'],
-    reconnection: true,
-    reconnectionDelay: 1000,
-    reconnectionDelayMax: 10000,
-  });
-
-  OPS_EVENTS.forEach((event) => {
-    socket.on(event, (payload) => {
-      (listeners.get(event) || []).forEach((handler) => {
-        try { handler(payload); } catch { /* handler error should not break others */ }
+  if (!token) {
+    setStatus('disconnected');
+    return null;
+  }
+  if (!initPromise) {
+    initPromise = import('socket.io-client').then(({ io }) => {
+      socket = io(`${socketOrigin()}/ops`, {
+        auth: { token },
+        withCredentials: true,
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 10000,
       });
-    });
-  });
 
+      socket.on('connect', () => setStatus('connected'));
+      socket.on('disconnect', () => setStatus('disconnected'));
+      socket.on('connect_error', () => setStatus('disconnected'));
+
+      OPS_EVENTS.forEach((event) => {
+        socket.on(event, (payload) => {
+          (listeners.get(event) || []).forEach((handler) => {
+            try { handler(payload); } catch { /* handler error should not break others */ }
+          });
+        });
+      });
+      return socket;
+    });
+  }
   return socket;
 };
 
@@ -53,4 +71,14 @@ export const subscribeOps = (event, handler) => {
   };
 };
 
-export default { subscribeOps };
+/** Current realtime connection status (for a status indicator). */
+export const getSocketStatus = () => status;
+
+/** Subscribe to status changes; immediately invokes the handler with current state. */
+export const subscribeStatus = (handler) => {
+  statusListeners.add(handler);
+  ensureSocket();
+  return () => statusListeners.delete(handler);
+};
+
+export default { subscribeOps, subscribeStatus, getSocketStatus };
