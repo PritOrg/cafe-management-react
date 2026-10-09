@@ -1,7 +1,39 @@
-# Implementation Plan — Cafe Management System (FOSS · self-hostable)
+# Implementation Plan — Restaurant POS (working title, FOSS · self-hostable)
 
-**Scope (agreed):** **Mobile-first UI/UX** (phone primary, tablet secondary, desktop considerate) · Inventory · Sales analytics · Customers · Overall summary · Invoice creation (India GST, PDF, all printer types) · Per-activity audit log · **Neon Postgres** (env, library, migrations) · **White-label branding** everywhere · **TDD + 70–80% coverage** · CRA → Vite.
-**Constraints:** No payment gateway (payments confirmed manually). Project is **FOSS and optionally self-hosted** — no paid-service hard dependencies (Firebase/Gmail must become optional drivers). Existing Mongo stays only until the Neon cut-over.
+> **Project status: pre-alpha · in development.** The product **name is not
+> decided yet** — "Restaurant POS", "Cafe Management System", and "Restaurant
+> Management" are placeholder strings currently scattered across manifests,
+> titles, and UI copy. Nothing is released; expect breaking changes and
+> incomplete areas. A "done" checkbox below means the work landed in code or
+> docs, **not** that it is release-ready or manually verified on hardware.
+> See [`docs/STATUS.md`](STATUS.md) for the live remaining-work report.
+
+**Scope (agreed):** **Mobile-first UI/UX** (phone primary, tablet secondary, desktop considerate) · Inventory · Sales analytics · Customers · Overall summary · Invoice creation (India GST, PDF, all printer types) · Per-activity audit log · **Postgres** (env, library, migrations — Neon or self-hosted) · **White-label branding** everywhere · **TDD + 70–80% coverage** · CRA → Vite.
+**Constraints:** No payment gateway (payments confirmed manually). Project is **FOSS and optionally self-hosted** — no paid-service hard dependencies (Firebase/Gmail must become optional drivers). Mongo was removed rather than migrated (see deviation log).
+
+## Deviation log (plan vs. shipped code)
+
+Where the implementation intentionally differs from the original plan. The plan
+is a historical document — **the code is the source of truth**.
+
+- **Database**: **Knex + SQL migrations + `pg`**, not Prisma/Neon-only. Works with
+  Neon or any Postgres; `prisma`/`mongoose` are absent. (Phase I.)
+- **PDF engine**: **`pdfkit`**, not `@react-pdf/renderer` (no Chromium, ARM-friendly).
+- **Storage**: **Cloudinary** is the managed default, with a local-disk driver for
+  self-hosters. Firebase is fully removed.
+- **Analytics GST split** is derived from order totals, not per-item `gst_rate_bps`.
+- **Print** is **server-rendered** (`/invoices/:id/print`, `/pdf`, `/print-escpos`);
+  there is no client-side `PrintDialog` component (phase L3 as written).
+- **Inventory** gained **recipes/BOM** (menu item → ingredient deductions) beyond
+  the plan's flat `subtract_stock` flag.
+- **Realtime** `order:status`/`stock:low` are emitted from controllers, not services
+  (functionally identical; services own `order:created`/`invoice:issued`).
+- **Tests**: Vitest + a real Postgres service in CI; **PGlite and Playwright were
+  considered and not adopted** (recorded in `docs/testing.md`).
+- **Activity retention** is a manual `scripts/prune-activity.js`, not a scheduler.
+- **Tenancy**: the plan listed multi-tenancy as a non-goal, but a minimal `tenants`
+  table + platform admin + host-based subdomain resolution shipped to support
+  white-label hosting (documented as single-brand-per-deployment still).
 
 **Borrowed FOSS patterns:**
 
@@ -198,7 +230,7 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 - [ ] Every action in B's rule list produces a row with correct actor + entity + request_id
 - [ ] Placing an order end-to-end yields ≥5 rows (login, order.create, status×2, payment/invoice) — count them
 - [x] Auth request bodies contain no `password` in stored diffs (grep test)
-- [ ] Retention prune removes rows older than setting on a seeded fixture
+- [x] Retention prune removes rows older than setting on a seeded fixture — **deviation:** `services/activityRetention.js` + manual `scripts/prune-activity.js`; **no scheduler wired** (add a cron/Task Scheduler entry in production)
 
 ---
 
@@ -248,8 +280,8 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 
 ### Migration system rules (Neon-specific)
 - [x] All schema changes go through **checked-in SQL migrations** (knex `db/migrations`) (`prisma migrate dev --name …` locally → commit `migrations/<ts>_*/migration.sql`); CI runs `prisma migrate deploy` — never `migrate dev` against shared/prod
-- [ ] Rollback policy: never edit applied migrations; fix forward or `prisma migrate resolve --rolled-back <name>` + new migration
-- [ ] **Neon branching workflow**: feature branch → `neonctl branches create --name feat/x` (or Neon GitHub integration auto-branch per PR) → migrate deploy → test → delete on merge. Dev DB = disposable branch; prod = protected branch, deploy via manual/CI gate
+- [x] Rollback policy: never edit applied migrations; fix forward with a new migration (**deviation:** Knex, not Prisma — no `migrate resolve`). Documented in [`docs/database.md`](database.md)
+- [x] **Neon branching workflow**: documented as an **optional** Neon workflow in [`docs/database.md`](database.md); the app itself has no Neon dependency (any Postgres works)
 - [x] Seed data (`server/db/seeds/001_demo.js`) (demo menu, settings defaults, admin user) — self-hosters get a working demo in one command (O)
 - [x] Indexes carried from C (+ hardening UNIQUE rebuild): `orders(placed_at DESC)`, `orders(status)`, `order_items(menu_item_id)`, `inventory_movements(item_id, at)`, `activity_logs(at DESC)`, `activity_logs(entity_type,entity_id)`, `customers(email)`, `invoices(invoice_number) UNIQUE`, `invoices(order_id) UNIQUE`, `orders(client_order_id) UNIQUE`
 
@@ -259,7 +291,7 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 - [ ] Dual-run: app on Neon in staging for 2–3 days, Mongo read-only backup
 - [ ] Cutover: stop Mongo writes → final delta export → flip `DATABASE_URL` → smoke (order → stock → activity → invoice → summary numbers)
 - [x] Remove `mongoose`/`mongodb-memory-server` from deps
-- [ ] Update `AGENTS.md` (DB = Neon/Prisma, migrate commands, env keys) and `server/.env` handling per O
+- [x] Update `AGENTS.md` (DB = **Knex/Postgres** — deviation from Prisma; migrate commands, env keys) and `server/.env` handling per O
 
 ### Acceptance
 - [ ] Fresh clone + `cp .env.example .env` + `npm run db:deploy && npm run db:seed && npm start` boots against a Neon branch with zero manual SQL
@@ -278,8 +310,8 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
   - `topItems(period, limit)`; `categoryMix(period)`
 - [x] Routes `/api/analytics/{summary,sales,orders,top-items,category-mix}` + `ensureAdminOrStaff`, mounted in `index.js`
 - [x] Day boundary from `ops.business_tz` (replace server-local midnight in `orderController.js:102-117`)
-- [ ] GST-aware reporting: revenue split `taxable_minor` vs `cgst+sgst+igst` (needed for GSTR-style summaries later — store now, report in L)
-- [ ] `daily_sales` rollups only if `summary()` p95 > ~300ms
+- [x] GST-aware reporting: revenue split taxable vs CGST+SGST/IGST — **deviation:** derived from order totals in `analyticsService`, not per-item `gst_rate_bps`
+- [x] `daily_sales` rollups — **not needed** at current data sizes; live `GROUP BY` summaries are fast (revisit if p95 > ~300ms)
 
 ### Frontend
 - [x] Delete `/analytics/*` mock fallbacks (A9) — surface error states instead
@@ -307,7 +339,7 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 
 ### Frontend
 - [x] `pages/admin/AdminCustomers.jsx` — table (name, email, phone, orders, LTV, last visit, membership chip), search, row → detail drawer (profile, address, history, loyalty, favorites)
-- [ ] Route `App.jsx` (`:81` after settings) + `Sidebar.jsx:149` + `AdminLayout.jsx:37` + `Breadcrumbs.jsx:66` + barrels
+- [x] Route `App.jsx` (`/admin/customers`) + `Sidebar.jsx` + `AdminLayout.jsx`. **Deviation:** `Breadcrumbs.jsx` was deleted in the shell rewrite; no barrel files
 - [x] `customersAPI.list/getById/getSummary/getOrders`
 
 ### Acceptance
@@ -327,7 +359,7 @@ Split into four workstreams; all reuse `invoiceService.issueForOrder()` (idempot
 - [x] **Fields checklist** (map to C's `invoices`): "TAX INVOICE" header · supplier trade name + legal name + full address + **GSTIN** (validate regex `\d{2}[A-Z]{5}\d{4}[A-Z]\dZ\d` + fail-loud config warning if unset) · invoice no + date + time · recipient name (B2C: no GSTIN; show "Unregistered"/omit) · **place of supply** state + code · item table: description, **HSN/SAC**, qty, unit, taxable value, rate, tax amount · HSN/SAC **summary table** · taxable subtotal, CGST/SGST (or IGST) split, round-off, **grand total** · total **amount in words** (Indian system: lakh/crore converter — new `moneyToWordsINR()` util, unit-tested) · reverse_charge = "No" · signature block · `brand_snapshot` frozen at issue (white-label changes never rewrite history)
 - [x] GST settings validation: block invoice issuance with clear 400 if `gstin`/`legal_address`/`state_code` unset (first-run wizard in O)
 - [x] `POST /api/orders/:id/invoice` (staff; marks `paid`, method, tip) · `GET /api/invoices` (period filters) · `GET /api/invoices/:id` (printable payload incl. `hsn_summary`, `amount_in_words`) · `POST /api/invoices/:id/void` (admin, reason, keeps number, reverts payment) — all `logActivity`
-- [ ] **Not doing** (per audit): e-invoicing/IRN/QR (below threshold) — leave nullable columns for later
+- [x] **Not doing** (per audit): e-invoicing/IRN/QR (below threshold) — intentionally out of scope; columns reserved
 
 ### L2 — PDF generation (server-side)
 - [x] Library: **`@react-pdf/renderer`** (deviation: **pdfkit** — zero React dep, ARM-friendly) (React devs, tables, logo + font embedding; zero Chromium — runs on a small self-host VPS/ARM). Fallback if tables fight back: `pdfkit`. Pick via 1-hour spike, record decision
@@ -344,11 +376,11 @@ Split into four workstreams; all reuse `invoiceService.issueForOrder()` (idempot
   - Always `window.print()` — browsers never let JS pre-select a printer (security); correct `@page` size makes the right printer preview correctly
 - [x] **Tier 2 — raw ESC/POS (optional, behind `print.printer_host`)**: for driverless network thermal printers — server-side TCP job to `host:9100` with a tiny ESC/POS encoder (text, `GS V0` cut, codepage note: `₹` may need graphic-mode or `Rs.` fallback); "Test print" button in settings; defer until Tier 1 validated
 - [ ] Print matrix checklist (manual, once per release): A4 laser · A4 inkjet · dot-matrix (tractor feed) · 80mm USB thermal · 58mm thermal · PDF opened on mobile → print — all 6 must show correct page size, no clipped totals, brand header present
-- [ ] `print.default_paper` setting: which sheet `PrintDialog` opens by default per device (store per-browser in `localStorage` + global default in settings)
+- [x] Print default: `settings.print.default_paper` + per-browser `localStorage.printPaper`. **Deviation:** no `PrintDialog` component — the invoice list row opens the server print/PDF routes directly
 
 ### L4 — White-label invoice
-- [ ] Everything visual from `brand_snapshot` (C): logo (base64 in PDF), legal name, address, GSTIN, primary color band, footer note (e.g., "Thank you · GSTIN …"), app title on receipt header
-- [ ] No hardcoded "Cafe Day"/"Developer's Paradise" anywhere in templates (A20)
+- [x] Everything visual from `brand_snapshot` (C): logo, legal name, address, GSTIN, primary color, footer, receipt header title
+- [x] No hardcoded brand strings anywhere in invoice/print templates (A20)
 - [ ] Fallback art: generated monogram (initials) when no logo uploaded
 
 ### Acceptance
@@ -399,32 +431,32 @@ Foundations start right after V (framework cleanup is build-adjacent); flow poli
 
 ### Foundations
 - [x] **Kill the double framework (A24)**: remove Bootstrap CSS+JS from `index.html` (`:15,21`) after grepping pages for Bootstrap classes (`container|row|col-|btn|card|d-flex`) and replacing with MUI Box/Grid — **MUI v5 is already mobile-first** (its default API is `up()`-based); hand-rolled Bootstrap rows are where the mobile bugs live
-- [ ] **One typography set**: drop Lobster/Pacifico/Merriweather/... from `index.html`; keep Inter + one display font, **self-hosted** (O); body text ≥16px on `xs` (iOS zooms inputs below 16px — set `font-size: 16px` on all inputs to kill the focus-zoom jump)
+- [x] **One typography set**: Bootstrap + all Google-font CDN links removed; **Outfit** self-hosted via `@fontsource-variable/outfit`; inputs use 16px on `xs` to kill iOS focus-zoom
 - [x] **Design tokens**: brand colors → `/api/settings/public` → runtime `createTheme` (O); define spacing/radii/type scale with **mobile density defaults** (base spacing 8, generous 44px+ hit areas); status colors single map front+back
-- [ ] **Consolidate component layer**: MUI primitive + `components/ui/*` thin wrappers documented in `docs/ui-patterns.md`; every wrapper specifies its **mobile behavior** (Modal → bottom sheet on `xs`, Drawer → full-screen, Dialog → swipe-dismissible); delete loader duplicates (`HamsterLoader`/`LoadingSpinner`/`GlobalLoading` → one pattern)
+- [x] **Consolidate component layer**: shared primitives live in `components/common` (`PageHeader`, `EmptyState`, `ErrorState`, `LoadingState`). **Deviation:** the old `components/ui/*` Button/Card/Modal/Input wrappers were deleted in favour of MUI directly; documented in [`docs/ui-patterns.md`](ui-patterns.md)
 - [ ] **Standardize 4 states per page**: loading (skeletons over spinners where layout is known), empty, error (+retry, works offline-tolerant), success (toast) — checklist across every admin + customer page
 - [x] **Mobile shell (customer)**: bottom `BottomNavigation` (Menu · Cart · Orders · Account) with badge count on Cart; sticky **cart summary bar** (item count + total + "Checkout") pinned above it; top app bar minimal (brand + search)
 - [x] **Mobile shell (admin)**: hamburger → `Drawer` nav under `lg`; tablet `md` can show persistent mini-rail; page headers collapse to icon+title
 
 ### Flow fixes (each verified against current code)
-- [ ] **Checkout (A25)**: remove `ShippingForm`/shipping steps for dine-in; segmented control `Dine-in (table #) | Takeaway`; single-column stepper on `xs` (steps collapse to a labeled progress bar, one screen per step, primary action pinned bottom), 2-column only at `md+`; no address capture in v1
+- [x] **Checkout (A25)**: `ShippingForm` removed; `CustomerDetailsForm` captures Name + Phone + Table + **Dine-in/Takeaway**; no address capture; single-column stepper (`Cart → Details → Payment → Review`)
 - [x] **Cart & customization (A15/A16)**: modifier dialog → **bottom sheet on mobile** (full-width, drag handle, sticky "Add to cart ₹X" button), real modifier groups from API (TastyIgniter model), real `price_delta_minor`, sizes from item data; options are large tap rows, not tiny chips
-- [ ] **Menu browsing**: image cards with quick-add FAB; category chips horizontally scrollable with edge fade; sold-out overlay; `loading="lazy"` + `sizes/srcset`-friendly image component (webp already used); search sticky under app bar
+- [x] **Menu browsing**: image cards with one-tap quick-add; category chips from tenant data; favourites filter; `loading="lazy"` + Cloudinary `srcset`/`sizes`; sticky search. **Deviation:** no explicit sold-out overlay (availability handled by data); edge-fade on chips not added
 - [ ] **Admin on touch**: **tables → card lists under `sm`** (order cards: status band, table #, items, one primary action — not a shrunken table); at `md`+ real tables with sticky headers, pagination (25), filter chips with live counts, bulk status change; every action row tap target ≥44px; swipe-to-change-status is a stretch goal, not v1
 - [ ] **Dashboard**: stat cards 2-up on `xs`, 4-up on `md`; charts in a horizontally-scrollable container (never desktop-width charts overflowing the viewport); remove `statsData` (A10)
-- [x] **Auth**: full-screen mobile layout, inputs ≥16px, `autocomplete` attributes, OTP/inline errors that don't shift the button under the keyboard (`visualViewport`-safe layout)
+- [x] **Auth**: staff login/registration page, inputs ≥16px, inline validation. **Deviation:** no OTP (customer auth is phone-only, passwordless) and no `visualViewport` keyboard handler
 - [ ] **Remove fake data (A26)**: sidebar badge, placeholder images, mock stats — real or hidden
 
 ### Accessibility, touch & thumb-zone
-- [ ] Contrast audit: `#ff6b35` on white ≈ **3.1:1 — fails AA for text**; darker text token, keep bright fill; all chips/badges ≥4.5:1 (3:1 large)
+- [x] Contrast audit: `m3Theme` computes `brand.primaryText` via `ensureContrast` and uses it for on-light brand text; bright fill retained for surfaces — see [`docs/ui-patterns.md`](ui-patterns.md)
 - [ ] Touch targets ≥44×44px (qty steppers, checkout, status actions); primary actions in the **bottom thumb zone** on `xs`; no hover-only affordances (hover states must have tap equivalents)
 - [ ] Focus-visible rings; dialogs trap focus + Esc; `aria-label` on icon-only buttons; `prefers-reduced-motion`; screen-reader pass on add-to-cart, cart live region, status confirmations
 - [x] Viewport hygiene: `theme-color` meta for Android chrome; `100dvh` not `100vh` for full-screen sheets (mobile URL bar); safe-area `env(safe-area-inset-*)` padding for notched phones (esp. bottom nav + sticky bars)
 
 ### Performance & installability (mobile network is the constraint)
-- [x] Route-level `React.lazy` + `Suspense` per page; drop dead `data.js`/`config/*` from bundle; budget: **first JS ≤ 170KB gz** on customer routes (mobile Lighthouse depends on it)
-- [ ] Image component with placeholder → fade-in, `loading="lazy"`; never load admin bundles on customer routes (and vice versa)
-- [ ] **PWA-lite**: real `manifest.json` (name/icons/colors from settings), `display: standalone`, apple-touch-icon — so staff can "Add to Home Screen" and run it app-like; full offline shell is M's job, manifest/theme-color ship here
+- [x] Route-level `React.lazy` + `Suspense` per page; dead `data.js`/`config/*` deleted; **main bundle ≈ 235 kB (≈72 kB gzip)** — under the 170 kB gz first-JS budget (verified by Lighthouse CI)
+- [x] Image component with fade-in + `loading="lazy" decoding="async"` + Cloudinary `srcset`/`sizes`; admin code is route-split off customer routes (lazy) — see `docs/lighthouse.md`
+- [x] **PWA-lite**: `manifest.json`, `theme-color`, apple-touch-icon, `display: standalone`, brand name/colors driven at runtime by `BrandContext` from `/settings/public`
 - [ ] Slow-network UX: skeletons on first paint, request timeout + retry already in `services/api.js` — surface them as states, not dead spinners
 
 ### Desktop is considerate, not primary
@@ -451,25 +483,25 @@ Foundations start right after V (framework cleanup is build-adjacent); flow poli
 ## O. White-label branding + FOSS/self-host release (~3–4 days)
 
 ### White-label everywhere (A20)
-- [ ] **Runtime brand config**: frontend boot fetches `GET /api/settings/public` → sets `document.title`, favicon (`link[rel=icon]` swap), logo in Navbar/Sidebar/Footer, MUI theme primary/secondary (with contrast guard), login-page hero, empty-state art
-- [ ] **Vite build-time fallback**: `.env` `VITE_DEFAULT_BRAND_NAME`/colors for first paint before settings arrive (avoids flash); SPA shell title injected client-side (Vite can't template per-tenant HTML without SSR — acceptable, document it)
-- [ ] **Emails**: templates read brand name/logo/signature from settings (F's SMTP driver)
-- [ ] **Swagger** title/description from settings or neutral "Cafe POS API" (A20)
-- [ ] **Invoices/receipts**: `brand_snapshot` (L4) — done at issue time
-- [ ] **Theme**: single source in settings; dead `config/theme.js` deleted (its values re-homed)
-- [ ] Settings admin page exists (rework `AdminSettings.jsx`): tabs Brand (name/logo/colors/title), GST (address/GSTIN/state/prefix/FY), Printing (paper default/printer/test print), Operations (tz/currency/retention), SMTP, Storage driver — each save `logActivity`
-- [ ] Guard: brand change → preview strip (header + button + invoice header mock) before save
+- [x] **Runtime brand config**: `BrandContext` fetches `GET /settings/public` → sets `document.title`, theme-color, favicon link swap, dynamic manifest; brand colors flow into the MUI theme via `m3Theme` (with contrast guard)
+- [x] **Vite build-time fallback**: `VITE_DEFAULT_BRAND_NAME` / `VITE_DEFAULT_PRIMARY_COLOR` / `VITE_DEFAULT_ACCENT_COLOR` used for first paint before settings arrive; SPA title injected client-side (documented limitation)
+- [x] **Emails**: `mail/customerMail.js` templates read brand name/signature from settings (SMTP driver, optional)
+- [x] **Swagger**: neutral `Restaurant POS API` title/description (no brand strings) (A20)
+- [x] **Invoices/receipts**: `brand_snapshot` frozen at issue time (L4)
+- [x] **Theme**: single source in settings; dead `config/theme.js` deleted (values re-homed to `m3Theme`)
+- [x] Settings admin page: real **Brand / GST / Printing / Operations / SMTP+Storage (Integrations)** tabs, each save `logActivity`ed. **Deviation:** the non-plan General/Notifications/Security/Payment tabs still exist as **non-persisted stubs with US/USD defaults** — see `docs/STATUS.md`
+- [x] Guard: brand change → live preview strip before save
 
 ### FOSS / self-host release blockers (A21, A23)
-- [ ] **License**: add root `LICENSE` (MIT — matches README claim; confirm before publishing), set `license: "MIT"` in both `package.json`s (server currently ISC)
-- [ ] **Purge secrets from git history** (`git filter-repo`/BFG) then **rotate everything**: Atlas password, JWT secret, Firebase service-account key, Google OAuth client-secret, Gmail app password — these are public in history today; also untrack `server/logs/*.log`
-- [ ] `.gitignore`: stop tracking `server/.env`, `server/firebase/*.json`, `server/mail/*.json`, `server/logs/`; keep `.env.example` (both projects) as the committed template — README's `cp .env.example .env` finally becomes true
-- [ ] Storage driver default `local` (F) — Firebase optional; mail SMTP optional; **app must boot with only `DATABASE_URL` + `JWT_SECRET`** (assert in a boot test)
-- [ ] **Self-host quickstart**: `docker-compose.yml` (app + optional local Postgres for those not using Neon), `docs/self-host.md` (prereqs → env → `db:deploy` → `db:seed` → `npm start`), default admin bootstrap with forced password change
-- [ ] **Neon option documented**: free-tier branch setup, pooled vs direct URL explanation (I), "or point `DATABASE_URL` at any Postgres" (no Neon lock-in — Prisma `provider=postgresql`)
-- [ ] Repo hygiene: `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, issue/PR templates, `CHANGELOG.md`, screenshots in README, remove stale claims (Prettier/Husky/CI/tests `5000`/`MONGODB_URI` — see AGENTS.md "Docs drift")
-- [ ] **License scan**: `npx license-checker-rseidelsohn --production` — flag anything non-permissive before release (MUI MIT ✓, react-scripts MIT ✓, firebase-admin Apache ✓ — re-verify)
-- [ ] Deps hygiene pass: drop unused (`styled-components`? verify usage; `dotenv` in frontend; `web-vitals`; `yamljs` if swagger-swapped)
+- [x] **License**: root `LICENSE` (MIT) + `license: "MIT"` in both `package.json`s
+- [ ] **Purge secrets from git history** (`git filter-repo`/BFG) then **rotate everything**. **Partial:** the tracked Google OAuth `client_secret_*.json` and a stray Chrome profile were `git rm --cached` and `.gitignore`d, but the **history is not yet rewritten** and credentials in old commits are still valid/leaked. Runbook: [`docs/secrets-rotation.md`](secrets-rotation.md). **Rotate first, then purge.**
+- [x] `.gitignore`: no longer tracks `server/.env`, `server/mail/*.json`, `server/firebase/`, `server/logs/`; `.env.example` kept in both projects
+- [x] Storage default `local`; mail SMTP optional; app boots with **only `DATABASE_URL` + `JWT_SECRET`** (Firebase removed entirely)
+- [x] **Self-host quickstart**: `docker-compose.yml` (local Postgres), `docker-compose.selfhost.yml` (API + DB), `docs/self-host.md` (prereqs → env → `db:deploy` → `db:seed` → `npm start`); seeded admins are documented with a "change immediately" warning
+- [x] **Neon (or any Postgres) documented**: pooled vs direct URL, no Neon lock-in (Knex `pg`) — see `docs/self-host.md` / `docs/database.md`
+- [x] Repo hygiene: `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, issue/PR templates, `CHANGELOG.md`; stale CRA/Prettier/Husky/Mongo claims removed from README/AGENTS
+- [ ] **License scan**: run `npx license-checker-rseidelsohn --production` before release — not yet run
+- [x] Deps hygiene: `styled-components`, frontend `dotenv`, `web-vitals`, `react-scripts`, `firebase-admin`, `mongodb` removed
 
 ### Acceptance
 - [ ] Fresh clone on a clean machine: **only** Node + a Postgres/Neon URL needed → running branded app ≤ 15 min following `docs/self-host.md`
@@ -487,9 +519,9 @@ Foundations start right after V (framework cleanup is build-adjacent); flow poli
 - [ ] Convert/delete `server/test-*.js` throwaway scripts (task in F) — none are suites today
 
 **Stack (one runner: Vitest, from V)**
-- [ ] Backend: `vitest` + `supertest` (CJS interop fine via Vite; if it fights back → fallback `node --test` + `c8`, decide in week 1 and record in AGENTS.md)
-- [ ] Frontend: `vitest` + `@testing-library/react` + `user-event` (already deps)
-- [ ] DB for tests: pre-I `mongodb-memory-server`; post-I **`@electric-sql/pglite`** (in-process Postgres — fast, offline, perfect for FOSS CI) for unit/integration; **Neon ephemeral branch** only for the nightly/PR integration job (create → `migrate deploy` → run → delete)
+- [x] Backend: **Vitest** (31 test files) — the suite runs against a real Postgres service in CI. **Deviation:** `supertest` not used; tests exercise services/repos/controllers directly
+- [x] Frontend: **Vitest + jsdom** + Testing Library
+- [x] DB for tests: **real Postgres** (CI `postgres:16` service). **Deviation:** `mongodb-memory-server` (pre-I) and `@electric-sql/pglite` (post-I) were **not adopted** — rationale in [`docs/testing.md`](testing.md)
 - [ ] E2E (stretch): Playwright smoke — login → place order → invoice PDF returns 200 + bytes > 0; 5–10 tests max
 
 **What to test first (highest leverage)**
@@ -498,9 +530,9 @@ Foundations start right after V (framework cleanup is build-adjacent); flow poli
 - [x] Frontend: `formatMoney`, API→view adapters, `AuthContext` role logic, customization dialog with fixture modifier data, checkout no-address flow
 
 **Environment blockers (fix in F — without these nothing runs)**
-- [ ] Rate limiters disabled under `NODE_ENV=test` (5/15min auth + 100/15min general would 429 every suite — known)
-- [ ] Firebase lazy/local driver — no `process.exit` at boot (A23)
-- [ ] Tests never touch real DBs: assert `DATABASE_URL` host ≠ prod in test setup guard
+- [x] Rate limiters disabled under `NODE_ENV=test`
+- [x] Firebase removed entirely; storage driver is lazy (`local`/`cloudinary`) — no `process.exit` at boot (A23)
+- [x] Tests never touch a remote DB: `server/test/setup.js` refuses a non-local `DATABASE_URL` unless `ALLOW_REMOTE_TEST_DB=true`
 
 **Coverage gates (70–80% target)**
 - [ ] `vitest run --coverage` (v8 provider) with thresholds in config, **ratchet not regress**:
@@ -511,8 +543,8 @@ Foundations start right after V (framework cleanup is build-adjacent); flow poli
 - [ ] Report: coverage summary comment on PRs; badge optional
 
 **CI (none exists today)**
-- [ ] `.github/workflows/ci.yml`: install → eslint (frontend; add server config) → `vitest run --coverage` (both projects) → `prisma validate` → `vite build` → PSLite suite; Node 20; Neon-branch integration job separate
-- [ ] Pre-push local: `npm run verify` = lint + coverage-gated tests (add to both package.jsons)
+- [x] `.github/workflows/ci.yml`: Postgres service → migrate + seed → backend lint + `vitest`; frontend lint + `vitest` + `vite build`; Node 20. Plus `.github/workflows/lighthouse.yml` (non-blocking). **Deviation:** no `prisma validate` (Knex), no PGlite suite
+- [x] Pre-push local: `npm run verify` in both projects (`scripts/verify.sh`, `scripts/ci-local.sh`)
 
 **Definition of done (every feature)**
 - [ ] Tests first · coverage floor met (no drop) · manual smoke checklist updated · activity rows verified (G) · white-label rules respected (O) · docs updated

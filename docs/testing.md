@@ -1,9 +1,12 @@
 # Testing
 
+> Status: pre-alpha. Coverage is below the plan's 70–80% target; the ratchet is
+> tracked in [`STATUS.md`](STATUS.md).
+
 ## Backend (`server/`)
 
 - Runner: **Vitest** (`npm test`, single-shot) against a real Postgres — CI runs a
-  `postgres:16` service, migrates + seeds, then runs the suite.
+  `postgres:16` service, migrates + seeds, then runs the suite. **31 test files.**
 - `server/test/setup.js` sets test env and **refuses a non-local `DATABASE_URL`**
   unless `ALLOW_REMOTE_TEST_DB=true`.
 - Coverage: `npm run test:coverage` (v8 provider; thresholds in `vitest.config.js`).
@@ -12,6 +15,7 @@
 ## Frontend (`cafe-management-sys/`)
 
 - Runner: **Vitest + jsdom** (`npm run test:run`); setup in `vite.config.js`.
+  **22 test files** covering utils, adapters, contexts, hooks, and key services.
 - Coverage: `npm run test:coverage` (v8; thresholds in `vite.config.js`).
 
 ## CI

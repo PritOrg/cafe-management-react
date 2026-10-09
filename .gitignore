@@ -19,3 +19,16 @@ cafe-management-sys/dist/
 # test coverage
 server/coverage/
 cafe-management-sys/coverage/
+
+# secrets — never commit (keep .example templates)
+server/mail/*.json
+!server/mail/*.example.json
+server/firebase/
+
+# Lighthouse CI scratch output
+cafe-management-sys/.lighthouseci/
+.lighthouseci/
+
+# stray browser/Lighthouse profile dumps (e.g. WSL writes a Windows-looking path)
+lighthouse.*
+C:*
