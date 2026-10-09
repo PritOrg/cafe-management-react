@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Card, CardContent, Chip, IconButton, Button, TextField, InputAdornment, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Tabs, Tab, Badge, TableRow, TableCell } from '@mui/material';
+import { Box, Typography, Card, CardContent, Chip, Checkbox, Select, IconButton, Button, TextField, InputAdornment, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Tabs, Tab, Badge, TableRow, TableCell } from '@mui/material';
 import Search from '@mui/icons-material/Search';
 import FilterList from '@mui/icons-material/FilterList';
 import MoreVert from '@mui/icons-material/MoreVert';
@@ -112,6 +112,30 @@ const AdminOrders = () => {
     const matchesMine = !mineOnly || (staffId && String(staffId) === String(user?.id));
     return matchesSearch && matchesStatus && matchesMine;
   });
+
+  // ---- Bulk status change (N1) ----
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkStatus, setBulkStatus] = useState('');
+
+  const toggleSelect = (id) =>
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  // Clear the selection whenever the visible set changes.
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [searchQuery, statusFilter, mineOnly]);
+
+  const applyBulkStatus = async () => {
+    if (!bulkStatus || selectedIds.length === 0) return;
+    try {
+      await Promise.all(selectedIds.map((id) => ordersAPI.updateStatus(id, bulkStatus)));
+      setOrders(orders.map((o) => (selectedIds.includes(o._id) ? { ...o, status: bulkStatus } : o)));
+      setSelectedIds([]);
+      setBulkStatus('');
+    } catch (error) {
+      console.error('Error applying bulk status change:', error);
+    }
+  };
 
   const openTransfer = async () => {
     setAnchorEl(null);
@@ -247,11 +271,33 @@ const AdminOrders = () => {
 
       {/* Orders — table on md+, cards on touch */}
       <Card>
+        {selectedIds.length > 0 && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+            <Typography variant="body2"><strong>{selectedIds.length}</strong> selected</Typography>
+            <Select
+              value={bulkStatus}
+              onChange={(e) => setBulkStatus(e.target.value)}
+              displayEmpty
+              size="small"
+              inputProps={{ 'aria-label': 'Bulk status' }}
+              sx={{ minWidth: 160 }}
+            >
+              <MenuItem value="" disabled>Set status…</MenuItem>
+              <MenuItem value="preparing">Preparing</MenuItem>
+              <MenuItem value="ready">Ready</MenuItem>
+              <MenuItem value="served">Served</MenuItem>
+              <MenuItem value="cancelled">Cancelled</MenuItem>
+            </Select>
+            <Button variant="contained" disabled={!bulkStatus} onClick={applyBulkStatus} sx={{ minHeight: 44 }}>Apply</Button>
+            <Button onClick={() => setSelectedIds([])} sx={{ minHeight: 44 }}>Clear</Button>
+          </Box>
+        )}
         <ResponsiveTable
           rows={filteredOrders}
           loading={loading}
           emptyMessage="No orders found"
           columns={[
+            { label: '', align: 'center' },
             { label: 'Order #' },
             { label: 'Customer' },
             { label: 'Items' },
@@ -262,6 +308,13 @@ const AdminOrders = () => {
           ]}
           renderRow={(order) => (
             <TableRow key={order._id} hover sx={{ '& td': { py: 1.5 } }}>
+              <TableCell padding="checkbox">
+                <Checkbox
+                  checked={selectedIds.includes(order._id)}
+                  onChange={() => toggleSelect(order._id)}
+                  inputProps={{ 'aria-label': `Select ${order.orderNumber}` }}
+                />
+              </TableCell>
               <TableCell>
                 <Typography variant="subtitle2" fontWeight={600}>
                   {order.orderNumber}
@@ -319,7 +372,13 @@ const AdminOrders = () => {
             >
               <CardContent sx={{ '&:last-child': { pb: 1.5 } }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                  <Box>
+                  <Checkbox
+                    checked={selectedIds.includes(order._id)}
+                    onChange={() => toggleSelect(order._id)}
+                    inputProps={{ 'aria-label': `Select ${order.orderNumber}` }}
+                    sx={{ ml: -1 }}
+                  />
+                  <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                     <Typography variant="subtitle1" fontWeight={700}>
                       {order.orderNumber}
                     </Typography>
