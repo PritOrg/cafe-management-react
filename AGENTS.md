@@ -1,5 +1,11 @@
 # AGENTS.md
 
+> **Status: pre-alpha, in development, product name undecided.** "Restaurant
+> POS" / "Cafe Management System" / "Restaurant Management" are placeholder
+> strings that differ across manifests and UI. Live remaining-work report:
+> [`docs/STATUS.md`](docs/STATUS.md). Full plan + deviation log:
+> [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md).
+
 ## Repo shape
 - Two independent npm projects, **not** a workspace. Root `package.json` is `{}` — never `npm install` there expecting workspaces/monorepo tooling.
   - `cafe-management-sys/` — React 18 SPA, **Vite 8** (migrated from CRA 2026-10-06), MUI v5, React Router v6, `"type": "module"`. Entry: `src/index.jsx`, `index.html` at package root, routes in `src/App.jsx`.

@@ -3,6 +3,10 @@
 Run this **manually once per release** before publishing. Every row must pass —
 correct page size, no clipped totals, brand header present.
 
+> **Status: not yet verified on hardware.** This list is a pending manual gate
+> (see [`STATUS.md`](STATUS.md)); the output paths exist and are unit-tested for
+> content, but no printer has been physically exercised yet.
+
 ## Papers / devices
 
 | # | Paper / device        | How to produce                                   | Pass criteria |
