@@ -580,15 +580,8 @@ const LoginRegisterPage = () => {
                 />
 
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1, mb: 2 }}>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      cursor: 'pointer',
-                      color: roleInfo.color,
-                      '&:hover': { textDecoration: 'underline' }
-                    }}
-                  >
-                    Forgot password?
+                  <Typography variant="body2" color="text.secondary">
+                    Forgot password? Ask an administrator to reset it.
                   </Typography>
                 </Box>
 

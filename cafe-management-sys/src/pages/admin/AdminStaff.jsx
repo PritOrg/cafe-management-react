@@ -26,6 +26,7 @@ const AdminStaff = () => {
     role: 'staff',
     password: '',
   });
+  const [editingStaff, setEditingStaff] = useState(null);
 
   const emptyStaff = {
     firstName: '',
@@ -62,16 +63,58 @@ const AdminStaff = () => {
     }
   };
 
-  const handleAddStaff = async () => {
+  const handleSubmitStaff = async () => {
     try {
-      const addedStaff = await staffAPI.add(newStaff);
-      const staffObj = addedStaff?.data ?? addedStaff;
-      setStaff([...staff, staffObj]);
+      if (editingStaff) {
+        const payload = {
+          firstName: newStaff.firstName,
+          lastName: newStaff.lastName,
+          email: newStaff.email,
+          phone: newStaff.phone,
+          role: newStaff.role,
+        };
+        const updated = await staffAPI.update(editingStaff._id, payload);
+        const staffObj = updated?.data ?? updated;
+        setStaff(staff.map((m) => (m._id === editingStaff._id ? staffObj || { ...m, ...payload } : m)));
+      } else {
+        const addedStaff = await staffAPI.add(newStaff);
+        const staffObj = addedStaff?.data ?? addedStaff;
+        setStaff([...staff, staffObj]);
+      }
       setAddDialogOpen(false);
+      setEditingStaff(null);
       setNewStaff(emptyStaff);
     } catch (error) {
-      console.error('Error adding staff:', error);
+      console.error('Error saving staff:', error);
     }
+  };
+
+  const openAddStaff = () => {
+    setEditingStaff(null);
+    setNewStaff(emptyStaff);
+    setAddDialogOpen(true);
+  };
+
+  const handleEditClick = () => {
+    const member = staff.find((m) => m._id === selectedStaffId);
+    handleMenuClose();
+    if (!member) return;
+    setEditingStaff(member);
+    setNewStaff({
+      firstName: member.firstName || '',
+      lastName: member.lastName || '',
+      email: member.email || '',
+      phone: member.phone || '',
+      role: member.role || 'staff',
+      password: '',
+    });
+    setAddDialogOpen(true);
+  };
+
+  const closeStaffDialog = () => {
+    setAddDialogOpen(false);
+    setEditingStaff(null);
+    setNewStaff(emptyStaff);
   };
 
   const handleDeleteStaff = async () => {
@@ -130,7 +173,7 @@ const AdminStaff = () => {
         <Button
           variant="contained"
           startIcon={<Add />}
-          onClick={() => setAddDialogOpen(true)}
+          onClick={openAddStaff}
           sx={{ borderRadius: 2 }}
         >
           Add Staff Member
@@ -248,7 +291,7 @@ const AdminStaff = () => {
         color="primary"
         aria-label="add"
         sx={{ position: 'fixed', bottom: 16, right: 16 }}
-        onClick={() => setAddDialogOpen(true)}
+        onClick={openAddStaff}
       >
         <Add />
       </Fab>
@@ -259,10 +302,7 @@ const AdminStaff = () => {
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
       >
-        <MenuItem onClick={() => {
-          console.log('Edit staff member');
-          handleMenuClose();
-        }}>
+        <MenuItem onClick={handleEditClick}>
           <Edit sx={{ mr: 1 }} />
           Edit
         </MenuItem>
@@ -275,11 +315,11 @@ const AdminStaff = () => {
       {/* Add Staff Dialog */}
       <Dialog
         open={addDialogOpen}
-        onClose={() => setAddDialogOpen(false)}
+        onClose={closeStaffDialog}
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Add New Staff Member</DialogTitle>
+        <DialogTitle>{editingStaff ? 'Edit Staff Member' : 'Add New Staff Member'}</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12} sm={6}>
@@ -329,20 +369,21 @@ const AdminStaff = () => {
               </TextField>
             </Grid>
             <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Password"
-                type="password"
-                value={newStaff.password}
-                onChange={(e) => setNewStaff({ ...newStaff, password: e.target.value })}
-              />
+<TextField
+              fullWidth
+              label="Password"
+              type="password"
+              value={newStaff.password}
+              onChange={(e) => setNewStaff({ ...newStaff, password: e.target.value })}
+              helperText={editingStaff ? 'Leave blank to keep the current password' : ''}
+            />
             </Grid>
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAddDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleAddStaff} variant="contained">
-            Add Staff Member
+          <Button onClick={closeStaffDialog}>Cancel</Button>
+          <Button onClick={handleSubmitStaff} variant="contained">
+            {editingStaff ? 'Save Changes' : 'Add Staff Member'}
           </Button>
         </DialogActions>
       </Dialog>

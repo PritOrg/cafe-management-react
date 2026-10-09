@@ -5,16 +5,14 @@ import { CircularProgress, Box, Typography, Paper, Button } from '@mui/material'
 import LockOutlined from '@mui/icons-material/LockOutlined';
 
 /**
- * AdminRoute component that restricts access to admin users only
- * Redirects to login page if user is not authenticated
- * Shows access denied if user is authenticated but not an admin
+ * AdminRoute guards the /admin area. Staff and admins may enter; the backend
+ * enforces finer permissions per endpoint (ensureAdmin vs ensureAdminOrStaff).
  */
 const AdminRoute = ({ children }) => {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, loading, isStaff } = useAuth();
   const location = useLocation();
 
-  // Show loading state while checking authentication
-  if (isLoading) {
+  if (loading) {
     return (
       <Box
         sx={{
@@ -34,16 +32,11 @@ const AdminRoute = ({ children }) => {
     );
   }
 
-  // Redirect to login if not authenticated
   if (!isAuthenticated) {
     return <Navigate to="/login-register" state={{ from: location }} replace />;
   }
 
-  // Check if user has admin role
-  const isAdmin = user?.role === 'admin' || user?.role === 'manager';
-
-  // Show access denied if not admin
-  if (!isAdmin) {
+  if (!isStaff()) {
     return (
       <Box
         sx={{
@@ -68,7 +61,7 @@ const AdminRoute = ({ children }) => {
             Access Denied
           </Typography>
           <Typography variant="body1" paragraph>
-            You don't have permission to access this area. This section is restricted to administrators only.
+            You don't have permission to access this area. This section is restricted to staff and administrators only.
           </Typography>
           <Button
             variant="contained"
@@ -83,7 +76,6 @@ const AdminRoute = ({ children }) => {
     );
   }
 
-  // Render children if authenticated and admin
   return children;
 };
 
