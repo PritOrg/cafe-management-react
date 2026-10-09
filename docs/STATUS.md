@@ -36,6 +36,10 @@ Implemented end-to-end:
 ## Remaining before a first release (prioritized)
 
 ### P0 — must do
+0. **Clear dependency security alerts.** **51 open** Dependabot alerts
+   (1 critical, 27 high) — mostly fixable by bumping `nodemailer`, `multer`,
+   `sharp`, `bcrypt`/`tar`, `react-router-dom`, `sweetalert2`. Full breakdown +
+   commands: [`dependency-audit.md`](dependency-audit.md).
 1. **Rotate + purge leaked secrets.** See [`secrets-rotation.md`](secrets-rotation.md).
    The Google OAuth `client_secret_*.json` was tracked (now `git rm --cached`) and
    old commits still contain `.env`, Firebase service-account keys, and logs.
@@ -54,6 +58,10 @@ Implemented end-to-end:
    `manifest.json`, `swagger.yaml`, `docs/*`, `.env.example` defaults.
 
 ### P1 — should do before beta
+> The next full phase is planned in [`phase-n-plan.md`](phase-n-plan.md)
+> (mobile-first UI/UX: admin-on-touch tables, four states, a11y, QA matrix).
+> The UI items below are folded into that plan.
+
 4. **AdminSettings fake tabs** — General / Notifications / Security / Payment
    render hardcoded US/USD defaults and never persist. Either wire them to
    settings or remove them. (Their `America/New_York` / `USD` / `+1 (555)…`
