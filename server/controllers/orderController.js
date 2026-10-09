@@ -67,8 +67,7 @@ exports.getTodaysOrders = async (req, res) => {
     }
 };
 
-exports.getOrderById = async (req, res) => {
-    try {
+exports.getOrderById = async (req, res) => {    try {
         const order = await orderRepo.findByIdForOwner(req.tenantId, req.params.id);
         if (!order) {
             return sendResponse(res, 404, false, 'Order not found');
@@ -93,12 +92,13 @@ exports.getOrderById = async (req, res) => {
 
 exports.getOrders = async (req, res) => {
     try {
-        const { status, today } = req.query;
+        const { status, today, staffId } = req.query;
         if (status && !ORDER_STATUSES.includes(status)) {
             return sendResponse(res, 400, false, `Invalid status. Allowed: ${ORDER_STATUSES.join(', ')}`);
         }
         const query = {};
         if (status) query.status = status;
+        if (staffId) query.staffId = staffId;
         if (today === 'true') {
             const start = new Date();
             start.setHours(0, 0, 0, 0);
@@ -111,6 +111,29 @@ exports.getOrders = async (req, res) => {
     } catch (error) {
         console.error('Error fetching orders:', error);
         return sendResponse(res, 500, false, 'Server error');
+    }
+};
+
+/** Reassign an order to a staff member (or unassign). Any staff/admin may do it. */
+exports.assignOrder = async (req, res) => {
+    try {
+        const staffId = (req.body && req.body.staffId) || null;
+        const order = await orderRepo.assignStaff(req.tenantId, req.params.id, staffId);
+        if (!order) return sendResponse(res, 404, false, 'Order not found');
+        await activityRepo.log({
+            tenantId: req.tenantId,
+            actorId: req.userId,
+            actorType: req.role,
+            action: 'order.assign',
+            entity: 'order',
+            entityId: order._id,
+            meta: { staffId },
+        });
+        events.emit('order:status', { tenantId: req.tenantId, orderId: order._id, status: order.status });
+        return sendResponse(res, 200, true, 'Order reassigned', order);
+    } catch (err) {
+        console.error('Error assigning order:', err);
+        return sendResponse(res, 500, false, err.message || 'Server error');
     }
 };
 

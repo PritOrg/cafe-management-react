@@ -11,11 +11,14 @@ import {
   Chip,
   Divider,
   CircularProgress,
+  Collapse,
 } from '@mui/material';
 import PhoneIcon from '@mui/icons-material/Phone';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import SearchIcon from '@mui/icons-material/Search';
 import ReplayIcon from '@mui/icons-material/Replay';
+import ShareIcon from '@mui/icons-material/Share';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { ordersAPI, unwrap } from '../../services/api';
 import PageHeader from '../../components/common/PageHeader';
 import EmptyState from '../../components/common/EmptyState';
@@ -54,6 +57,23 @@ const normalizeOptions = (customizations) => {
   return customizations || {};
 };
 
+const lineTotal = (item) => Number(item.itemPrice ?? item.price ?? 0) * (item.quantity || 1);
+
+const buildBill = (order) => {
+  const lines = (order.items || []).map((i) => ({
+    name: i.name || i.menuItemDoc?.title || 'Item',
+    size: i.size,
+    qty: i.quantity || 1,
+    amount: lineTotal(i),
+  }));
+  const subtotal = Number(order.totalAmount ?? lines.reduce((sum, l) => sum + l.amount, 0));
+  const tip = Number(order.tipAmount || 0);
+  const discount = Number(order.discountAmount || 0);
+  const total = Number(order.finalAmount ?? subtotal + tip);
+  const tax = Math.max(0, Number((total - subtotal - tip).toFixed(2)));
+  return { lines, subtotal, tip, discount, tax, total };
+};
+
 const StatusTrack = ({ status }) => {
   const activeIndex = ORDER_STEPS.indexOf(status);
   if (status === 'cancelled') {
@@ -90,6 +110,7 @@ const OrderHistoryPage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [reorderingId, setReorderingId] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
   const [error, setError] = useState(null);
   const [searched, setSearched] = useState(false);
 
@@ -208,7 +229,23 @@ const OrderHistoryPage = () => {
           const meta = STATUS_META[order.status] || { label: order.status, color: 'default' };
           const itemCount = (order.items || []).reduce((sum, i) => sum + (i.quantity || 1), 0);
           const busy = reorderingId === (order._id || order.orderNumber);
-          return (
+  const shareBill = (order) => {
+    const { lines, subtotal, tax, total } = buildBill(order);
+    const text = [
+      `Order ${order.orderNumber}`,
+      ...lines.map((l) => `${l.qty}× ${l.name}${l.size ? ` (${l.size})` : ''} — ₹${l.amount.toFixed(2)}`),
+      `Subtotal: ₹${subtotal.toFixed(2)}`,
+      `GST: ₹${tax.toFixed(2)}`,
+      `Total: ₹${total.toFixed(2)}`,
+    ].join('\n');
+    if (navigator.share) {
+      navigator.share({ title: `Order ${order.orderNumber}`, text }).catch(() => {});
+    } else if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(() => toast.success('Bill copied'));
+    }
+  };
+
+  return (
             <Paper key={order._id || order.orderNumber} elevation={0} sx={{ p: 2.5, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
                 <Box sx={{ minWidth: 0 }}>
@@ -234,31 +271,74 @@ const OrderHistoryPage = () => {
                 </Typography>
               </Stack>
 
-              {(order.items || []).length > 0 && (
-                <Box sx={{ mt: 1.5 }}>
-                  {order.items.slice(0, 4).map((item, index) => (
-                    <Typography key={index} variant="body2" color="text.secondary" noWrap>
-                      {item.quantity || 1}× {item.name || item.menuItemDoc?.title || 'Item'}
-                      {item.size ? ` (${item.size})` : ''}
-                    </Typography>
-                  ))}
-                  {order.items.length > 4 && (
-                    <Typography variant="caption" color="text.secondary">+{order.items.length - 4} more</Typography>
-                  )}
-                </Box>
-              )}
+              {(() => {
+                const bill = buildBill(order);
+                const key = order._id || order.orderNumber;
+                const expanded = expandedId === key;
+                return (
+                  <>
+                    <Collapse in={expanded} timeout="auto" unmountOnExit>
+                      <Box sx={{ mt: 1.5 }}>
+                        {bill.lines.map((l, i) => (
+                          <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              {l.qty}× {l.name}{l.size ? ` (${l.size})` : ''}
+                            </Typography>
+                            <Typography variant="body2">₹{l.amount.toFixed(2)}</Typography>
+                          </Box>
+                        ))}
+                        <Divider sx={{ my: 1 }} />
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="body2" color="text.secondary">Subtotal</Typography>
+                          <Typography variant="body2">₹{bill.subtotal.toFixed(2)}</Typography>
+                        </Box>
+                        {bill.discount > 0 && (
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography variant="body2" color="text.secondary">Discount</Typography>
+                            <Typography variant="body2">−₹{bill.discount.toFixed(2)}</Typography>
+                          </Box>
+                        )}
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="body2" color="text.secondary">GST</Typography>
+                          <Typography variant="body2">₹{bill.tax.toFixed(2)}</Typography>
+                        </Box>
+                        {bill.tip > 0 && (
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography variant="body2" color="text.secondary">Tip</Typography>
+                            <Typography variant="body2">₹{bill.tip.toFixed(2)}</Typography>
+                          </Box>
+                        )}
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Total</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>₹{bill.total.toFixed(2)}</Typography>
+                        </Box>
+                      </Box>
+                    </Collapse>
 
-              <Stack direction="row" justifyContent="flex-end" sx={{ mt: 2 }}>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  startIcon={busy ? <CircularProgress size={16} /> : <ReplayIcon />}
-                  onClick={() => handleReorder(order)}
-                  disabled={busy}
-                >
-                  Reorder
-                </Button>
-              </Stack>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 1.5 }} flexWrap="wrap" useFlexGap>
+                      <Button
+                        size="small"
+                        onClick={() => setExpandedId(expanded ? null : key)}
+                        endIcon={<ExpandMoreIcon sx={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />}
+                      >
+                        {expanded ? 'Hide bill' : 'View bill'}
+                      </Button>
+                      <Stack direction="row" spacing={1}>
+                        <Button size="small" startIcon={<ShareIcon />} onClick={() => shareBill(order)}>Share</Button>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={busy ? <CircularProgress size={16} /> : <ReplayIcon />}
+                          onClick={() => handleReorder(order)}
+                          disabled={busy}
+                        >
+                          Reorder
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </>
+                );
+              })()}
             </Paper>
           );
         })}

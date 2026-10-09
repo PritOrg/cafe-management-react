@@ -8,7 +8,9 @@ import CheckCircle from '@mui/icons-material/CheckCircle';
 import Cancel from '@mui/icons-material/Cancel';
 import Schedule from '@mui/icons-material/Schedule';
 import LocalShipping from '@mui/icons-material/LocalShipping';
-import { ordersAPI, activityAPI, unwrap } from '../../services/api';
+import SwapHoriz from '@mui/icons-material/SwapHoriz';
+import { ordersAPI, activityAPI, staffAPI, unwrap } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import ErrorState from '../../components/common/ErrorState';
 import useOpsEvents from '../../hooks/useOpsEvents';
 import { adaptOrder } from '../../adapters';
@@ -25,6 +27,10 @@ const AdminOrders = () => {
   const [orderDetailOpen, setOrderDetailOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const { user } = useAuth();
+  const [mineOnly, setMineOnly] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [staffList, setStaffList] = useState([]);
 
   const orderStatuses = [
     { value: 'all', label: 'All Orders', count: 0 },
@@ -101,8 +107,32 @@ const AdminOrders = () => {
     const matchesSearch = (order.orderNumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (order.customer?.name || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const staffId = order.placedByStaff?._id || order.placedByStaff || null;
+    const matchesMine = !mineOnly || (staffId && String(staffId) === String(user?.id));
+    return matchesSearch && matchesStatus && matchesMine;
   });
+
+  const openTransfer = async () => {
+    setAnchorEl(null);
+    setTransferOpen(true);
+    try {
+      const body = await staffAPI.getAll();
+      const data = unwrap(body) || [];
+      setStaffList(Array.isArray(data) ? data : (data.items || data.staff || []));
+    } catch {
+      setStaffList([]);
+    }
+  };
+
+  const handleAssign = async (staffId) => {
+    try {
+      await ordersAPI.assign(selectedOrderId, staffId);
+      setTransferOpen(false);
+      fetchOrders();
+    } catch (err) {
+      setError(err.message || 'Failed to transfer order');
+    }
+  };
 
   const getStatusCounts = () => {
     const counts = { all: orders.length };
@@ -195,17 +225,17 @@ const AdminOrders = () => {
               />
             </Grid>
             <Grid item xs={12} md={6}>
-              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-                <Button
-                  variant="outlined"
-                  startIcon={<FilterList />}
-                >
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', alignItems: 'center' }}>
+                <Chip
+                  label="Mine"
+                  color={mineOnly ? 'primary' : 'default'}
+                  variant={mineOnly ? 'filled' : 'outlined'}
+                  onClick={() => setMineOnly((v) => !v)}
+                />
+                <Button variant="outlined" startIcon={<FilterList />}>
                   More Filters
                 </Button>
-                <Button
-                  variant="contained"
-                  onClick={fetchOrders}
-                >
+                <Button variant="contained" onClick={fetchOrders}>
                   Refresh
                 </Button>
               </Box>
@@ -327,7 +357,33 @@ const AdminOrders = () => {
           <LocalShipping sx={{ mr: 1 }} />
           Mark as Served
         </MenuItem>
+        <MenuItem onClick={openTransfer}>
+          <SwapHoriz sx={{ mr: 1 }} />
+          Transfer to staff
+        </MenuItem>
       </Menu>
+
+      {/* Transfer order dialog */}
+      <Dialog open={transferOpen} onClose={() => setTransferOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Transfer order to…</DialogTitle>
+        <DialogContent dividers>
+          <MenuItem onClick={() => handleAssign(null)}>Unassigned</MenuItem>
+          {staffList.map((s) => (
+            <MenuItem key={s._id} onClick={() => handleAssign(s._id)}>
+              {[s.firstName, s.lastName].filter(Boolean).join(' ') || s.email}
+              {s.role === 'admin' ? ' · admin' : ''}
+            </MenuItem>
+          ))}
+          {staffList.length === 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ p: 1 }}>
+              No staff found.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setTransferOpen(false)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Order Detail Dialog */}
       <Dialog
