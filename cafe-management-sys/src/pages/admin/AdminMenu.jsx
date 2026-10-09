@@ -20,6 +20,7 @@ import {
   Fab,
   Switch,
   FormControlLabel,
+  Pagination,
 } from '@mui/material';
 import Search from '@mui/icons-material/Search';
 import Add from '@mui/icons-material/Add';
@@ -133,6 +134,17 @@ const AdminMenu = () => {
     return matchesSearch && matchesCategory;
   });
 
+  const [page, setPage] = useState(1);
+  const PAGE_MENU = 24;
+  const pageCount = Math.max(1, Math.ceil(filteredItems.length / PAGE_MENU));
+
+  // Reset to page 1 whenever the item set changes (search/category).
+  useEffect(() => {
+    setPage(1);
+  }, [filteredItems.length]);
+
+  const pagedItems = filteredItems.slice((page - 1) * PAGE_MENU, page * PAGE_MENU);
+
   const handleMenuClick = (event, itemId) => {
     setAnchorEl(event.currentTarget);
     setSelectedItemId(itemId);
@@ -233,7 +245,7 @@ const AdminMenu = () => {
             <Typography align="center">No menu items found</Typography>
           </Grid>
         ) : (
-          filteredItems.map((item) => (
+          pagedItems.map((item) => (
             <Grid item xs={12} sm={6} md={4} lg={3} key={item._id}>
               <Card 
                 sx={{ 
@@ -321,6 +333,19 @@ const AdminMenu = () => {
               </Card>
             </Grid>
           ))
+        )}
+        {filteredItems.length > PAGE_MENU && (
+          <Grid item xs={12}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, overflow: 'auto' }}>
+              <Pagination
+                count={pageCount}
+                page={Math.min(page, pageCount)}
+                onChange={(_, p) => setPage(p)}
+                shape="rounded"
+                size="medium"
+              />
+            </Box>
+          </Grid>
         )}
       </Grid>
 
