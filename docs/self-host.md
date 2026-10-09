@@ -4,6 +4,10 @@ This app is free and self-hostable. Two services: an **API** (`server/`, Node +
 Knex/Postgres) and a **static frontend** (`cafe-management-sys/`, Vite build).
 You need Node 20 + a Postgres database (local, Docker, Neon, or any Postgres).
 
+> **Status: pre-alpha · in development.** It is not published yet; this guide
+> describes running it from source. See [`STATUS.md`](STATUS.md) for remaining
+> work and [`database.md`](database.md) for migrations/backups.
+
 ## 1. Prerequisites
 
 - Node.js 20+
@@ -22,7 +26,8 @@ docker compose -f docker-compose.selfhost.yml up --build
 
 This starts Postgres, runs migrations + the demo seed once, then serves the API
 on `http://localhost:4969` (health at `/health`). Provide Cloudinary/SMTP vars
-via the environment to enable them.
+via the environment to enable them. Postgres credentials default to
+`restaurant`/`restaurant` in this compose file (change before exposing it).
 
 ## 2B. Manual setup
 

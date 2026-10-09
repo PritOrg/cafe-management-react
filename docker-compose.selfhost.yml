@@ -1,5 +1,6 @@
-# Self-host the API + a local Postgres. Copy `.env.selfhost.example` to `.env` or
-# pass variables inline. The frontend is a static build — see docs/self-host.md.
+# Self-host the API + a local Postgres. Pass variables inline or via a `.env`
+# file next to this compose file. The frontend is a static build — see
+# docs/self-host.md. Pre-alpha: change the default DB credentials + JWT_SECRET.
 services:
   db:
     image: postgres:16-alpine

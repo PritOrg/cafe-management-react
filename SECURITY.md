@@ -2,8 +2,8 @@
 
 ## Supported versions
 
-This project is under active development on `main`. Security fixes land on `main`
-and are released from there.
+This project is **pre-alpha and under active development** on `main` (no tagged
+release yet). Security fixes land on `main`.
 
 ## Reporting a vulnerability
 
@@ -22,10 +22,14 @@ timeline with you.
 
 ## Secrets & configuration
 
-- Never commit credentials. `.env` files, `server/logs/`, and `server/mail/*.json`
-  are untracked; keep them that way.
+- Never commit credentials. `.env` files, `server/logs/`, `server/mail/*.json`,
+  and `server/firebase/` are untracked and gitignored; keep them that way.
 - Cloudinary credentials live only in `server/.env`
   (`CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET`).
+- A Google OAuth `client_secret_*.json` and a stray browser profile were
+  previously tracked; they are now untracked, but **git history still contains
+  credentials**. Rotate and purge per
+  [`docs/secrets-rotation.md`](docs/secrets-rotation.md).
 - If you believe a secret was committed, rotate it immediately and treat the
   value as compromised — history rewrites alone are not sufficient.
 

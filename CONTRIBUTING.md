@@ -1,7 +1,10 @@
 # Contributing
 
-Thanks for helping improve the Cafe/Restaurant Management System! This repo is
-free and open source (MIT) and self-hostable.
+Thanks for helping improve the project! It is free and open source (MIT) and
+self-hostable.
+
+> **Status: pre-alpha · in development · name undecided.** Expect breaking
+> changes; see [`docs/STATUS.md`](docs/STATUS.md) for what is in flight.
 
 ## Repo layout
 
@@ -55,7 +58,9 @@ Both projects must report **0 ESLint problems**.
 - Import MUI icons as deep paths (`@mui/icons-material/Menu`), never the barrel.
 - Frontend env vars must be `VITE_*` via `import.meta.env` (`process.env` is banned in `src/`).
 - Prefer the shared primitives (`PageHeader`, `EmptyState`) over bespoke headers.
-- Don't commit secrets. `.env` files, `server/logs/`, and `server/mail/*.json` are untracked.
+- Don't commit secrets. `.env` files, `server/logs/`, `server/mail/*.json`, and
+  `server/firebase/` are untracked and gitignored. Never add a new credential —
+  load it from env and document the key name in `.env.example`.
 
 ## Commit style
 
