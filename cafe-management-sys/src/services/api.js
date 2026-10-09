@@ -305,6 +305,11 @@ export const kitchenAPI = {
   getActiveOrders: () => apiRequest('/kitchen/orders'),
 };
 
+// Tables API (floor / POS)
+export const tablesAPI = {
+  list: () => apiRequest('/tables'),
+};
+
 // Orders API
 export const ordersAPI = {
   getAll: (params = {}) => {

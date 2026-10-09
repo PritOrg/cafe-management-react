@@ -4,6 +4,7 @@ import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import LocalDiningIcon from '@mui/icons-material/LocalDining';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import InventoryIcon from '@mui/icons-material/Inventory';
@@ -37,6 +38,7 @@ export const CUSTOMER_BOTTOM_NAV = CUSTOMER_NAV.filter((item) => item.bottom);
  */
 export const ADMIN_NAV = [
   { title: 'Dashboard', href: '/admin', icon: DashboardIcon, exact: true },
+  { title: 'Take Order', href: '/admin/order', icon: PointOfSaleIcon },
   { title: 'Orders', href: '/admin/orders', icon: ShoppingCartIcon },
   { title: 'Kitchen', href: '/admin/kitchen', icon: LocalDiningIcon },
   { title: 'Menu Items', href: '/admin/menu', icon: RestaurantIcon },
