@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { Box } from '@mui/material';
 
 // Components and layouts (direct imports — avoids pulling the whole component
@@ -32,6 +32,12 @@ const AdminTenants = lazy(() => import('./pages/admin/AdminTenants.jsx').then((m
 const AdminCustomers = lazy(() => import('./pages/admin/AdminCustomers.jsx').then((m) => ({ default: m.AdminCustomers || m.default })));
 const AdminKitchen = lazy(() => import('./pages/admin/AdminKitchen.jsx').then((m) => ({ default: m.AdminKitchen || m.default })));
 const AdminTakeOrder = lazy(() => import('./pages/admin/AdminTakeOrder.jsx').then((m) => ({ default: m.AdminTakeOrder || m.default })));
+
+// QR landing: /t/:table → the menu with the table chip pre-filled.
+const TableEntry = () => {
+  const { table } = useParams();
+  return <Navigate to={`/menu?table=${encodeURIComponent(table || '')}`} replace />;
+};
 const AdminActivity = lazy(() => import('./pages/admin/AdminActivity.jsx').then((m) => ({ default: m.AdminActivity || m.default })));
 const AdminInvoices = lazy(() => import('./pages/admin/AdminInvoices.jsx').then((m) => ({ default: m.AdminInvoices || m.default })));
 
@@ -50,6 +56,7 @@ const App = () => {
                   <Route path="menu" element={<MenuPage />} />
                   <Route path="cart" element={<CartPage />} />
                   <Route path="orders" element={<OrderHistoryPage />} />
+                  <Route path="t/:table" element={<TableEntry />} />
                 </Route>
 
                 {/* Admin Routes */}

@@ -41,6 +41,7 @@ const attachPeople = async (db, orders) => {
 const loadFull = async (db, tenantId, query = {}) => {
     let q = db('orders as o').where('o.tenant_id', tenantId);
     if (query.status) q = q.andWhere('o.status', query.status);
+    if (query.staffId) q = q.andWhere('o.placed_by_staff', query.staffId);
     if (query.placedAt) {
         if (query.placedAt.$gte) q = q.andWhere('o.placed_at', '>=', query.placedAt.$gte);
         if (query.placedAt.$lte) q = q.andWhere('o.placed_at', '<=', query.placedAt.$lte);
@@ -89,6 +90,16 @@ const create = async (tenantId, data, trx = getDb()) => {
 const findById = async (tenantId, id) => {
     const list = await loadFull(getDb(), tenantId, {});
     return list.find((o) => o._id === id) || null;
+};
+
+/** Reassign an order to a staff member (or unassign with staffId=null). */
+const assignStaff = async (tenantId, id, staffId) => {
+    const [row] = await getDb()('orders')
+        .where({ id, tenant_id: tenantId })
+        .update({ placed_by_staff: staffId || null, updated_at: new Date() })
+        .returning('*');
+    if (!row) return null;
+    return findByIdForOwner(tenantId, id);
 };
 
 /** Locate a previously placed order by its client-generated idempotency key. */
@@ -182,6 +193,7 @@ module.exports = {
     findMany,
     findByIdForOwner,
     findByClientOrderId,
+    assignStaff,
     findStatus,
     updateStatus,
     countToday,

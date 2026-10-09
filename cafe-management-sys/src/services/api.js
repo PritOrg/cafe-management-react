@@ -332,6 +332,11 @@ export const ordersAPI = {
     body: JSON.stringify({ status }),
   }),
 
+  assign: (id, staffId) => apiRequest(`/orders/${id}/assign`, {
+    method: 'PUT',
+    body: JSON.stringify({ staffId }),
+  }),
+
   create: (orderData) => apiRequest('/orders', {
     method: 'POST',
     body: JSON.stringify(orderData),
