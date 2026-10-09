@@ -416,6 +416,9 @@ Split into four workstreams; all reuse `invoiceService.issueForOrder()` (idempot
 
 ## N. UI/UX overhaul — mobile-first (~5–6 days)
 
+> **Status: in progress — this is the active phase.** The remaining N work is
+> broken into concrete workstreams in [`docs/phase-n-plan.md`](phase-n-plan.md).
+
 **Device reality:** customers order from phones; staff/owners run the admin on **tablets** and phones (restaurant floor has no desks); desktop/PC is supported but designed **last**. Method: design at **360px**, scale up; the breakpoints below are the contract.
 
 Breakpoint contract (MUI defaults, `theme.breakpoints`):

@@ -101,6 +101,8 @@ falls back to `DEFAULT_TENANT_SLUG`.
 | Doc | What's in it |
 |---|---|
 | [`docs/STATUS.md`](docs/STATUS.md) | Live remaining work, known gaps, name/status |
+| [`docs/phase-n-plan.md`](docs/phase-n-plan.md) | Plan for the next phase (mobile UI/UX) |
+| [`docs/dependency-audit.md`](docs/dependency-audit.md) | Open security alerts + remediation |
 | [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) | Full plan + deviation log (historical) |
 | [`docs/self-host.md`](docs/self-host.md) | Deploy the API + frontend |
 | [`docs/database.md`](docs/database.md) | Knex schema, migrations, Neon |
