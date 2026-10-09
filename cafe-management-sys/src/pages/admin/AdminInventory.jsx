@@ -5,10 +5,9 @@ import {
   Card,
   CardContent,
   Table,
+  TableHead,
   TableBody,
   TableCell,
-  TableContainer,
-  TableHead,
   TableRow,
   Chip,
   IconButton,
@@ -21,9 +20,9 @@ import {
   Grid,
   Alert,
   Fab,
-  LinearProgress,
   MenuItem,
 } from '@mui/material';
+import ResponsiveTable from '../../components/common/ResponsiveTable';
 import Search from '@mui/icons-material/Search';
 import Add from '@mui/icons-material/Add';
 import Delete from '@mui/icons-material/Delete';
@@ -241,62 +240,90 @@ const AdminInventory = () => {
       </Card>
 
       <Card>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Item</TableCell>
-                <TableCell>Category</TableCell>
-                <TableCell>Qty</TableCell>
-                <TableCell>Min</TableCell>
-                <TableCell>Unit</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell align="center">Actions</TableCell>
+        <ResponsiveTable
+          rows={items}
+          loading={loading}
+          emptyMessage="No inventory items"
+          columns={[
+            { label: 'Item' },
+            { label: 'Category' },
+            { label: 'Qty' },
+            { label: 'Min' },
+            { label: 'Unit' },
+            { label: 'Status' },
+            { label: '', align: 'center' },
+          ]}
+          renderRow={(item) => {
+            const isLow = Number(item.quantity) <= Number(item.minQty || 0);
+            return (
+              <TableRow key={item._id} hover>
+                <TableCell>
+                  <Button size="medium" onClick={() => openEdit(item)} sx={{ textTransform: 'none', fontWeight: 600 }}>
+                    {item.itemName}
+                  </Button>
+                </TableCell>
+                <TableCell>{item.category}</TableCell>
+                <TableCell>{item.quantity}</TableCell>
+                <TableCell>{item.minQty || 0}</TableCell>
+                <TableCell>{item.unit}</TableCell>
+                <TableCell>
+                  <Chip
+                    size="small"
+                    icon={isLow ? <Warning /> : <CheckCircle />}
+                    label={isLow ? 'Low stock' : 'OK'}
+                    color={isLow ? 'warning' : 'success'}
+                  />
+                </TableCell>
+                <TableCell align="center">
+                  <Button size="medium" onClick={() => { setMoveTarget(item); setMoveForm({ type: 'purchase', delta: 10, note: '' }); }}>
+                    Move
+                  </Button>
+                  <Button size="medium" startIcon={<MenuBook />} onClick={() => openRecipes(item)}>
+                    Recipes
+                  </Button>
+                  <IconButton size="medium" color="error" aria-label="Delete item" onClick={() => setDeleteTarget(item)}>
+                    <Delete />
+                  </IconButton>
+                </TableCell>
               </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                <TableRow><TableCell colSpan={7} align="center"><LinearProgress /></TableCell></TableRow>
-              ) : items.length === 0 ? (
-                <TableRow><TableCell colSpan={7} align="center">No inventory items</TableCell></TableRow>
-              ) : (
-                items.map((item) => {
-                  const isLow = Number(item.quantity) <= Number(item.minQty || 0);
-                  return (
-                    <TableRow key={item._id} hover>
-                      <TableCell>
-                        <Button size="small" onClick={() => openEdit(item)}>{item.itemName}</Button>
-                      </TableCell>
-                      <TableCell>{item.category}</TableCell>
-                      <TableCell>{item.quantity}</TableCell>
-                      <TableCell>{item.minQty || 0}</TableCell>
-                      <TableCell>{item.unit}</TableCell>
-                      <TableCell>
-                        <Chip
-                          size="small"
-                          icon={isLow ? <Warning /> : <CheckCircle />}
-                          label={isLow ? 'Low stock' : 'OK'}
-                          color={isLow ? 'warning' : 'success'}
-                        />
-                      </TableCell>
-                      <TableCell align="center">
-                        <Button size="small" onClick={() => { setMoveTarget(item); setMoveForm({ type: 'purchase', delta: 10, note: '' }); }}>
-                          Move
-                        </Button>
-                        <Button size="small" startIcon={<MenuBook />} onClick={() => openRecipes(item)}>
-                          Recipes
-                        </Button>
-                        <IconButton size="small" color="error" onClick={() => setDeleteTarget(item)}>
-                          <Delete />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            );
+          }}
+          renderCard={(item) => {
+            const isLow = Number(item.quantity) <= Number(item.minQty || 0);
+            return (
+              <Card key={item._id} sx={{ mx: 2, mb: 1.5 }}>
+                <CardContent sx={{ '&:last-child': { pb: 1.5 } }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                    <Box>
+                      <Typography variant="subtitle1" fontWeight={700}>{item.itemName}</Typography>
+                      <Typography variant="caption" color="text.secondary">{item.category || '—'}</Typography>
+                    </Box>
+                    <Chip
+                      size="small"
+                      icon={isLow ? <Warning /> : <CheckCircle />}
+                      label={isLow ? 'Low stock' : 'OK'}
+                      color={isLow ? 'warning' : 'success'}
+                    />
+                  </Box>
+                  <Typography variant="body2">
+                    <strong>{item.quantity} {item.unit}</strong> · min {item.minQty || 0}
+                  </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, mt: 1 }}>
+                    <Button size="medium" onClick={() => { setMoveTarget(item); setMoveForm({ type: 'purchase', delta: 10, note: '' }); }}>
+                      Move
+                    </Button>
+                    <Button size="medium" startIcon={<MenuBook />} onClick={() => openRecipes(item)}>
+                      Recipes
+                    </Button>
+                    <IconButton size="medium" color="error" aria-label="Delete item" onClick={() => setDeleteTarget(item)}>
+                      <Delete />
+                    </IconButton>
+                  </Box>
+                </CardContent>
+              </Card>
+            );
+          }}
+        />
       </Card>
 
       <Fab color="primary" sx={{ position: 'fixed', bottom: 24, right: 24 }} onClick={openCreate}>

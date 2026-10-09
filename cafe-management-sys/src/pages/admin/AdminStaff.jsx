@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Button, TextField, InputAdornment, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Avatar, Fab } from '@mui/material';
+import { Box, Typography, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Button, TextField, InputAdornment, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Avatar, Fab, Pagination } from '@mui/material';
 import Search from '@mui/icons-material/Search';
 import Add from '@mui/icons-material/Add';
 import Edit from '@mui/icons-material/Edit';
@@ -147,6 +147,16 @@ const AdminStaff = () => {
       (member.role || '').toLowerCase().includes(searchQuery.toLowerCase());
   });
 
+  const [staffPage, setStaffPage] = useState(1);
+  const PAGE_STAFF = 15;
+  const pagedStart = (staffPage - 1) * PAGE_STAFF;
+  const staffPageCount = Math.max(1, Math.ceil(filteredStaff.length / PAGE_STAFF));
+
+  // Reset to page 1 when the search changes.
+  useEffect(() => {
+    setStaffPage(1);
+  }, [searchQuery]);
+
   const handleMenuClick = (event, staffId) => {
     setAnchorEl(event.currentTarget);
     setSelectedStaffId(staffId);
@@ -227,7 +237,7 @@ const AdminStaff = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredStaff.map((member) => (
+                filteredStaff.slice(pagedStart, pagedStart + PAGE_STAFF).map((member) => (
                   <TableRow key={member._id} hover>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -284,6 +294,17 @@ const AdminStaff = () => {
             </TableBody>
           </Table>
         </TableContainer>
+        {filteredStaff.length > PAGE_STAFF && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, overflow: 'auto' }}>
+            <Pagination
+              count={staffPageCount}
+              page={Math.min(staffPage, staffPageCount)}
+              onChange={(_, p) => setStaffPage(p)}
+              shape="rounded"
+              size="medium"
+            />
+          </Box>
+        )}
       </Card>
 
       {/* Floating Action Button */}
