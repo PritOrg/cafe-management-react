@@ -152,7 +152,7 @@ const AdminRevenue = () => {
 
       {/* Revenue Summary */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={6} md={4}>
           <StatCard
             title={`Total Revenue (${periods.find(p => p.value === period)?.label})`}
             value={revenueData?.total}
@@ -161,7 +161,7 @@ const AdminRevenue = () => {
             color="success"
           />
         </Grid>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={6} md={4}>
           <StatCard
             title="Average Daily Revenue"
             value={revenueData?.total ? Math.round(revenueData.total / (period === '7d' ? 7 : period === '30d' ? 30 : period === '90d' ? 90 : 365)) : 0}
@@ -170,7 +170,7 @@ const AdminRevenue = () => {
             color="primary"
           />
         </Grid>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={6} md={4}>
           <StatCard
             title="Growth Rate"
             value={`${revenueData?.change || 0}%`}
