@@ -3,16 +3,12 @@ import {
   Box,
   Typography,
   Card,
-  Table,
-  TableBody,
+  CardContent,
   TableCell,
-  TableContainer,
-  TableHead,
   TableRow,
   Chip,
   Button,
   Grid,
-  LinearProgress,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -20,7 +16,9 @@ import {
   Pagination,
   TextField,
   MenuItem,
+  LinearProgress,
 } from '@mui/material';
+import ResponsiveTable from '../../components/common/ResponsiveTable';
 import Refresh from '@mui/icons-material/Refresh';
 import ReceiptLong from '@mui/icons-material/ReceiptLong';
 import Print from '@mui/icons-material/Print';
@@ -131,50 +129,74 @@ const AdminInvoices = () => {
       )}
 
       <Card>
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Invoice #</TableCell>
-                <TableCell>Date</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell align="right">Taxable</TableCell>
-                <TableCell align="right">CGST+SGST</TableCell>
-                <TableCell align="right">Total</TableCell>
-                <TableCell align="center">Actions</TableCell>
+        <ResponsiveTable
+          rows={invoices}
+          loading={loading}
+          emptyMessage="No invoices"
+          columns={[
+            { label: 'Invoice #' },
+            { label: 'Date' },
+            { label: 'Status' },
+            { label: 'Taxable', align: 'right' },
+            { label: 'CGST+SGST', align: 'right' },
+            { label: 'Total', align: 'right' },
+            { label: '', align: 'center' },
+          ]}
+          renderRow={(inv) => {
+            const tax = Number(inv.cgstAmount || 0) + Number(inv.sgstAmount || 0) + Number(inv.igstAmount || 0);
+            return (
+              <TableRow key={inv._id || inv.id} hover>
+                <TableCell>
+                  <Button size="medium" onClick={() => openInvoice(inv)} sx={{ textTransform: 'none', fontWeight: 600 }}>
+                    {inv.invoiceNumber}
+                  </Button>
+                </TableCell>
+                <TableCell>{inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString() : '—'}</TableCell>
+                <TableCell>
+                  <Chip size="small" color={statusColor(inv.status)} label={inv.status} />
+                </TableCell>
+                <TableCell align="right">{formatMoney(inv.taxableAmount)}</TableCell>
+                <TableCell align="right">{formatMoney(tax)}</TableCell>
+                <TableCell align="right">{formatMoney(inv.grandTotal)}</TableCell>
+                <TableCell align="center">
+                  <Button size="medium" startIcon={<Print />} onClick={() => printInvoice(inv)}>Print</Button>
+                  <Button size="medium" startIcon={<Download />} onClick={() => downloadPdf(inv, 'a4')}>PDF</Button>
+                </TableCell>
               </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                <TableRow><TableCell colSpan={7} align="center"><LinearProgress /></TableCell></TableRow>
-              ) : invoices.length === 0 ? (
-                <TableRow><TableCell colSpan={7} align="center">No invoices</TableCell></TableRow>
-              ) : (
-                invoices.map((inv) => {
-                  const tax = Number(inv.cgstAmount || 0) + Number(inv.sgstAmount || 0) + Number(inv.igstAmount || 0);
-                  return (
-                    <TableRow key={inv._id || inv.id} hover>
-                      <TableCell>
-                        <Button size="small" onClick={() => openInvoice(inv)}>{inv.invoiceNumber}</Button>
-                      </TableCell>
-                      <TableCell>{inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString() : '—'}</TableCell>
-                      <TableCell>
-                        <Chip size="small" color={statusColor(inv.status)} label={inv.status} />
-                      </TableCell>
-                      <TableCell align="right">{formatMoney(inv.taxableAmount)}</TableCell>
-                      <TableCell align="right">{formatMoney(tax)}</TableCell>
-                      <TableCell align="right">{formatMoney(inv.grandTotal)}</TableCell>
-                      <TableCell align="center">
-                        <Button size="small" startIcon={<Print />} onClick={() => printInvoice(inv)}>Print</Button>
-                        <Button size="small" startIcon={<Download />} onClick={() => downloadPdf(inv, 'a4')}>PDF</Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            );
+          }}
+          renderCard={(inv) => {
+            const tax = Number(inv.cgstAmount || 0) + Number(inv.sgstAmount || 0) + Number(inv.igstAmount || 0);
+            return (
+              <Card key={inv._id || inv.id} sx={{ mx: 2, mb: 1.5 }}>
+                <CardContent sx={{ '&:last-child': { pb: 1.5 } }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                    <Box>
+                      <Typography variant="subtitle1" fontWeight={700}>
+                        {inv.invoiceNumber}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {inv.issuedAt ? new Date(inv.issuedAt).toLocaleString() : '—'}
+                      </Typography>
+                    </Box>
+                    <Chip size="small" color={statusColor(inv.status)} label={inv.status} />
+                  </Box>
+                  <Typography variant="body2">
+                    Taxable: <strong>{formatMoney(inv.taxableAmount)}</strong> ·
+                    CGST+SGST: <strong>{formatMoney(tax)}</strong>
+                  </Typography>
+                  <Typography variant="subtitle1" fontWeight={700}>
+                    Total: {formatMoney(inv.grandTotal)}
+                  </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, mt: 1 }}>
+                    <Button size="medium" startIcon={<Print />} onClick={() => printInvoice(inv)}>Print</Button>
+                    <Button size="medium" startIcon={<Download />} onClick={() => downloadPdf(inv, 'a4')}>PDF</Button>
+                  </Box>
+                </CardContent>
+              </Card>
+            );
+          }}
+        />
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
           <Pagination
             count={Math.max(1, Math.ceil(total / limit))}

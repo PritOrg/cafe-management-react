@@ -4,13 +4,9 @@ import {
   Typography,
   Card,
   CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Chip,
+  TableCell,
+  TableRow,
   TextField,
   Button,
   Dialog,
@@ -23,6 +19,7 @@ import {
   Alert,
   LinearProgress,
 } from '@mui/material';
+import ResponsiveTable from '../../components/common/ResponsiveTable';
 import Refresh from '@mui/icons-material/Refresh';
 import Search from '@mui/icons-material/Search';
 import DeleteOutline from '@mui/icons-material/DeleteOutline';
@@ -149,53 +146,72 @@ const AdminCustomers = () => {
       </Card>
 
       <Card>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Phone</TableCell>
-                <TableCell>Membership</TableCell>
-                <TableCell>Loyalty</TableCell>
-                <TableCell align="center">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                <TableRow><TableCell colSpan={6} align="center"><LinearProgress /></TableCell></TableRow>
-              ) : items.length === 0 ? (
-                <TableRow><TableCell colSpan={6} align="center">No customers found</TableCell></TableRow>
-              ) : (
-                items.map((c) => (
-                  <TableRow key={c._id} hover>
-                    <TableCell>
-                      <Button size="small" onClick={() => openDetail(c)}>
-                        {[c.firstName, c.lastName].filter(Boolean).join(' ') || c.email}
-                      </Button>
-                    </TableCell>
-                    <TableCell>{c.email}</TableCell>
-                    <TableCell>{c.phone || '—'}</TableCell>
-                    <TableCell>
-                      <Chip size="small" label={c.membershipLevel || 'Silver'} />
-                    </TableCell>
-                    <TableCell>{c.loyaltyPoints || 0}</TableCell>
-                    <TableCell align="center">
-                      <Button
-                        size="small"
-                        color="error"
-                        startIcon={<DeleteOutline />}
-                        onClick={() => setDeleteTarget(c)}
-                      >
-                        Deactivate
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <ResponsiveTable
+          rows={items}
+          loading={loading}
+          emptyMessage="No customers found"
+          columns={[
+            { label: 'Name' },
+            { label: 'Email' },
+            { label: 'Phone' },
+            { label: 'Membership' },
+            { label: 'Loyalty' },
+            { label: '', align: 'center' },
+          ]}
+          renderRow={(c) => (
+            <TableRow key={c._id} hover>
+              <TableCell>
+                <Button size="medium" onClick={() => openDetail(c)} sx={{ textTransform: 'none', fontWeight: 600 }}>
+                  {[c.firstName, c.lastName].filter(Boolean).join(' ') || c.email}
+                </Button>
+              </TableCell>
+              <TableCell>{c.email}</TableCell>
+              <TableCell>{c.phone || '—'}</TableCell>
+              <TableCell>
+                <Chip size="small" label={c.membershipLevel || 'Silver'} />
+              </TableCell>
+              <TableCell>{c.loyaltyPoints || 0}</TableCell>
+              <TableCell align="center">
+                <Button
+                  size="medium"
+                  color="error"
+                  startIcon={<DeleteOutline />}
+                  onClick={() => setDeleteTarget(c)}
+                >
+                  Deactivate
+                </Button>
+              </TableCell>
+            </TableRow>
+          )}
+          renderCard={(c) => (
+            <Card key={c._id} sx={{ mx: 2, mb: 1.5 }}>
+              <CardContent sx={{ '&:last-child': { pb: 1.5 } }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                  <Box>
+                    <Typography variant="subtitle1" fontWeight={700}>
+                      {[c.firstName, c.lastName].filter(Boolean).join(' ') || c.email}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {c.email}
+                    </Typography>
+                  </Box>
+                  <Chip size="small" label={c.membershipLevel || 'Silver'} />
+                </Box>
+                <Typography variant="body2">
+                  <strong>{c.phone || '—'}</strong> · {c.loyaltyPoints || 0} pts
+                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, mt: 1 }}>
+                  <Button size="medium" onClick={() => openDetail(c)}>
+                    View
+                  </Button>
+                  <Button size="medium" color="error" startIcon={<DeleteOutline />} onClick={() => setDeleteTarget(c)}>
+                    Deactivate
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+          )}
+        />
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
           <Pagination
             count={Math.max(1, Math.ceil(total / limit))}
