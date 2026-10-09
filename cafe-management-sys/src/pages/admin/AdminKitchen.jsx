@@ -17,7 +17,9 @@ import Whatshot from '@mui/icons-material/Whatshot';
 import { kitchenAPI, ordersAPI, unwrap } from '../../services/api';
 import LoadingState from '../../components/common/LoadingState';
 import ErrorState from '../../components/common/ErrorState';
+import { useToast } from '../../components/ui';
 import useOpsEvents from '../../hooks/useOpsEvents';
+import { playChime } from '../../utils/chime';
 
 // KDS age thresholds: green < 10m, amber 10–15m, red > 15m.
 const ageBorder = (m) => (m > 15 ? 'error.main' : m >= 10 ? 'warning.main' : 'success.main');
@@ -26,6 +28,7 @@ const statusColor = (s) => (s === 'pending' ? 'warning' : s === 'preparing' ? 'i
 const NEXT_STATUS = { pending: 'preparing', preparing: 'ready', ready: 'served' };
 
 const AdminKitchen = () => {
+  const toast = useToast();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -60,8 +63,14 @@ const AdminKitchen = () => {
     return () => clearInterval(timer);
   }, [fetchOrders]);
 
-  // Realtime: new tickets / status changes from other terminals.
-  useOpsEvents({ 'order:created': fetchOrders, 'order:status': fetchOrders });
+  // Realtime: new tickets chime + toast; any status change refreshes.
+  const handleNewOrder = useCallback((payload) => {
+    fetchOrders();
+    playChime();
+    toast.info(`New ticket${payload?.orderNumber ? ` ${payload.orderNumber}` : ''}`);
+  }, [fetchOrders, toast]);
+
+  useOpsEvents({ 'order:created': handleNewOrder, 'order:status': fetchOrders });
 
   // Keyboard bump: press 1–9 to advance the Nth ticket.
   useEffect(() => {
