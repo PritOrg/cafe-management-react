@@ -209,7 +209,7 @@ const AdminRevenue = () => {
                         </TableCell>
                         <TableCell align="right">
                           <Typography variant="subtitle2" fontWeight={600}>
-                            ${item.amount.toLocaleString()}
+                            {formatMoney(item.amount)}
                           </Typography>
                         </TableCell>
                         <TableCell align="right">
@@ -247,7 +247,7 @@ const AdminRevenue = () => {
                       {new Date(day.date).toLocaleDateString()}
                     </Typography>
                     <Typography variant="subtitle2" fontWeight={600}>
-                      ${day.amount.toLocaleString()}
+                      {formatMoney(day.amount)}
                     </Typography>
                   </Box>
                 ))}

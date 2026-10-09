@@ -33,6 +33,19 @@ import { menuAPI, activityAPI, unwrap } from '../../services/api';
 import ErrorState from '../../components/common/ErrorState';
 import { cloudinaryUrl } from '../../utils/cloudinary';
 
+const formatItemPrice = (item) => {
+  const fix = (v) => `₹${Number(v ?? 0).toFixed(0)}`;
+  if (Array.isArray(item.sizes) && item.sizes.length) {
+    return `${fix(item.sizes[0].price)} onwards`;
+  }
+  const medium = item.price?.medium;
+  const large = item.price?.large;
+  if (large != null && Number(large) !== Number(medium ?? large)) {
+    return `${fix(medium ?? large)} – ${fix(large)}`;
+  }
+  return fix(medium ?? large);
+};
+
 const AdminMenu = () => {
   const navigate = useNavigate();
   const [menuItems, setMenuItems] = useState([]);
@@ -275,7 +288,7 @@ const AdminMenu = () => {
 
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Typography variant="h6" color="primary" sx={{ fontWeight: 600 }}>
-                      ${item.price.toFixed(2)}
+                      {formatItemPrice(item)}
                     </Typography>
                     <FormControlLabel
                       control={

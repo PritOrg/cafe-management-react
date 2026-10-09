@@ -50,7 +50,6 @@ const AdminAnalytics = () => {
           name: t.title,
           orders: t.ordersCount || t.qty || 0,
           revenue: t.revenue || 0,
-          growth: 0,
         })),
         categoryMix: categoryMix || [],
       });
@@ -225,7 +224,6 @@ const AdminAnalytics = () => {
                       <TableCell>Product</TableCell>
                       <TableCell align="right">Orders</TableCell>
                       <TableCell align="right">Revenue</TableCell>
-                      <TableCell align="right">Growth</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -243,16 +241,8 @@ const AdminAnalytics = () => {
                         </TableCell>
                         <TableCell align="right">
                           <Typography variant="subtitle2" fontWeight={600}>
-                            ${product.revenue}
+                            {formatMoney(product.revenue)}
                           </Typography>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Chip
-                            label={`${product.growth > 0 ? '+' : ''}${product.growth}%`}
-                            color={product.growth > 0 ? 'success' : product.growth < 0 ? 'error' : 'default'}
-                            size="small"
-                            icon={product.growth > 0 ? <TrendingUp /> : product.growth < 0 ? <TrendingDown /> : null}
-                          />
                         </TableCell>
                       </TableRow>
                     ))}
