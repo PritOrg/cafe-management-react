@@ -2,7 +2,6 @@ import React, { memo, useCallback, useContext, useState } from 'react';
 import {
   Card,
   CardActionArea,
-  CardMedia,
   CardContent,
   Typography,
   CardActions,
@@ -25,6 +24,7 @@ import ImageIcon from '@mui/icons-material/Image';
 import CartContext from '../CartContext';
 import { useToast } from '../ui';
 import useFavourites from '../../hooks/useFavourites';
+import { cloudinaryUrl, cloudinarySrcSet } from '../../utils/cloudinary';
 import CustomizationDialog from './CustomizationDialog';
 import MenuItemInfoDialog from './MenuItemInfoDialog';
 
@@ -92,9 +92,11 @@ const MenuItemCard = ({ menuItem }) => {
             }}
           >
             {menuItem.imageUrl && !imageError ? (
-              <CardMedia
+              <Box
                 component="img"
-                image={menuItem.imageUrl}
+                src={cloudinaryUrl(menuItem.imageUrl, { w: 800 })}
+                srcSet={cloudinarySrcSet(menuItem.imageUrl, [400, 800, 1200])}
+                sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw"
                 alt={menuItem.title}
                 loading="lazy"
                 decoding="async"

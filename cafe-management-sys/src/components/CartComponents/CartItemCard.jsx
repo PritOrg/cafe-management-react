@@ -15,6 +15,7 @@ import TuneIcon from '@mui/icons-material/Tune';
 import ImageIcon from '@mui/icons-material/Image';
 import QuantitySelector from './QuantitySelector';
 import CartCustomizationDialog from './CartCustomizationDialog';
+import { cloudinaryUrl } from '../../utils/cloudinary';
 
 const formatMoney = (value) => `₹${Number(value || 0).toFixed(2)}`;
 
@@ -60,7 +61,7 @@ const CartItemCard = ({ item, onQuantityChange, onRemoveItem, onUpdateCustomizat
             }}
           >
             {item.imageUrl ? (
-              <Box component="img" src={item.imageUrl} alt={item.title} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <Box component="img" src={cloudinaryUrl(item.imageUrl, { w: 128 })} alt={item.title} loading="lazy" decoding="async" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
               <ImageIcon />
             )}

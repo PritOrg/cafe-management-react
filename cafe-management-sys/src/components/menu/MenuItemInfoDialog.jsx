@@ -20,6 +20,7 @@ import StarIcon from '@mui/icons-material/Star';
 import CategoryIcon from '@mui/icons-material/RestaurantMenu';
 import AllergenIcon from '@mui/icons-material/ReportProblem';
 import CloseIcon from '@mui/icons-material/Close';
+import { cloudinaryUrl } from '../../utils/cloudinary';
 
 const formatMoney = (value) => `₹${Number(value || 0).toFixed(0)}`;
 
@@ -62,7 +63,7 @@ const MenuItemInfoDialog = ({ open, onClose, onAddToCart, menuItem }) => {
           color: '#fff',
           p: 3,
           background: imageUrl
-            ? `linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.75)), url(${imageUrl}) center/cover`
+            ? `linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.75)), url(${cloudinaryUrl(imageUrl, { w: 1200 })}) center/cover`
             : `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
         }}
       >
