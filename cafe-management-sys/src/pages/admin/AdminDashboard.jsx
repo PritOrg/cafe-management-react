@@ -213,7 +213,7 @@ export default function AdminDashboard() {
         {/* Stats Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {statsCards.map((stat, index) => (
-            <Grid item xs={12} sm={6} lg={3} key={stat.title}>
+            <Grid item xs={6} md={3} key={stat.title}>
               <Grow in={!loading} timeout={500 + index * 100}>
                 <div>
                   <StatsCard color={stat.color}>
