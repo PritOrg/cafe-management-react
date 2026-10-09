@@ -7,8 +7,9 @@ const {
     getTopItems,
     getCategoryMix,
 } = require('../controllers/analyticsController');
-const { ensureAdminOrStaff } = require('../middleware/auth');
+const { ensureAuthenticated, ensureAdminOrStaff } = require('../middleware/auth');
 
+router.use(ensureAuthenticated);
 router.use(ensureAdminOrStaff);
 router.get('/summary', getSummary);
 router.get('/sales', getSales);

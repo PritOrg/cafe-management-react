@@ -7,8 +7,9 @@ const {
   getCustomerSummary,
   removeCustomer,
 } = require('../controllers/customerController');
-const { ensureAdmin } = require('../middleware/auth');
+const { ensureAuthenticated, ensureAdmin } = require('../middleware/auth');
 
+router.use(ensureAuthenticated);
 router.use(ensureAdmin);
 router.get('/', getAllCustomers);
 router.get('/:id/orders', getCustomerOrders);

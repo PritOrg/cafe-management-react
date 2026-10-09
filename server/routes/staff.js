@@ -6,12 +6,12 @@ const {
   updateStaff,
   removeStaff,
 } = require('../controllers/staffController');
-const { ensureAdmin } = require('../middleware/auth');
+const { ensureAuthenticated, ensureAdmin } = require('../middleware/auth');
 
 // Core staff management
-router.get('/', ensureAdmin, getAllStaff);
-router.post('/', ensureAdmin, addStaff);
-router.put('/:id', ensureAdmin, updateStaff);
-router.delete('/:id', ensureAdmin, removeStaff);
+router.get('/', ensureAuthenticated, ensureAdmin, getAllStaff);
+router.post('/', ensureAuthenticated, ensureAdmin, addStaff);
+router.put('/:id', ensureAuthenticated, ensureAdmin, updateStaff);
+router.delete('/:id', ensureAuthenticated, ensureAdmin, removeStaff);
 
 module.exports = router;
