@@ -1,0 +1,87 @@
+name: Lighthouse
+
+# Non-blocking perf/a11y budget. Uses a Postgres service so /menu renders real
+# data. Keep this job OUT of required checks until the baseline is stable.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'cafe-management-sys/**'
+
+concurrency:
+  group: lighthouse-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lighthouse:
+    name: Lighthouse (mobile, non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: cafe
+          POSTGRES_PASSWORD: cafe
+          POSTGRES_DB: cafe
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Backend deps + DB
+        working-directory: server
+        env:
+          DATABASE_URL: postgresql://cafe:cafe@127.0.0.1:5432/cafe
+          JWT_SECRET: ci-test-secret
+          STORAGE_DRIVER: local
+          DEFAULT_TENANT_SLUG: cafe1
+          NODE_ENV: development
+        run: |
+          npm ci
+          npm run db:migrate
+          npm run db:seed
+
+      - name: Start API
+        working-directory: server
+        env:
+          DATABASE_URL: postgresql://cafe:cafe@127.0.0.1:5432/cafe
+          JWT_SECRET: ci-test-secret
+          STORAGE_DRIVER: local
+          DEFAULT_TENANT_SLUG: cafe1
+          PORT: 4969
+        run: |
+          nohup node index.js > /tmp/api.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:4969/health >/dev/null && break || sleep 2
+          done
+
+      - name: Frontend deps + build
+        working-directory: cafe-management-sys
+        env:
+          VITE_API_URL: http://localhost:4969/api/v1
+        run: |
+          npm ci
+          npm run build
+
+      - name: Run Lighthouse CI
+        working-directory: cafe-management-sys
+        env:
+          VITE_API_URL: http://localhost:4969/api/v1
+        run: npx --yes @lhci/cli@0.14 autorun
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-report
+          path: cafe-management-sys/.lighthouseci
+          retention-days: 7

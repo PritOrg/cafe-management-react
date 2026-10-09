@@ -31,6 +31,7 @@ import FilterList from '@mui/icons-material/FilterList';
 import { useNavigate } from 'react-router-dom';
 import { menuAPI, activityAPI, unwrap } from '../../services/api';
 import ErrorState from '../../components/common/ErrorState';
+import { cloudinaryUrl } from '../../utils/cloudinary';
 
 const AdminMenu = () => {
   const navigate = useNavigate();
@@ -234,7 +235,7 @@ const AdminMenu = () => {
                   component="img"
                   height="200"
                   loading="lazy"
-                  image={item.imageUrl || '/logo512.png'}
+                  image={item.imageUrl ? cloudinaryUrl(item.imageUrl, { w: 400 }) : '/logo512.png'}
                   alt={item.title}
                 />
                 
