@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Button, TextField, InputAdornment, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Tabs, Tab, Badge } from '@mui/material';
+import { Box, Typography, Card, CardContent, Chip, IconButton, Button, TextField, InputAdornment, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Grid, Tabs, Tab, Badge, TableRow, TableCell } from '@mui/material';
 import Search from '@mui/icons-material/Search';
 import FilterList from '@mui/icons-material/FilterList';
 import MoreVert from '@mui/icons-material/MoreVert';
@@ -12,6 +12,7 @@ import SwapHoriz from '@mui/icons-material/SwapHoriz';
 import { ordersAPI, activityAPI, staffAPI, unwrap } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import ErrorState from '../../components/common/ErrorState';
+import ResponsiveTable from '../../components/common/ResponsiveTable';
 import useOpsEvents from '../../hooks/useOpsEvents';
 import { adaptOrder } from '../../adapters';
 
@@ -244,92 +245,113 @@ const AdminOrders = () => {
         </CardContent>
       </Card>
 
-      {/* Orders Table */}
+      {/* Orders — table on md+, cards on touch */}
       <Card>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Order #</TableCell>
-                <TableCell>Customer</TableCell>
-                <TableCell>Items</TableCell>
-                <TableCell>Total</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Date</TableCell>
-                <TableCell align="center">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center">
-                    Loading orders...
-                  </TableCell>
-                </TableRow>
-              ) : filteredOrders.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center">
-                    No orders found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredOrders.map((order) => (
-                  <TableRow key={order._id} hover>
-                    <TableCell>
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        {order.orderNumber}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Box>
-                        <Typography variant="body2" fontWeight={500}>
-                          {order.customer.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {order.customer.email}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {order.items.length} item(s)
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        {order.total != null ? `₹${order.total.toFixed(2)}` : '—'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        icon={getStatusIcon(order.status)}
-                        label={order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                        color={getStatusColor(order.status)}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {new Date(order.createdAt).toLocaleDateString()}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {new Date(order.createdAt).toLocaleTimeString()}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <IconButton
-                        onClick={(e) => handleMenuClick(e, order._id)}
-                        size="small"
-                      >
-                        <MoreVert />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <ResponsiveTable
+          rows={filteredOrders}
+          loading={loading}
+          emptyMessage="No orders found"
+          columns={[
+            { label: 'Order #' },
+            { label: 'Customer' },
+            { label: 'Items' },
+            { label: 'Total' },
+            { label: 'Status' },
+            { label: 'Date' },
+            { label: '', align: 'center' },
+          ]}
+          renderRow={(order) => (
+            <TableRow key={order._id} hover sx={{ '& td': { py: 1.5 } }}>
+              <TableCell>
+                <Typography variant="subtitle2" fontWeight={600}>
+                  {order.orderNumber}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Box>
+                  <Typography variant="body2" fontWeight={500}>
+                    {order.customer.name}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {order.customer.email}
+                  </Typography>
+                </Box>
+              </TableCell>
+              <TableCell>
+                <Typography variant="body2">{order.items.length} item(s)</Typography>
+              </TableCell>
+              <TableCell>
+                <Typography variant="subtitle2" fontWeight={600}>
+                  {order.total != null ? `₹${order.total.toFixed(2)}` : '—'}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Chip
+                  icon={getStatusIcon(order.status)}
+                  label={order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                  color={getStatusColor(order.status)}
+                  size="small"
+                />
+              </TableCell>
+              <TableCell>
+                <Typography variant="body2">
+                  {new Date(order.createdAt).toLocaleDateString()}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {new Date(order.createdAt).toLocaleTimeString()}
+                </Typography>
+              </TableCell>
+              <TableCell align="center">
+                <IconButton
+                  onClick={(e) => handleMenuClick(e, order._id)}
+                  size="medium"
+                  aria-label="Order actions"
+                >
+                  <MoreVert />
+                </IconButton>
+              </TableCell>
+            </TableRow>
+          )}
+          renderCard={(order) => (
+            <Card
+              key={order._id}
+              sx={{ mx: 2, mb: 1.5, overflow: 'hidden', borderLeft: 5, borderColor: `${getStatusColor(order.status)}.main` }}
+            >
+              <CardContent sx={{ '&:last-child': { pb: 1.5 } }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                  <Box>
+                    <Typography variant="subtitle1" fontWeight={700}>
+                      {order.orderNumber}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {new Date(order.createdAt).toLocaleString()}
+                    </Typography>
+                  </Box>
+                  <Chip
+                    icon={getStatusIcon(order.status)}
+                    label={order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                    color={getStatusColor(order.status)}
+                    size="small"
+                  />
+                </Box>
+                <Typography variant="body2">
+                  <strong>{order.customer.name}</strong> · {order.items.length} item(s)
+                </Typography>
+                <Typography variant="subtitle1" fontWeight={700}>
+                  {order.total != null ? `₹${order.total.toFixed(2)}` : '—'}
+                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mt: 1 }}>
+                  <Button size="medium" startIcon={<Visibility />} onClick={() => handleViewOrder(order)}>
+                    View
+                  </Button>
+                  <IconButton size="medium" onClick={(e) => handleMenuClick(e, order._id)} aria-label="Order actions">
+                    <MoreVert />
+                  </IconButton>
+                </Box>
+              </CardContent>
+            </Card>
+          )}
+        />
       </Card>
 
       {/* Action Menu */}
