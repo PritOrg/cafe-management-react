@@ -8,7 +8,8 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet'); // security headers
 const swaggerUi = require('swagger-ui-express');
-const YAML = require('yamljs');
+const yaml = require('js-yaml');
+const fs = require('fs');
 const path = require('path');
 const compression = require('compression');
 const http = require('http');
@@ -25,13 +26,13 @@ const { trackRequestMetrics, healthCheckHandler, metricsHandler } = require('./m
 // Handle uncaught exceptions before anything else
 handleUncaughtException();
 
-const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
+const swaggerDocument = yaml.load(fs.readFileSync(path.join(__dirname, 'swagger.yaml'), 'utf8'));
 
 // Enhanced Swagger setup
 const swaggerOptions = {
   explorer: true,
   customCss: '.swagger-ui .topbar { display: none }', // hide top bar
-  customSiteTitle: 'Cafe Management System API',
+  customSiteTitle: 'Restaurant POS API (working title)',
   swaggerOptions: {
     persistAuthorization: true,
   }
