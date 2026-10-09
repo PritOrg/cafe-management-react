@@ -12,6 +12,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import ErrorBoundary from '../common/ErrorBoundary';
+import ScrollTop from './ScrollTop';
 import { matchAdminNav } from '../../constants/navigation';
 
 const SPECIAL_SEGMENT = { add: 'Add', edit: 'Edit' };
@@ -96,6 +97,7 @@ const AdminLayout = () => {
           <Outlet />
         </ErrorBoundary>
       </Box>
+      <ScrollTop />
     </Box>
   );
 };
