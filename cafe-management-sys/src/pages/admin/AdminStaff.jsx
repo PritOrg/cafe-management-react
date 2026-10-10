@@ -16,6 +16,8 @@ const AdminStaff = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState(null);
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -147,10 +149,17 @@ const AdminStaff = () => {
 
   const filteredStaff = staff.filter(member => {
     const name = displayName(member).toLowerCase();
-    return name.includes(searchQuery.toLowerCase()) ||
-      (member.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (member.role || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = name.includes(searchQuery.toLowerCase()) ||
+      (member.email || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesRole = roleFilter === 'all' || member.role === roleFilter;
+    const matchesStatus = statusFilter === 'all' || (member.isActive !== false ? 'active' : 'inactive') === statusFilter;
+    return matchesSearch && matchesRole && matchesStatus;
   });
+
+  const staffRoleCounts = staff.reduce(
+    (acc, m) => ({ ...acc, [m.role || 'staff']: (acc[m.role || 'staff'] || 0) + 1 }),
+    {}
+  );
 
   const [staffPage, setStaffPage] = useState(1);
   const PAGE_STAFF = 15;
@@ -210,7 +219,38 @@ const AdminStaff = () => {
                 </InputAdornment>
               ),
             }}
+            sx={{ mb: 2 }}
           />
+          <Grid container spacing={2}>
+            <Grid item xs={6} sm={4}>
+              <TextField
+                fullWidth
+                select
+                label="Role"
+                size="small"
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+              >
+                <MenuItem value="all">All roles</MenuItem>
+                <MenuItem value="staff">Staff ({staffRoleCounts.staff || 0})</MenuItem>
+                <MenuItem value="admin">Admin ({staffRoleCounts.admin || 0})</MenuItem>
+              </TextField>
+            </Grid>
+            <Grid item xs={6} sm={4}>
+              <TextField
+                fullWidth
+                select
+                label="Status"
+                size="small"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="inactive">Inactive</MenuItem>
+              </TextField>
+            </Grid>
+          </Grid>
         </CardContent>
       </Card>
 

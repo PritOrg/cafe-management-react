@@ -44,6 +44,15 @@ const AdminInvoices = () => {
   const [selected, setSelected] = useState(null);
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  const visibleInvoices = (invoices || []).filter((inv) => {
+    const q = search.trim().toLowerCase();
+    const matchesSearch = !q || String(inv.invoiceNumber || '').toLowerCase().includes(q);
+    const matchesStatus = statusFilter === 'all' || inv.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const fetchInvoices = useCallback(async () => {
     try {
@@ -128,9 +137,35 @@ const AdminInvoices = () => {
         />
       )}
 
+      <Grid container spacing={2} sx={{ mb: 2 }} alignItems="center">
+        <Grid item xs={12} sm={6} md={4}>
+          <TextField
+            fullWidth
+            size="small"
+            label="Search invoices"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <TextField
+            fullWidth
+            select
+            size="small"
+            label="Status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="issued">Issued</MenuItem>
+            <MenuItem value="void">Void</MenuItem>
+          </TextField>
+        </Grid>
+      </Grid>
+
       <Card>
         <ResponsiveTable
-          rows={invoices}
+          rows={visibleInvoices}
           loading={loading}
           emptyMessage="No invoices"
           columns={[
