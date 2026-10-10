@@ -33,6 +33,7 @@ import Inventory2 from '@mui/icons-material/Inventory2';
 import MenuBook from '@mui/icons-material/MenuBook';
 import { inventoryAPI, menuAPI, unwrap } from '../../services/api';
 import { formatMoneyMinor } from '../../utils/formatMoney';
+import { reorderItems, suggestedPurchase } from '../../utils/inventorySuggest';
 import useOpsEvents from '../../hooks/useOpsEvents';
 
 const MOVEMENT_TYPES = [
@@ -140,6 +141,7 @@ const AdminInventory = () => {
   useOpsEvents({ 'stock:low': fetchItems });
 
   const lowCount = items.filter((i) => Number(i.quantity) <= Number(i.minQty || 0)).length;
+  const reorderList = reorderItems(items);
 
   const openCreate = () => {
     setEditing(null);
@@ -251,6 +253,13 @@ const AdminInventory = () => {
         </CardContent>
       </Card>
 
+      {reorderList.length > 0 && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          {reorderList.length} item{reorderList.length === 1 ? '' : 's'} below reorder level — add:{' '}
+          {reorderList.map((r) => `+${r.suggested} ${r.item.itemName}`).join(', ')}
+        </Alert>
+      )}
+
       <Card>
         <ResponsiveTable
           rows={items}
@@ -271,9 +280,14 @@ const AdminInventory = () => {
             return (
               <TableRow key={item._id} hover>
                 <TableCell>
-                  <Button size="medium" onClick={() => openEdit(item)} sx={{ textTransform: 'none', fontWeight: 600 }}>
-                    {item.itemName}
-                  </Button>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                    <Button size="medium" onClick={() => openEdit(item)} sx={{ textTransform: 'none', fontWeight: 600 }}>
+                      {item.itemName}
+                    </Button>
+                    {suggestedPurchase(item) != null && (
+                      <Chip size="small" color="warning" label={`Reorder +${suggestedPurchase(item)}`} />
+                    )}
+                  </Box>
                 </TableCell>
                 <TableCell>{item.category}</TableCell>
                 <TableCell>{item.quantity}</TableCell>
@@ -324,6 +338,9 @@ const AdminInventory = () => {
                     {item.valuation != null ? ` · value ${formatMoneyMinor(item.valuation)}` : ''}
                     {item.supplier ? ` · ${item.supplier}` : ''}
                   </Typography>
+                  {suggestedPurchase(item) != null && (
+                    <Chip size="small" color="warning" label={`Reorder +${suggestedPurchase(item)}`} sx={{ mt: 1 }} />
+                  )}
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, mt: 1 }}>
                     <Button size="medium" onClick={() => { setMoveTarget(item); setMoveForm({ type: 'purchase', delta: 10, note: '' }); }}>
                       Move
