@@ -223,6 +223,7 @@ const attachUserIfPresent = (req, _res, next) => {
  */
 const attachTokenFromQuery = (req, res, next) => {
     if (!req.headers.authorization && req.query && typeof req.query.token === 'string') {
+        req.tokenFromQuery = req.query.token;
         req.headers.authorization = `Bearer ${req.query.token}`;
         delete req.query.token;
     }
