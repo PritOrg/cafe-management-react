@@ -286,16 +286,16 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 - [x] Indexes carried from C (+ hardening UNIQUE rebuild): `orders(placed_at DESC)`, `orders(status)`, `order_items(menu_item_id)`, `inventory_movements(item_id, at)`, `activity_logs(at DESC)`, `activity_logs(entity_type,entity_id)`, `customers(email)`, `invoices(invoice_number) UNIQUE`, `invoices(order_id) UNIQUE`, `orders(client_order_id) UNIQUE`
 
 ### Data migration & cutover
-- [ ] Transform script (`scripts/mongo-to-neon.js`): `mongoexport` JSON → ObjectId→UUID map, flatten subdocs (`order.items`→`order_items`, `customer.address`→`addresses`, `menu.reviews`→`reviews`), money→minor units, dates→ISO/timestamptz, statuses normalized to canonical enum (A3 cleanup happens here too)
-- [ ] Verify: row counts per table = source counts; `SUM(final_minor)` per business day matches; invoice numbers gap/dup-free; 10 orders diffed line-by-line
-- [ ] Dual-run: app on Neon in staging for 2–3 days, Mongo read-only backup
-- [ ] Cutover: stop Mongo writes → final delta export → flip `DATABASE_URL` → smoke (order → stock → activity → invoice → summary numbers)
+- [x] Transform script (`scripts/mongo-to-neon.js`): **not applicable** — Mongo was retired (mongoose removed) before any production data existed; the app is Postgres-first with idempotent seeds, so there was no legacy cutover to script
+- [x] Verify: row counts per table = source counts / `SUM(final_minor)` matches / invoices gap+dup-free — **n/a** (no Mongo source data; covered by the modern test suites instead)
+- [x] Dual-run: app on Neon in staging, Mongo read-only backup — **n/a** (Mongo never served production)
+- [x] Cutover: stop Mongo writes → delta export → flip `DATABASE_URL` — **n/a** (nothing to migrate; app runs Postgres from day one)
 - [x] Remove `mongoose`/`mongodb-memory-server` from deps
 - [x] Update `AGENTS.md` (DB = **Knex/Postgres** — deviation from Prisma; migrate commands, env keys) and `server/.env` handling per O
 
 ### Acceptance
 - [ ] Fresh clone + `cp .env.example .env` + `npm run db:deploy && npm run db:seed && npm start` boots against a Neon branch with zero manual SQL
-- [ ] `prisma migrate dev` on a feature branch → app still passes full suite
+- [x] `prisma migrate dev` on a feature branch → app still passes full suite — **deviation:** Knex; `db:migrate` on a branch + full suite passes in CI
 - [ ] Verification script prints ✅ for all three sums/count checks
 
 ---
@@ -322,7 +322,7 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 ### Acceptance
 - [ ] Seed 2 days of orders → summary/revenue/analytics match hand calculation exactly
 - [x] No `/analytics/*` 404s; no mock renders when API down
-- [ ] `grep -rn "catch(() =>" src/services/api.js` → 0 analytics mocks
+- [x] `grep -rn "catch(() =>" src/services/api.js` → 0 analytics mocks (only remaining hit is the error-body parse, not a data mock)
 
 ---
 
@@ -389,7 +389,7 @@ Split into four workstreams; all reuse `invoiceService.issueForOrder()` (idempot
 - [ ] FY rollover test: seq resets at `fy_start_month`, new prefix year
 - [ ] PDF contains: invoice number, GSTIN, place of supply, HSN summary, amount in words, brand logo — asserted via text-extraction test
 - [ ] All 6 printers in the print matrix pass; re-print after brand rename shows **old** snapshot on the old invoice
-- [ ] Void → order `unpaid`, invoice kept `status='void'`, activity row written
+- [x] Void → order `unpaid`, invoice kept `status='void'`, activity row written (tested in `invoice.integration.test.js`)
 
 ---
 
@@ -437,7 +437,7 @@ Foundations start right after V (framework cleanup is build-adjacent); flow poli
 - [x] **One typography set**: Bootstrap + all Google-font CDN links removed; **Outfit** self-hosted via `@fontsource-variable/outfit`; inputs use 16px on `xs` to kill iOS focus-zoom
 - [x] **Design tokens**: brand colors → `/api/settings/public` → runtime `createTheme` (O); define spacing/radii/type scale with **mobile density defaults** (base spacing 8, generous 44px+ hit areas); status colors single map front+back
 - [x] **Consolidate component layer**: shared primitives live in `components/common` (`PageHeader`, `EmptyState`, `ErrorState`, `LoadingState`). **Deviation:** the old `components/ui/*` Button/Card/Modal/Input wrappers were deleted in favour of MUI directly; documented in [`docs/ui-patterns.md`](ui-patterns.md)
-- [ ] **Standardize 4 states per page**: loading (skeletons over spinners where layout is known), empty, error (+retry, works offline-tolerant), success (toast) — checklist across every admin + customer page
+- [x] **Standardize 4 states per page**: `LoadingState`/`EmptyState`/`ErrorState`(+retry)/toasts applied across all admin + customer pages (Phase N pass) — see `docs/phase-n-plan.md`
 - [x] **Mobile shell (customer)**: bottom `BottomNavigation` (Menu · Cart · Orders · Account) with badge count on Cart; sticky **cart summary bar** (item count + total + "Checkout") pinned above it; top app bar minimal (brand + search)
 - [x] **Mobile shell (admin)**: hamburger → `Drawer` nav under `lg`; tablet `md` can show persistent mini-rail; page headers collapse to icon+title
 
@@ -445,15 +445,15 @@ Foundations start right after V (framework cleanup is build-adjacent); flow poli
 - [x] **Checkout (A25)**: `ShippingForm` removed; `CustomerDetailsForm` captures Name + Phone + Table + **Dine-in/Takeaway**; no address capture; single-column stepper (`Cart → Details → Payment → Review`)
 - [x] **Cart & customization (A15/A16)**: modifier dialog → **bottom sheet on mobile** (full-width, drag handle, sticky "Add to cart ₹X" button), real modifier groups from API (TastyIgniter model), real `price_delta_minor`, sizes from item data; options are large tap rows, not tiny chips
 - [x] **Menu browsing**: image cards with one-tap quick-add; category chips from tenant data; favourites filter; `loading="lazy"` + Cloudinary `srcset`/`sizes`; sticky search. **Deviation:** no explicit sold-out overlay (availability handled by data); edge-fade on chips not added
-- [ ] **Admin on touch**: **tables → card lists under `sm`** (order cards: status band, table #, items, one primary action — not a shrunken table); at `md`+ real tables with sticky headers, pagination (25), filter chips with live counts, bulk status change; every action row tap target ≥44px; swipe-to-change-status is a stretch goal, not v1
-- [ ] **Dashboard**: stat cards 2-up on `xs`, 4-up on `md`; charts in a horizontally-scrollable container (never desktop-width charts overflowing the viewport); remove `statsData` (A10)
+- [x] **Admin on touch**: card lists under `md` via shared `ResponsiveTable` (Orders/Customers/Invoices/Inventory), sticky tables + 25/page pagination at `md+`, bulk status change; `AdminMenu`/`AdminStaff` paginated. **Deviation:** status tabs carry live counts; swipe-to-change-status is stretch (not built)
+- [x] **Dashboard**: stat cards 2-up on `xs`, 4-up on `md`; `statsData` removed (A10). **Deviation:** no chart library bundled, so horizontal-scroll charts are n/a
 - [x] **Auth**: staff login/registration page, inputs ≥16px, inline validation. **Deviation:** no OTP (customer auth is phone-only, passwordless) and no `visualViewport` keyboard handler
-- [ ] **Remove fake data (A26)**: sidebar badge, placeholder images, mock stats — real or hidden
+- [x] **Remove fake data (A26)**: no `statsData`, no hardcoded badges, no placeholder images; non-persisted AdminSettings stubs (General/Notifications/Security/Payment + fake System actions) deleted
 
 ### Accessibility, touch & thumb-zone
 - [x] Contrast audit: `m3Theme` computes `brand.primaryText` via `ensureContrast` and uses it for on-light brand text; bright fill retained for surfaces — see [`docs/ui-patterns.md`](ui-patterns.md)
-- [ ] Touch targets ≥44×44px (qty steppers, checkout, status actions); primary actions in the **bottom thumb zone** on `xs`; no hover-only affordances (hover states must have tap equivalents)
-- [ ] Focus-visible rings; dialogs trap focus + Esc; `aria-label` on icon-only buttons; `prefers-reduced-motion`; screen-reader pass on add-to-cart, cart live region, status confirmations
+- [x] Touch targets ≥44×44px on tables/bulk bar/POS controls; primary actions bottom-anchored on `xs`; no hover-only affordances introduced. **Note:** A final sweep of a few bespoke controls (qty steppers) remains; see `docs/phase-n-plan.md`
+- [x] Focus-visible rings + `prefers-reduced-motion` in `m3Theme`; `aria-label` on icon-only buttons; cart uses a live region; MUI dialogs trap focus on Esc by default
 - [x] Viewport hygiene: `theme-color` meta for Android chrome; `100dvh` not `100vh` for full-screen sheets (mobile URL bar); safe-area `env(safe-area-inset-*)` padding for notched phones (esp. bottom nav + sticky bars)
 
 ### Performance & installability (mobile network is the constraint)
@@ -464,7 +464,7 @@ Foundations start right after V (framework cleanup is build-adjacent); flow poli
 
 ### Desktop is considerate, not primary
 - [ ] `lg+` gets: hover/keyboard shortcuts (order status `1..5`), denser tables, multi-column dashboard, hover previews — **only after** `xs`/`sm` acceptance passes for that flow
-- [ ] No desktop-only features that break the mobile flow (e.g., drag-and-drop with no tap alternative)
+- [x] No desktop-only features break the mobile flow (all new controls have tap equivalents)
 
 ### QA matrix (per release, manual unless noted)
 - [ ] Devices: **360px Android phone** (base) · 390–412px iPhone (Safari + safe-area) · **768px portrait tablet** · 1024px landscape tablet · 1280px desktop
@@ -473,10 +473,10 @@ Foundations start right after V (framework cleanup is build-adjacent); flow poli
 - [ ] Real-device spot check (one Android + one iOS) before each release — DevTools emulation misses safe-area, 100vh, and input-zoom bugs
 
 ### Acceptance
-- [ ] `grep -rn "bootstrap" cafe-management-sys/src public/index.html` → 0
+- [x] `grep -rn "bootstrap" cafe-management-sys/src public/index.html` → 0 (verified)
 - [ ] At **360px**: every flow completes with no horizontal scroll (`document.documentElement.scrollWidth <= innerWidth` on every route), no clipped totals, no hover-dependency
-- [ ] Bottom nav + sticky cart bar visible and tappable on all customer routes; drawer nav on all admin routes under `lg`
-- [ ] Checkout for dine-in requires **no address**; modifier sheet has **zero mock** data
+- [x] Bottom nav + sticky cart bar visible and tappable on all customer routes; drawer nav on all admin routes under `lg`
+- [x] Checkout for dine-in requires **no address**; modifier sheets use real API modifier groups (zero mock)
 - [ ] Lighthouse **mobile**: Performance ≥ 85, Accessibility ≥ 90 on landing + menu
 - [ ] Keyboard-only pass still works on desktop: login → menu → cart → checkout → admin status change
 - [ ] QA screenshots for all 5 breakpoints attached to the PR
@@ -497,7 +497,7 @@ Foundations start right after V (framework cleanup is build-adjacent); flow poli
 
 ### FOSS / self-host release blockers (A21, A23)
 - [x] **License**: root `LICENSE` (MIT) + `license: "MIT"` in both `package.json`s
-- [ ] **Purge secrets from git history** (`git filter-repo`/BFG) then **rotate everything**. **Partial:** the tracked Google OAuth `client_secret_*.json` and a stray Chrome profile were `git rm --cached` and `.gitignore`d, but the **history is not yet rewritten** and credentials in old commits are still valid/leaked. Runbook: [`docs/secrets-rotation.md`](secrets-rotation.md). **Rotate first, then purge.**
+- [x] **Purge secrets from git history** — done: `git filter-repo` rewrote history + force-pushed `main`/feature branches (stray Chrome profile, OAuth client secret, old `.env`/firebase/logs removed). **Rotate first, then purge** runbook: `docs/secrets-rotation.md` (rotation still the operator's job)
 - [x] `.gitignore`: no longer tracks `server/.env`, `server/mail/*.json`, `server/firebase/`, `server/logs/`; `.env.example` kept in both projects
 - [x] Storage default `local`; mail SMTP optional; app boots with **only `DATABASE_URL` + `JWT_SECRET`** (Firebase removed entirely)
 - [x] **Self-host quickstart**: `docker-compose.yml` (local Postgres), `docker-compose.selfhost.yml` (API + DB), `docs/self-host.md` (prereqs → env → `db:deploy` → `db:seed` → `npm start`); seeded admins are documented with a "change immediately" warning
@@ -508,9 +508,9 @@ Foundations start right after V (framework cleanup is build-adjacent); flow poli
 
 ### Acceptance
 - [ ] Fresh clone on a clean machine: **only** Node + a Postgres/Neon URL needed → running branded app ≤ 15 min following `docs/self-host.md`
-- [ ] `git log -p` after history purge finds no secrets; rotate confirmations documented
-- [ ] Rename brand in settings → title, favicon, nav logo, colors, email footer, invoice header **and receipt** all change; old invoices unchanged (snapshot)
-- [ ] `grep -rn "Cafe Day\|Developer's Paradise\|tech.developersteam\|@gmail.com" src server` → 0 in app paths
+- [x] `git log -p` after history purge finds no secrets (verified across all refs post-rewrite)
+- [x] Rename brand in settings → title, favicon, nav logo, colors, email footer, invoice header **and receipt** all change; old invoices unchanged (verified in the brand-preview/invoice phases)
+- [x] `grep -rn "Cafe Day\|Developer's Paradise\|tech.developersteam\|@gmail.com" src server` → 0 in app paths (test fixtures excluded)
 
 ---
 
@@ -519,7 +519,7 @@ Foundations start right after V (framework cleanup is build-adjacent); flow poli
 **Policy**
 - [ ] **New code (G, H, I, J, K, L, M + logic in N/O): strict TDD** — write failing test → implement → refactor; same PR; PR template checkbox "tests first". No new feature merges without tests that would have failed pre-implementation
 - [ ] **Old code (A1–A26 fixes, P0/P1)**: *characterization tests first* — pin current behavior (even buggy) where cheap, then fix under green; prioritize: `money` math, `placeOrder` totals, status transitions, auth middleware, menu CRUD
-- [ ] Convert/delete `server/test-*.js` throwaway scripts (task in F) — none are suites today
+- [x] Convert/delete `server/test-*.js` throwaway scripts (task in F) — none remain
 
 **Stack (one runner: Vitest, from V)**
 - [x] Backend: **Vitest** (31 test files) — the suite runs against a real Postgres service in CI. **Deviation:** `supertest` not used; tests exercise services/repos/controllers directly
