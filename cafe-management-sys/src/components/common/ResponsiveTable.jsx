@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Table,
@@ -7,12 +7,14 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   Typography,
   IconButton,
   CircularProgress,
 } from '@mui/material';
 import ChevronLeft from '@mui/icons-material/ChevronLeft';
 import ChevronRight from '@mui/icons-material/ChevronRight';
+import { sortRows, toggleSort } from '../../utils/sortable';
 
 const PAGE_SIZE = 25;
 
@@ -37,7 +39,13 @@ const ResponsiveTable = ({
   emptyMessage = 'No records found',
 }) => {
   const [page, setPage] = useState(0);
-  const pageCount = Math.max(1, Math.ceil((rows.length || 0) / PAGE_SIZE));
+  const [sort, setSort] = useState(null);
+
+  const sortableRows = useMemo(
+    () => (sort ? sortRows(rows, sort.key, sort.dir) : rows),
+    [rows, sort]
+  );
+  const pageCount = Math.max(1, Math.ceil((sortableRows.length || 0) / PAGE_SIZE));
 
   // Reset to the first page whenever the record set changes (search/filter).
   useEffect(() => {
@@ -46,7 +54,7 @@ const ResponsiveTable = ({
 
   const safePage = Math.min(page, pageCount - 1);
   const start = safePage * PAGE_SIZE;
-  const visible = rows.slice(start, start + PAGE_SIZE);
+  const visible = sortableRows.slice(start, start + PAGE_SIZE);
 
   if (loading) {
     return (
@@ -56,7 +64,7 @@ const ResponsiveTable = ({
     );
   }
 
-  if (!rows.length) {
+  if (!sortableRows.length) {
     return (
       <Box sx={{ py: 4 }}>
         <Typography variant="body2" color="text.secondary" align="center">
@@ -75,7 +83,17 @@ const ResponsiveTable = ({
             <TableRow>
               {columns.map((col, i) => (
                 <TableCell key={i} align={col.align || 'left'}>
-                  {col.label}
+                  {col.sortKey ? (
+                    <TableSortLabel
+                      active={sort?.key === col.sortKey}
+                      direction={sort?.key === col.sortKey ? sort.dir : 'asc'}
+                      onClick={() => setSort((s) => toggleSort(s, col.sortKey))}
+                    >
+                      {col.label}
+                    </TableSortLabel>
+                  ) : (
+                    col.label
+                  )}
                 </TableCell>
               ))}
             </TableRow>
@@ -90,7 +108,7 @@ const ResponsiveTable = ({
       </Box>
 
       {/* Pagination */}
-      {rows.length > PAGE_SIZE && (
+      {sortableRows.length > PAGE_SIZE && (
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1.5 }}>
           <Typography variant="body2" color="text.secondary">
             {start + 1}–{Math.min(start + PAGE_SIZE, rows.length)} of {rows.length}
