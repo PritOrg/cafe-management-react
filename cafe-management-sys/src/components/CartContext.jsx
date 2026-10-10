@@ -2,23 +2,15 @@ import React, { createContext, useState, useEffect, useMemo, useCallback } from 
 import { menuAPI, ordersAPI } from '../services/api';
 import { findMenuItem } from '../hooks/useMenuData';
 import { addToOutbox } from '../utils/orderOutbox';
+import {
+    normalizeSize,
+    resolveSize,
+    generateCartItemId,
+    cartTotals,
+    buildOrderItems,
+} from '../utils/cartPricing';
 
 const CartContext = createContext();
-
-const normalizeSize = (size) => {
-    const s = String(size || '').toLowerCase();
-    return s === 'large' ? 'large' : 'medium';
-};
-
-const resolveSize = (item, selectedSize) => {
-    const sizes = item?.sizes || [];
-    if (sizes.length) {
-        if (selectedSize && sizes.some((s) => s.label === selectedSize)) return selectedSize;
-        const def = sizes.find((s) => s.isDefault) || sizes[0];
-        return def?.label || null;
-    }
-    return normalizeSize(selectedSize);
-};
 
 export const CartProvider = ({ children }) => {
     const [cartItems, setCartItems] = useState(() => {
@@ -43,12 +35,10 @@ export const CartProvider = ({ children }) => {
         }
     }, [cartItems]);
 
-    const generateCartItemId = useCallback((id, selectedSize, selectedOptions) => {
-        return `${id}-${selectedSize}-${Object.entries(selectedOptions || {})
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([key, value]) => `${key}:${value}`)
-            .join('|')}`;
-    }, []);
+    const generateId = useCallback(
+        (id, size, options) => generateCartItemId(id, size, options),
+        []
+    );
 
     const addToCart = useCallback(async (itemOrId, selectedOptions = {}, selectedSize = 'medium') => {
         setIsLoading(true);
@@ -67,7 +57,7 @@ export const CartProvider = ({ children }) => {
 
             const id = item._id;
             const size = resolveSize(item, selectedSize);
-            const cartItemId = generateCartItemId(id, size, selectedOptions);
+            const cartItemId = generateId(id, size, selectedOptions);
 
             setCartItems(prevItems => {
                 const existingItemIndex = prevItems.findIndex(
@@ -101,7 +91,7 @@ export const CartProvider = ({ children }) => {
         } finally {
             setIsLoading(false);
         }
-    }, [generateCartItemId]);
+    }, [generateId]);
 
     const updateCartItem = useCallback((cartItemId, updates) => {
         setCartItems(prevItems =>
@@ -126,45 +116,13 @@ export const CartProvider = ({ children }) => {
         setCartItems([]);
     }, []);
 
-    const { total, totalPrepTime } = useMemo(() => {
-        return cartItems.reduce((acc, item) => {
-            const sizes = item?.sizes || [];
-            let unitBase = 0;
-            if (sizes.length) {
-                const match = sizes.find((s) => s.label === item.selectedSize)
-                    || sizes.find((s) => s.isDefault)
-                    || sizes[0];
-                unitBase = Number(match?.price || 0);
-            } else {
-                unitBase = Number(item.price?.[normalizeSize(item.selectedSize)] || 0);
-            }
-            // Modifier priceDeltas stored as selectedOptions values
-            const optionsDelta = Object.values(item.selectedOptions || {})
-                .reduce((sum, v) => sum + (Number(v) || 0), 0);
-            const quantity = item.quantity || 1;
-            const prepTime = item.preparationTime || 0;
-
-            return {
-                total: acc.total + ((unitBase + optionsDelta) * quantity),
-                totalPrepTime: acc.totalPrepTime + (prepTime * quantity)
-            };
-        }, { total: 0, totalPrepTime: 0 });
-    }, [cartItems]);
+    const { subtotal: total, totalPrepTime } = useMemo(() => cartTotals(cartItems), [cartItems]);
 
     const createOrder = useCallback(async (paymentMethod, options = {}) => {
         setIsLoading(true);
         let orderData = null;
         try {
-            const orderItems = cartItems.map(item => ({
-                menuItem: item._id,
-                size: resolveSize(item, item.selectedSize),
-                quantity: item.quantity || 1,
-                options: Object.entries(item.selectedOptions || {}).map(([name, value]) => ({
-                    name: typeof value === 'string' ? value : name,
-                    priceDelta: Number(value) || 0,
-                })),
-                specialInstructions: item.specialInstructions || '',
-            }));
+            const orderItems = buildOrderItems(cartItems);
 
             orderData = {
                 items: orderItems,
