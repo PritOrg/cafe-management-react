@@ -3,9 +3,11 @@ const invoiceService = require('../services/invoiceService');
 
 exports.issueForOrder = async (req, res) => {
     try {
-        const { interState } = req.body || {};
+        const { interState, paymentMethod, tipAmount } = req.body || {};
         const result = await invoiceService.issueForOrder(req.tenantId, req.params.id, {
             interState: !!interState,
+            paymentMethod,
+            tipAmount,
             actorId: req.userId,
             actorType: req.role,
         });

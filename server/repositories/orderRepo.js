@@ -151,6 +151,17 @@ const updateStatus = async (tenantId, id, status, trx = getDb()) => {
     return row ? mapOrder(row, { items: [] }) : null;
 };
 
+/** Mark/clear payment on an order (used by invoice issue/void). */
+const updatePayment = async (tenantId, id, { status = 'paid', method }, trx = getDb()) => {
+    const patch = { payment_status: status, updated_at: new Date() };
+    if (method) patch.payment_method = method;
+    const [row] = await trx('orders')
+        .where({ id, tenant_id: tenantId })
+        .update(patch)
+        .returning('*');
+    return row ? mapOrder(row, { items: [] }) : null;
+};
+
 const countToday = async (tenantId, start, end) => {
     const [{ count }] = await getDb()('orders')
         .where({ tenant_id: tenantId })
@@ -196,6 +207,7 @@ module.exports = {
     assignStaff,
     findStatus,
     updateStatus,
+    updatePayment,
     countToday,
     findByOrderNumberPrefix,
     incrementMenuItemOrderCount,

@@ -58,6 +58,10 @@ describe('invoiceService + PDF integration', () => {
         expect(invoice.amountInWords).toMatch(/Rupees/);
         invoiceId = invoice.id || invoice._id;
 
+        // Recommendation #1: issuing the bill marks the order paid.
+        const [ord] = await getDb()('orders').where({ id: orderId, tenant_id: tenant._id }).select('payment_status');
+        expect(ord.payment_status).toBe('paid');
+
         const again = await issueForOrder(tenant._id, orderId, {});
         expect(again.alreadyIssued).toBe(true);
     });
@@ -72,6 +76,9 @@ describe('invoiceService + PDF integration', () => {
 
         const voided = await voidInvoice(tenant._id, invoiceId, 'integration void', { actorId: 't', actorType: 'admin' });
         expect(voided.status).toBe('void');
+        // Recommendation #1: voiding reverts the order to unpaid.
+        const [ord2] = await getDb()('orders').where({ id: orderId, tenant_id: tenant._id }).select('payment_status');
+        expect(ord2.payment_status).toBe('pending');
     });
 
     it('renders all paper formats', async () => {
