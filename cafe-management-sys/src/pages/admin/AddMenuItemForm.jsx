@@ -84,6 +84,7 @@ const AddMenuItemForm = () => {
         severity: 'success'
     });
     const [formErrors, setFormErrors] = useState({});
+    const [saving, setSaving] = useState(false);
 
     // Edit mode: load the existing item into the form (including its image preview).
     useEffect(() => {
@@ -218,6 +219,7 @@ const AddMenuItemForm = () => {
 
         if (file) submitData.append('file', file);
 
+        setSaving(true);
         try {
             if (isEdit) {
                 await menuAPI.updateForm(id, submitData);
@@ -260,6 +262,8 @@ const AddMenuItemForm = () => {
                 message: `Failed to ${isEdit ? 'update' : 'add'} menu item. Please try again.`,
                 severity: 'error'
             });
+        } finally {
+            setSaving(false);
         }
     };
     
@@ -701,6 +705,7 @@ const AddMenuItemForm = () => {
                             size="large"
                             startIcon={<AddCircleOutline />}
                             onClick={handleSubmit}
+                            disabled={saving}
                             sx={{ 
                                 px: 5, 
                                 py: 1.5,
@@ -708,7 +713,7 @@ const AddMenuItemForm = () => {
                                 boxShadow: theme.shadows[4]
                             }}
                         >
-                            {isEdit ? 'Update Menu Item' : 'Add to Menu'}
+                            {saving ? 'Saving…' : isEdit ? 'Update Menu Item' : 'Add to Menu'}
                         </Button>
                     </Box>
                 </Paper>

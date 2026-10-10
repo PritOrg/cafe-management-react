@@ -57,18 +57,18 @@ build → `lhci autorun`), non-blocking until ramped.
 
 ## Baseline
 
-First run — **landing `/`**, production build, Lighthouse 12 default (mobile
-emulation + throttling), single run:
+Latest run — **landing `/`**, production build, Lighthouse 12 default
+(mobile emulation + throttling):
 
-| Category / metric | Score |
-|---|---|
-| Performance | **78** |
-| Accessibility | **93** |
-| FCP | 2.6 s |
-| LCP | 3.3 s |
-| CLS | **0** |
-| TBT | 420 ms |
-| Main bundle | 235 kB (72 kB gzip) |
+| Category / metric | First run | Latest |
+|---|---|---|
+| Performance | 78 | **81** |
+| Accessibility | 93 | **93** |
+| FCP | 2.6 s | — |
+| LCP | 3.3 s | 3.4 s |
+| CLS | **0** | **0** |
+| TBT | 420 ms | 350 ms |
+| Main bundle | 235 kB (72 kB gzip) | 235 kB (72 kB gzip) |
 
 **Read:** CLS is perfect; A11y clears the bar. Perf is LCP/TBT-bound, which is
 inherent to a client-rendered SPA whose first view is JS-rendered and whose JS
