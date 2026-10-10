@@ -1,7 +1,8 @@
-import React, { useCallback, useContext } from 'react';
+import React, { useCallback, useContext, useMemo } from 'react';
 import { Container } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import CartContext from '../../components/CartContext';
+import { estimateTotals } from '../../utils/cartPricing';
 import CheckoutStepper from '../../components/CartComponents/CheckoutStepper';
 import CartItems from '../../components/CartComponents/CartItems';
 import CustomerDetailsForm from '../../components/CartComponents/CustomerDetailsForm';
@@ -42,6 +43,8 @@ const CartPage = () => {
     setOpenDialog,
     setPaymentMethod,
   } = useCheckoutFlow(createOrder, { name, phone, tableNumber });
+
+  const estimate = useMemo(() => estimateTotals(cartItems), [cartItems]);
 
   const steps = ['Cart', 'Details', 'Payment', 'Review'];
 
@@ -117,6 +120,7 @@ const CartPage = () => {
             total={total}
             cartCount={cartCount}
             totalPrepTime={totalPrepTime}
+            estimate={estimate}
             onBack={handleBack}
             onNext={placeOrder}
             isLoading={isLoading}
