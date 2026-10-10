@@ -58,7 +58,7 @@ export const resolveApiBaseUrl = (
 export const API_BASE_URL = resolveApiBaseUrl(RAW_API_URL);
 
 // Helper function to get auth token (sessionStorage preferred, localStorage fallback)
-const getAuthToken = () => {
+export const getAuthToken = () => {
   return sessionStorage.getItem('token') || localStorage.getItem('token');
 };
 

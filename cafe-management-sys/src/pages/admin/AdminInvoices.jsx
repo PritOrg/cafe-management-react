@@ -23,7 +23,7 @@ import Refresh from '@mui/icons-material/Refresh';
 import ReceiptLong from '@mui/icons-material/ReceiptLong';
 import Print from '@mui/icons-material/Print';
 import Download from '@mui/icons-material/Download';
-import { invoicesAPI, activityAPI, API_BASE_URL, unwrap } from '../../services/api';
+import { invoicesAPI, activityAPI, API_BASE_URL, getAuthToken, unwrap } from '../../services/api';
 import ErrorState from '../../components/common/ErrorState';
 import useOpsEvents from '../../hooks/useOpsEvents';
 import { formatMoney } from '../../utils/formatMoney';
@@ -95,12 +95,18 @@ const AdminInvoices = () => {
 
   const printInvoice = (inv, mode = paper) => {
     const id = inv._id || inv.id;
-    window.open(`${API_BASE_URL}/invoices/${id}/print?mode=${mode}`, '_blank');
+    const qp = new URLSearchParams({ mode });
+    const token = getAuthToken();
+    if (token) qp.set('token', token);
+    window.open(`${API_BASE_URL}/invoices/${id}/print?${qp.toString()}`, '_blank');
   };
 
   const downloadPdf = (inv, format = 'a4') => {
     const id = inv._id || inv.id;
-    window.open(`${API_BASE_URL}/invoices/${id}/pdf?format=${format}&download=1`, '_blank');
+    const qp = new URLSearchParams({ format, download: '1' });
+    const token = getAuthToken();
+    if (token) qp.set('token', token);
+    window.open(`${API_BASE_URL}/invoices/${id}/pdf?${qp.toString()}`, '_blank');
   };
 
   return (

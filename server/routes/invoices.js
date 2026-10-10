@@ -8,8 +8,9 @@ const {
     printEscPos,
     voidInvoice,
 } = require('../controllers/invoiceController');
-const { ensureAuthenticated, ensureAdmin, ensureAdminOrStaff } = require('../middleware/auth');
+const { ensureAuthenticated, ensureAdmin, ensureAdminOrStaff, attachTokenFromQuery } = require('../middleware/auth');
 
+router.use(attachTokenFromQuery);
 router.use(ensureAuthenticated);
 router.get('/', ensureAdminOrStaff, listInvoices);
 router.get('/:id', ensureAdminOrStaff, getInvoice);
