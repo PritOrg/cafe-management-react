@@ -15,7 +15,7 @@ const DEFAULTS = {
         invoicePrefix: 'INV',
         fyStartMonth: 4,
     },
-    ops: { currency: 'INR', timezone: 'Asia/Kolkata', activity_retention_days: 365, printer_host: '' },
+    ops: { currency: 'INR', timezone: 'Asia/Kolkata', activity_retention_days: 365, printer_host: '', inventory_enabled: true, loyalty_enabled: true, auto_invoice_enabled: true },
     print: { default_paper: 'a4' }, // a4 | thermal80 | thermal58
 };
 

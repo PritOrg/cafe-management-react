@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Card, CardContent, Grid, TextField, Button, Alert, Tabs, Tab, CircularProgress } from '@mui/material';
+import { Box, Typography, Card, CardContent, Grid, TextField, Button, Alert, Tabs, Tab, CircularProgress, Switch, FormControlLabel, Stack } from '@mui/material';
 import Save from '@mui/icons-material/Save';
 import Palette from '@mui/icons-material/Palette';
 import ReceiptLong from '@mui/icons-material/ReceiptLong';
@@ -40,7 +40,7 @@ const AdminSettings = () => {
   });
   const [gstError, setGstError] = useState('');
   const [gstSaving, setGstSaving] = useState(false);
-  const [ops, setOps] = useState({ timezone: 'Asia/Kolkata', currency: 'INR', activity_retention_days: 365 });
+  const [ops, setOps] = useState({ timezone: 'Asia/Kolkata', currency: 'INR', activity_retention_days: 365, inventory_enabled: true, loyalty_enabled: true, auto_invoice_enabled: true });
   const [print, setPrint] = useState({ default_paper: 'a4', printer_host: '' });
   const [opsSaving, setOpsSaving] = useState(false);
   const [printSaving, setPrintSaving] = useState(false);
@@ -104,6 +104,9 @@ const AdminSettings = () => {
           timezone: data.ops.timezone || 'Asia/Kolkata',
           currency: data.ops.currency || 'INR',
           activity_retention_days: data.ops.activity_retention_days ?? 365,
+          inventory_enabled: data.ops.inventory_enabled !== false,
+          loyalty_enabled: data.ops.loyalty_enabled !== false,
+          auto_invoice_enabled: data.ops.auto_invoice_enabled !== false,
         });
       }
       if (data.print) {
@@ -137,6 +140,9 @@ const AdminSettings = () => {
           currency: ops.currency,
           activity_retention_days: Number(ops.activity_retention_days) || 365,
           printer_host: print.printer_host,
+          inventory_enabled: ops.inventory_enabled,
+          loyalty_enabled: ops.loyalty_enabled,
+          auto_invoice_enabled: ops.auto_invoice_enabled,
         },
         print: { default_paper: print.default_paper, printer_host: print.printer_host },
       });
@@ -584,6 +590,22 @@ const AdminSettings = () => {
                     value={ops.activity_retention_days}
                     onChange={(e) => setOps({ ...ops, activity_retention_days: e.target.value })}
                   />
+                </Grid>
+                <Grid item xs={12}>
+                  <Stack spacing={1} sx={{ mt: 1 }}>
+                    <FormControlLabel
+                      control={<Switch checked={ops.inventory_enabled} onChange={(e) => setOps({ ...ops, inventory_enabled: e.target.checked })} />}
+                      label="Inventory tracking — deduct stock on orders"
+                    />
+                    <FormControlLabel
+                      control={<Switch checked={ops.loyalty_enabled} onChange={(e) => setOps({ ...ops, loyalty_enabled: e.target.checked })} />}
+                      label="Loyalty points & memberships"
+                    />
+                    <FormControlLabel
+                      control={<Switch checked={ops.auto_invoice_enabled} onChange={(e) => setOps({ ...ops, auto_invoice_enabled: e.target.checked })} />}
+                      label="Auto-issue the GST bill at checkout"
+                    />
+                  </Stack>
                 </Grid>
                 <Grid item xs={12}>
                   <Button variant="contained" startIcon={<Save />} onClick={handleSaveOps} disabled={opsSaving}>

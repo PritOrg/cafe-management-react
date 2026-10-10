@@ -3,6 +3,7 @@ import { getDb, destroyDb } from '../db/pool.js';
 import tenantRepo from '../repositories/tenantRepo.js';
 import menuRepo from '../repositories/menuRepo.js';
 import inventoryRepo from '../repositories/inventoryRepo.js';
+import settingsRepo from '../repositories/settingsRepo.js';
 import { placeOrder } from '../services/orderService.js';
 
 let tenant;
@@ -63,6 +64,26 @@ describe('orderService stock deduction (subtract_stock)', () => {
         } else {
             // Fail until deduction is implemented
             expect(after.quantity).toBeLessThan(before.quantity);
+        }
+    });
+
+    it('skips stock deduction when the tenant disables inventory tracking', async () => {
+        const before = await inventoryRepo.findById(tenant._id, inventoryItem._id);
+        const current = await settingsRepo.getOrCreate(tenant._id);
+        await settingsRepo.update(tenant._id, { ops: { ...current.ops, inventory_enabled: false } });
+        try {
+            const result = await placeOrder({
+                tenantId: tenant._id,
+                body: {
+                    items: [{ menuItemId: trackedMenu._id, size: 'medium', quantity: 3 }],
+                    paymentMethod: 'cash',
+                },
+            });
+            expect(result.status).toBe(201);
+            const after = await inventoryRepo.findById(tenant._id, inventoryItem._id);
+            expect(after.quantity).toBe(before.quantity); // unchanged — deductions are off
+        } finally {
+            await settingsRepo.update(tenant._id, { ops: { ...current.ops, inventory_enabled: true } });
         }
     });
 });
