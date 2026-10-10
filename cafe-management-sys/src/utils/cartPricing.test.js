@@ -9,6 +9,7 @@ import {
   estimateTotals,
   generateCartItemId,
   buildOrderItems,
+  staleItemId,
 } from './cartPricing';
 
 const legacy = { _id: 'm1', price: { medium: 100, large: 150 }, quantity: 2, selectedSize: 'large' };
@@ -95,5 +96,12 @@ describe('cartPricing', () => {
       options: [{ name: 'Extra', priceDelta: 10 }],
       specialInstructions: 'no ice',
     });
+  });
+
+  it('staleItemId extracts a stale menu id from the server error', () => {
+    expect(staleItemId('Menu item not found: 55ffe79f-c6de-4a58-8bf3-7db2992c8fdf'))
+      .toBe('55ffe79f-c6de-4a58-8bf3-7db2992c8fdf');
+    expect(staleItemId('Something else')).toBeNull();
+    expect(staleItemId('')).toBeNull();
   });
 });
