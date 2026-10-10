@@ -13,21 +13,33 @@ const BASE_HOSTS = new Set(['localhost', 'www']);
 const isIpAddress = (hostname) =>
   /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname) || hostname.includes(':');
 
-export const tenantSlugFromHost = () => {
-  if (typeof window === 'undefined') return null;
-  const hostname = (window.location.hostname || '').toLowerCase();
-  if (!hostname || isIpAddress(hostname)) return null;
-  const labels = hostname.split('.');
+/** Pure: derive the tenant slug from a hostname (null for bare localhost/IP/www). */
+export const slugFromHostname = (hostname = '') => {
+  const host = String(hostname || '').toLowerCase();
+  if (!host || isIpAddress(host)) return null;
+  const labels = host.split('.');
   if (labels.length < 2) return null;
   const first = labels[0];
   if (BASE_HOSTS.has(first)) return null;
   return first;
 };
 
-const resolveApiBaseUrl = (raw) => {
-  if (typeof window === 'undefined' || !/^https?:\/\//i.test(raw)) return raw;
+export const tenantSlugFromHost = () => {
+  if (typeof window === 'undefined') return null;
+  return slugFromHostname(window.location.hostname || '');
+};
+
+/**
+ * Mirror the tenant slug onto the API host so menu/brand/settings resolve to the
+ * right restaurant. Injectable `hostname` keeps it unit-testable.
+ */
+export const resolveApiBaseUrl = (
+  raw,
+  hostname = typeof window !== 'undefined' ? window.location.hostname || '' : ''
+) => {
+  if (!/^https?:\/\//i.test(raw)) return raw;
   try {
-    const slug = tenantSlugFromHost();
+    const slug = slugFromHostname(hostname);
     if (!slug) return raw;
     const url = new URL(raw);
     if (url.hostname === 'localhost' || isIpAddress(url.hostname)) {
