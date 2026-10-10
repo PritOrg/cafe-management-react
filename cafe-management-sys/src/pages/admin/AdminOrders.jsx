@@ -179,6 +179,23 @@ const AdminOrders = () => {
     setSelectedOrderId(null);
   };
 
+  // lg+ keyboard shortcuts: digits 1-5 switch the status filter tab.
+  useEffect(() => {
+    const mq = typeof window !== 'undefined' && window.matchMedia
+      ? window.matchMedia('(min-width: 1200px)')
+      : null;
+    const onKey = (e) => {
+      if (mq && !mq.matches) return;
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      const tag = e.target && e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      const map = { 1: 'all', 2: 'pending', 3: 'preparing', 4: 'ready', 5: 'served' };
+      if (map[e.key]) setStatusFilter(map[e.key]);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const handleViewOrder = async (order) => {
     setSelectedOrder(order);
     setOrderDetailOpen(true);

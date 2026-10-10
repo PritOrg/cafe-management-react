@@ -91,4 +91,27 @@ describe('orderService.placeOrder integration', () => {
         expect(result.status).toBe(400);
         expect(result.message).toMatch(/not found/i);
     });
+
+    it('derives customer LTV = sum of their order totals', async () => {
+        const phone = `7${Date.now().toString().slice(-9)}`;
+        const a = await placeOrder({
+            tenantId: tenant._id,
+            role: 'customer',
+            userId: 'u',
+            body: { items: [{ menuItemId: menu._id, size: 'medium', quantity: 1 }], paymentMethod: 'cash', phone, customerName: 'LTV Guest' },
+        });
+        const b = await placeOrder({
+            tenantId: tenant._id,
+            role: 'customer',
+            userId: 'u',
+            body: { items: [{ menuItemId: menu._id, size: 'medium', quantity: 2 }], paymentMethod: 'cash', phone },
+        });
+        const customers = await customerRepo.findByPhone(tenant._id, phone);
+        const s = await customerRepo.summary(tenant._id, customers[0]._id || customers[0].id);
+        const expectedMinor = Math.round(
+            (Number(a.data.order.finalAmount) + Number(b.data.order.finalAmount)) * 100
+        );
+        expect(s.ordersCount).toBe(2);
+        expect(s.lifetimeValueMinor).toBe(expectedMinor);
+    });
 });

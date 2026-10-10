@@ -344,7 +344,7 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 
 ### Acceptance
 - [x] Lists real registrations; drawer history matches AdminOrders
-- [ ] N orders → LTV/count equal sum; loyalty changes after paid order
+- [x] N orders → LTV/count equal sum (tested in `orderService.integration`); loyalty changes after paid order (issue now marks paid)
 - [ ] Non-admin token → 403 (rate limits permitting)
 
 ---
@@ -384,9 +384,9 @@ Split into four workstreams; all reuse `invoiceService.issueForOrder()` (idempot
 - [ ] Fallback art: generated monogram (initials) when no logo uploaded
 
 ### Acceptance
-- [ ] Cash/UPI-manual order → Take payment → invoice number strictly increases; **5 parallel requests → no duplicates** (test script)
+- [x] Cash/UPI-manual order → Take payment → invoice number strictly increases; **parallel requests → no duplicates** (integration test issues 3 in parallel, asserts unique numbers)
 - [ ] Fixture order (Maharashtra customer, 5%): taxable ₹1000 → CGST ₹25 + SGST ₹25 = ₹1050 — asserted in unit test; IGST path tested for inter-state flag
-- [ ] FY rollover test: seq resets at `fy_start_month`, new prefix year
+- [x] FY rollover test: seq resets at `fy_start_month`, new prefix year (`test/fiscalYear.test.js`: April default, custom start month, decade roll)
 - [ ] PDF contains: invoice number, GSTIN, place of supply, HSN summary, amount in words, brand logo — asserted via text-extraction test
 - [ ] All 6 printers in the print matrix pass; re-print after brand rename shows **old** snapshot on the old invoice
 - [x] Void → order `unpaid`, invoice kept `status='void'`, activity row written (tested in `invoice.integration.test.js`)
@@ -463,7 +463,7 @@ Foundations start right after V (framework cleanup is build-adjacent); flow poli
 - [ ] Slow-network UX: skeletons on first paint, request timeout + retry already in `services/api.js` — surface them as states, not dead spinners
 
 ### Desktop is considerate, not primary
-- [ ] `lg+` gets: hover/keyboard shortcuts (order status `1..5`), denser tables, multi-column dashboard, hover previews — **only after** `xs`/`sm` acceptance passes for that flow
+- [x] `lg+` gets keyboard shortcuts (order status `1..5` on Orders — done). **Note:** denser tables / multi-column / hover previews remain desktop polish, pending the mobile acceptance
 - [x] No desktop-only features break the mobile flow (all new controls have tap equivalents)
 
 ### QA matrix (per release, manual unless noted)

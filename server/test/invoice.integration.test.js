@@ -11,6 +11,7 @@ import { moneyToWordsINR } from '../utils/moneyToWordsINR.js';
 let tenant;
 let orderId;
 let invoiceId;
+let menu;
 
 describe('invoiceService + PDF integration', () => {
     beforeAll(async () => {
@@ -27,7 +28,7 @@ describe('invoiceService + PDF integration', () => {
             },
         });
         const menus = await menuRepo.findAll(tenant._id);
-        const menu = menus.find((m) => !m.sizes?.length && Number(m.price?.medium) > 0) || menus[0];
+        menu = menus.find((m) => !m.sizes?.length && Number(m.price?.medium) > 0) || menus[0];
         if (!menu?.price?.medium && !menu?.sizes?.length) {
             throw new Error('No billable menu item found for invoice test');
         }
@@ -92,6 +93,28 @@ describe('invoiceService + PDF integration', () => {
 
     it('money words for invoice totals', () => {
         expect(moneyToWordsINR(inv || 210)).toMatch(/Rupees/);
+    });
+
+    it('issues several invoices in parallel without duplicate numbers', async () => {
+        const ids = [];
+        for (let i = 0; i < 3; i += 1) {
+            const placed = await placeOrder({
+                tenantId: tenant._id,
+                role: 'customer',
+                userId: '0000000000000000000000aa',
+                body: {
+                    items: [{ menuItemId: menu._id, size: 'medium', quantity: 1 }],
+                    paymentMethod: 'cash',
+                    phone: `98${Date.now()}${i}`,
+                    customerName: `Concurrent ${i}`,
+                },
+            });
+            ids.push(placed.data.order._id);
+        }
+        const results = await Promise.all(ids.map((oid) => issueForOrder(tenant._id, oid, {})));
+        const numbers = results.map((r) => r.invoice.invoiceNumber);
+        expect(new Set(numbers).size).toBe(3);
+        results.forEach((r) => expect(r.invoice.status).toBe('issued'));
     });
 });
 
