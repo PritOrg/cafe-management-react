@@ -27,7 +27,7 @@ const validateGstSettings = (gst) => {
 /**
  * Issue GST tax invoice for an order (idempotent — one invoice per order).
  */
-const issueForOrder = async (tenantId, orderId, { interState = false, actorId, actorType } = {}) => {
+const issueForOrder = async (tenantId, orderId, { interState = false, paymentMethod, tipAmount, actorId, actorType } = {}) => {
     const existing = await invoiceRepo.findByOrder(tenantId, orderId);
     if (existing && existing.status === 'issued') {
         return { invoice: existing, alreadyIssued: true };
@@ -82,20 +82,12 @@ const issueForOrder = async (tenantId, orderId, { interState = false, actorId, a
         sgst = taxTotal - cgst;
     }
 
-    const tipMinor = money.toMinor(Number(order.tipAmount || 0));
+    const tipMinor = money.toMinor(Number(tipAmount ?? order.tipAmount ?? 0));
     const grossMinor = taxable + taxTotal + tipMinor;
     const grand = Math.round(money.fromMinor(grossMinor) * 100) / 100;
     const roundOff = money.fromMinor(grossMinor) - grand;
 
-    const hsnMap = new Map();
-    for (const li of lineItems) {
-        const key = li.hsnSac;
-        const prev = hsnMap.get(key) || { hsnSac: key, taxable: 0, tax: 0 };
-        prev.taxable = money.toMinor(li.taxable);
-        prev.tax = money.toMinor(li.taxAmount);
-        hsnMap.set(key, prev);
-    }
-    // recompute properly
+    // Aggregate the HSN/SAC summary from the line items.
     const hsnSummary = [];
     for (const li of lineItems) {
         const row = hsnSummary.find((h) => h.hsnSac === li.hsnSac);
@@ -112,7 +104,7 @@ const issueForOrder = async (tenantId, orderId, { interState = false, actorId, a
 
     const saved = await getDb().transaction(async (trx) => {
         const { invoiceNumber, seq } = await invoiceRepo.nextNumber(tenantId, prefix, fy, trx);
-        return invoiceRepo.create(tenantId, {
+        const created = await invoiceRepo.create(tenantId, {
             orderId: order._id,
             invoiceNumber,
             fiscalYear: fy,
@@ -135,6 +127,15 @@ const issueForOrder = async (tenantId, orderId, { interState = false, actorId, a
             },
             amountInWords: moneyToWordsINR(grand),
         }, trx);
+
+        // The order is billable now: mark it paid (optionally with method/tip).
+        await orderRepo.updatePayment(tenantId, order._id, { status: 'paid', method: paymentMethod }, trx);
+        if (tipAmount != null && Number(tipAmount) !== Number(order.tipAmount || 0)) {
+            await trx('orders')
+                .where({ id: order._id, tenant_id: tenantId })
+                .update({ tip_amount: tipMinor, updated_at: new Date() });
+        }
+        return created;
     });
 
     await activityRepo.log({
@@ -202,6 +203,10 @@ const getInvoice = async (tenantId, id) => {
 const voidInvoice = async (tenantId, id, reason, { actorId, actorType } = {}) => {
     const row = await invoiceRepo.voidInvoice(tenantId, id, reason);
     if (!row) return null;
+    // The bill no longer stands: revert the order to unpaid.
+    if (row.order_id) {
+        await orderRepo.updatePayment(tenantId, row.order_id, { status: 'pending' });
+    }
     await activityRepo.log({
         tenantId,
         actorId,

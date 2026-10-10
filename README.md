@@ -108,6 +108,7 @@ falls back to `DEFAULT_TENANT_SLUG`.
 | [`docs/database.md`](docs/database.md) | Knex schema, migrations, Neon |
 | [`docs/ui-patterns.md`](docs/ui-patterns.md) | Primitives, theming, frontend rules |
 | [`docs/testing.md`](docs/testing.md) | Test strategy and CI |
+| [`docs/per-tenant-customization.md`](docs/per-tenant-customization.md) | Per-tenant food / convenience / branding |
 | [`docs/print-matrix.md`](docs/print-matrix.md) | Printer compatibility checklist |
 | [`docs/lighthouse.md`](docs/lighthouse.md) | Perf/a11y budgets + baseline |
 | [`docs/secrets-rotation.md`](docs/secrets-rotation.md) | Rotate + purge leaked secrets |
