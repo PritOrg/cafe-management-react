@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Card, CardContent, Grid, Button, ButtonGroup, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, LinearProgress, Alert } from '@mui/material';
+import { Box, Typography, Card, CardContent, Grid, Button, ButtonGroup, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Alert } from '@mui/material';
 import TrendingUp from '@mui/icons-material/TrendingUp';
 import TrendingDown from '@mui/icons-material/TrendingDown';
 import AttachMoney from '@mui/icons-material/AttachMoney';
@@ -7,6 +7,7 @@ import DateRange from '@mui/icons-material/DateRange';
 import Download from '@mui/icons-material/Download';
 import Refresh from '@mui/icons-material/Refresh';
 import { analyticsAPI, unwrap } from '../../services/api';
+import LoadingState from '../../components/common/LoadingState';
 import { formatMoney } from '../../utils/formatMoney';
 
 const AdminRevenue = () => {
@@ -99,7 +100,7 @@ const AdminRevenue = () => {
         <Typography variant="h4" sx={{ mb: 3, fontWeight: 600 }}>
           Revenue Analytics
         </Typography>
-        <LinearProgress />
+        <LoadingState label="Loading revenue…" rows={5} />
       </Box>
     );
   }

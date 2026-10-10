@@ -25,6 +25,8 @@ import Block from '@mui/icons-material/Block';
 import CheckCircle from '@mui/icons-material/CheckCircle';
 import { tenantsAPI, unwrap } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import LoadingState from '../../components/common/LoadingState';
+import ErrorState from '../../components/common/ErrorState';
 
 const AdminTenants = () => {
   const { isPlatformAdmin } = useAuth();
@@ -115,7 +117,15 @@ const AdminTenants = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center">Loading tenants...</TableCell>
+                  <TableCell colSpan={5}>
+                    <LoadingState label="Loading tenants…" rows={3} />
+                  </TableCell>
+                </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell colSpan={5}>
+                    <ErrorState title="Couldn't load tenants" message={error} onRetry={fetchTenants} />
+                  </TableCell>
                 </TableRow>
               ) : tenants.length === 0 ? (
                 <TableRow>

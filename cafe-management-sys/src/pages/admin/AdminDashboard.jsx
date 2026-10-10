@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Grid, Card, CardContent, Typography, Button, Chip, Paper, LinearProgress, Fade, Grow, alpha, Alert } from '@mui/material';
+import { Box, Grid, Card, CardContent, Typography, Button, Chip, Paper, Fade, Grow, alpha, Alert } from '@mui/material';
 import TrendingUp from '@mui/icons-material/TrendingUp';
 import TrendingDown from '@mui/icons-material/TrendingDown';
 import ShoppingCart from '@mui/icons-material/ShoppingCart';
@@ -15,6 +15,7 @@ import CheckCircle from '@mui/icons-material/CheckCircle';
 import { styled } from '@mui/material/styles';
 
 import { analyticsAPI, ordersAPI, inventoryAPI, unwrap } from '../../services/api';
+import LoadingState from '../../components/common/LoadingState';
 import useOpsEvents from '../../hooks/useOpsEvents';
 import { formatMoney } from '../../utils/formatMoney';
 import { adaptOrder } from '../../adapters';
@@ -194,9 +195,7 @@ export default function AdminDashboard() {
 
   if (loading && !dashboardData) {
     return (
-        <Box sx={{ width: '100%', mt: 2 }}>
-          <LinearProgress />
-        </Box>
+        <LoadingState label="Loading dashboard…" rows={4} />
     );
   }
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Card, CardContent, Grid, Button, ButtonGroup, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, LinearProgress, IconButton, Alert } from '@mui/material';
+import { Box, Typography, Card, CardContent, Grid, Button, ButtonGroup, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Alert } from '@mui/material';
 import TrendingUp from '@mui/icons-material/TrendingUp';
 import TrendingDown from '@mui/icons-material/TrendingDown';
 import BarChart from '@mui/icons-material/BarChart';
@@ -9,6 +9,7 @@ import Refresh from '@mui/icons-material/Refresh';
 import PieChart from '@mui/icons-material/PieChart';
 import { analyticsAPI, unwrap } from '../../services/api';
 import { formatMoney } from '../../utils/formatMoney';
+import LoadingState from '../../components/common/LoadingState';
 
 const AdminAnalytics = () => {
   const [loading, setLoading] = useState(true);
@@ -109,7 +110,7 @@ const AdminAnalytics = () => {
         <Typography variant="h4" sx={{ mb: 3, fontWeight: 600 }}>
           Analytics Dashboard
         </Typography>
-        <LinearProgress />
+        <LoadingState label="Loading analytics…" rows={5} />
       </Box>
     );
   }
