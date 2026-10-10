@@ -74,7 +74,7 @@ exports.getInvoicePrint = async (req, res) => {
 
         // Small on-screen toolbar (hidden in print), so the print tab isn't a
         // dead-end page. Reuses the token passed for this tab to link the PDF.
-        const token = req.tokenFromQuery || String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+        const token = req.tokenFromQuery || String((req.headers && req.headers.authorization) || '').replace(/^Bearer\s+/i, '');
         const pdfFormat = mode === 'thermal' ? 'thermal80' : 'a4';
         const pdfHref = `/api/v1/invoices/${req.params.id}/pdf?format=${pdfFormat}&download=1&token=${encodeURIComponent(token)}`;
         const title = String(invoice.invoiceNumber || 'Invoice').replace(/[<>&"]/g, '');
