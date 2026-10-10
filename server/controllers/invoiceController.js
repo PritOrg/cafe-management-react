@@ -71,8 +71,35 @@ exports.getInvoicePrint = async (req, res) => {
         const mode = req.query.mode === 'thermal' ? 'thermal' : 'a4';
         const { renderInvoiceHtml } = require('../services/invoicePrintHtml');
         const html = renderInvoiceHtml(invoice, { mode });
+
+        // Small on-screen toolbar (hidden in print), so the print tab isn't a
+        // dead-end page. Reuses the token passed for this tab to link the PDF.
+        const token = req.tokenFromQuery || String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+        const pdfFormat = mode === 'thermal' ? 'thermal80' : 'a4';
+        const pdfHref = `/api/v1/invoices/${req.params.id}/pdf?format=${pdfFormat}&download=1&token=${encodeURIComponent(token)}`;
+        const title = String(invoice.invoiceNumber || 'Invoice').replace(/[<>&"]/g, '');
+
+        const chrome = `
+<style>
+  .print-toolbar{position:fixed;top:0;left:0;right:0;z-index:9999;display:flex;gap:10px;align-items:center;
+    padding:10px 16px;background:#17233b;color:#fff;font:14px/1.4 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+  .print-toolbar .t-title{font-weight:600;margin-right:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .print-toolbar button,.print-toolbar a{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:0;border-radius:10px;
+    font:600 14px/1.2 system-ui;cursor:pointer;text-decoration:none;background:#ffffff22;color:#fff}
+  .print-toolbar button:active,.print-toolbar a:active{transform:translateY(1px)}
+  .print-page{padding-top:58px}
+  @media print{ .print-toolbar{display:none !important} .print-page{padding-top:0} }
+</style>
+<div class="print-toolbar">
+  <span class="t-title">${title}</span>
+  <button type="button" onclick="window.print()">🖨 Print</button>
+  <a href="${pdfHref}" download>⬇ Download PDF</a>
+  <button type="button" onclick="window.close()">✕ Close</button>
+</div>
+<script>document.body.classList.add('print-page');</script>`;
+
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        return res.send(html);
+        return res.send(html.replace('</body>', `${chrome}</body>`));
     } catch (err) {
         console.error('Error rendering invoice HTML:', err);
         return sendResponse(res, 500, false, err.message || 'Server error');
