@@ -64,6 +64,12 @@ export const generateCartItemId = (id, size, options) =>
     .map(([key, value]) => `${key}:${value}`)
     .join('|')}`;
 
+/** Extracts the menu id from a server 'Menu item not found: <uuid>' error. */
+export const staleItemId = (message = '') => {
+  const m = String(message).match(/Menu item not found: ([0-9a-f-]{8,})/i);
+  return m ? m[1] : null;
+};
+
 /** Shape cart lines into the server's `POST /orders` item contract. */
 export const buildOrderItems = (items = []) =>
   items.map((item) => ({

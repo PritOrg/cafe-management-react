@@ -8,6 +8,7 @@ import {
     generateCartItemId,
     cartTotals,
     buildOrderItems,
+    staleItemId,
 } from '../utils/cartPricing';
 
 const CartContext = createContext();
@@ -181,7 +182,19 @@ export const CartProvider = ({ children }) => {
 
             setOrderError(errorMessage);
             setOrderConfirmation(null);
-            throw new Error(errorMessage);
+            // A stored cart line may reference a menu item that no longer exists
+            // (e.g. deleted after a menu/DB change). Drop just that line so a
+            // retry succeeds and the customer can finish checkout.
+            const staleId = staleItemId(errorMessage);
+            if (staleId) {
+                setCartItems(prev => prev.filter((it) => it._id !== staleId));
+                setOrderError('One item in your cart is no longer available and was removed.');
+            }
+            throw new Error(
+                staleId
+                    ? 'An item in your cart is no longer available and was removed. Please review and try again.'
+                    : errorMessage
+            );
         } finally {
             setIsLoading(false);
         }
