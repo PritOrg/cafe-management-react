@@ -16,6 +16,8 @@ import {
   InputLabel,
 } from '@mui/material';
 import Grid2 from '@mui/material/Unstable_Grid2';
+import LoadingState from '../../components/common/LoadingState';
+import EmptyState from '../../components/common/EmptyState';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
@@ -166,7 +168,14 @@ const AdminTakeOrder = () => {
             ))}
           </Box>
 
-          {loading ? null : (
+          {loading ? (
+            <LoadingState label="Loading menu…" rows={4} />
+          ) : filtered.length === 0 ? (
+            <EmptyState
+              title="No menu items"
+              description="Nothing matches this filter yet."
+            />
+          ) : (
             <Grid2 container spacing={2}>
               {filtered.map((item) => (
                 <Grid2 xs={12} sm={6} lg={4} key={item._id || item.id}>
