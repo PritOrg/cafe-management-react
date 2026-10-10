@@ -23,7 +23,7 @@ import Refresh from '@mui/icons-material/Refresh';
 import ReceiptLong from '@mui/icons-material/ReceiptLong';
 import Print from '@mui/icons-material/Print';
 import Download from '@mui/icons-material/Download';
-import { invoicesAPI, activityAPI, unwrap } from '../../services/api';
+import { invoicesAPI, activityAPI, API_BASE_URL, unwrap } from '../../services/api';
 import ErrorState from '../../components/common/ErrorState';
 import useOpsEvents from '../../hooks/useOpsEvents';
 import { formatMoney } from '../../utils/formatMoney';
@@ -86,12 +86,12 @@ const AdminInvoices = () => {
 
   const printInvoice = (inv, mode = paper) => {
     const id = inv._id || inv.id;
-    window.open(`/api/v1/invoices/${id}/print?mode=${mode}`, '_blank');
+    window.open(`${API_BASE_URL}/invoices/${id}/print?mode=${mode}`, '_blank');
   };
 
   const downloadPdf = (inv, format = 'a4') => {
     const id = inv._id || inv.id;
-    window.open(`/api/v1/invoices/${id}/pdf?format=${format}&download=1`, '_blank');
+    window.open(`${API_BASE_URL}/invoices/${id}/pdf?format=${format}&download=1`, '_blank');
   };
 
   return (
