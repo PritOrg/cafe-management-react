@@ -32,6 +32,7 @@ import Refresh from '@mui/icons-material/Refresh';
 import Inventory2 from '@mui/icons-material/Inventory2';
 import MenuBook from '@mui/icons-material/MenuBook';
 import { inventoryAPI, menuAPI, unwrap } from '../../services/api';
+import { formatMoneyMinor } from '../../utils/formatMoney';
 import useOpsEvents from '../../hooks/useOpsEvents';
 
 const MOVEMENT_TYPES = [
@@ -48,7 +49,7 @@ const AdminInventory = () => {
   const [error, setError] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ itemName: '', quantity: 0, unit: 'kg', category: '', minQty: 0 });
+  const [form, setForm] = useState({ itemName: '', quantity: 0, unit: 'kg', category: '', minQty: 0, costPerUnitMinor: '', reorderQty: '', supplier: '' });
   const [moveTarget, setMoveTarget] = useState(null);
   const [moveForm, setMoveForm] = useState({ type: 'purchase', delta: 10, note: '' });
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -142,7 +143,7 @@ const AdminInventory = () => {
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ itemName: '', quantity: 0, unit: 'kg', category: '', minQty: 0 });
+    setForm({ itemName: '', quantity: 0, unit: 'kg', category: '', minQty: 0, costPerUnitMinor: '', reorderQty: '', supplier: '' });
     setFormOpen(true);
   };
 
@@ -154,14 +155,25 @@ const AdminInventory = () => {
       unit: item.unit,
       category: item.category,
       minQty: item.minQty || 0,
+      costPerUnitMinor: item.costPerUnitMinor != null ? String(item.costPerUnitMinor / 100) : '',
+      reorderQty: item.reorderQty != null ? String(item.reorderQty) : '',
+      supplier: item.supplier || '',
     });
     setFormOpen(true);
   };
 
   const handleSave = async () => {
     try {
-      if (editing) await inventoryAPI.update(editing._id, form);
-      else await inventoryAPI.create(form);
+      const payload = {
+        ...form,
+        // UI enters rupees; the API stores minor units (paise).
+        costPerUnitMinor: form.costPerUnitMinor !== '' && form.costPerUnitMinor != null
+          ? Math.round(Number(form.costPerUnitMinor) * 100)
+          : null,
+        reorderQty: form.reorderQty !== '' && form.reorderQty != null ? Number(form.reorderQty) : null,
+      };
+      if (editing) await inventoryAPI.update(editing._id, payload);
+      else await inventoryAPI.create(payload);
       setFormOpen(false);
       fetchItems();
     } catch (err) {
@@ -249,8 +261,9 @@ const AdminInventory = () => {
             { label: 'Category' },
             { label: 'Qty' },
             { label: 'Min' },
-            { label: 'Unit' },
+            { label: 'Supplier' },
             { label: 'Status' },
+            { label: 'Valuation', align: 'right' },
             { label: '', align: 'center' },
           ]}
           renderRow={(item) => {
@@ -265,7 +278,7 @@ const AdminInventory = () => {
                 <TableCell>{item.category}</TableCell>
                 <TableCell>{item.quantity}</TableCell>
                 <TableCell>{item.minQty || 0}</TableCell>
-                <TableCell>{item.unit}</TableCell>
+                <TableCell>{item.supplier || '—'}</TableCell>
                 <TableCell>
                   <Chip
                     size="small"
@@ -274,6 +287,7 @@ const AdminInventory = () => {
                     color={isLow ? 'warning' : 'success'}
                   />
                 </TableCell>
+                <TableCell align="right">{item.valuation != null ? formatMoneyMinor(item.valuation) : '—'}</TableCell>
                 <TableCell align="center">
                   <Button size="medium" onClick={() => { setMoveTarget(item); setMoveForm({ type: 'purchase', delta: 10, note: '' }); }}>
                     Move
@@ -307,6 +321,8 @@ const AdminInventory = () => {
                   </Box>
                   <Typography variant="body2">
                     <strong>{item.quantity} {item.unit}</strong> · min {item.minQty || 0}
+                    {item.valuation != null ? ` · value ${formatMoneyMinor(item.valuation)}` : ''}
+                    {item.supplier ? ` · ${item.supplier}` : ''}
                   </Typography>
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, mt: 1 }}>
                     <Button size="medium" onClick={() => { setMoveTarget(item); setMoveForm({ type: 'purchase', delta: 10, note: '' }); }}>
@@ -348,6 +364,15 @@ const AdminInventory = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField fullWidth label="Unit" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} />
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <TextField fullWidth label="Cost / unit (₹)" type="number" value={form.costPerUnitMinor} onChange={(e) => setForm({ ...form, costPerUnitMinor: e.target.value })} />
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <TextField fullWidth label="Reorder qty" type="number" value={form.reorderQty} onChange={(e) => setForm({ ...form, reorderQty: e.target.value })} />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField fullWidth label="Supplier" value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} />
             </Grid>
           </Grid>
         </DialogContent>

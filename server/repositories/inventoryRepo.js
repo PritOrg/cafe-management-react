@@ -1,13 +1,17 @@
 const { getDb } = require('../db/pool');
 const { mapInventory } = require('../db/mappers');
 
-const cols = ['id', 'tenant_id', 'item_name', 'quantity', 'unit', 'category', 'min_qty', 'is_active', 'last_updated', 'created_at', 'updated_at'];
+const cols = ['id', 'tenant_id', 'item_name', 'quantity', 'unit', 'category', 'min_qty', 'is_active', 'last_updated', 'created_at', 'updated_at', 'cost_per_unit_minor', 'reorder_qty', 'supplier'];
 
-const mapItem = (row) => row && ({
+const mapItem = (row) => row && {
     ...mapInventory(row),
     minQty: Number(row.min_qty ?? 0),
     isActive: row.is_active !== false,
-});
+    costPerUnitMinor: row.cost_per_unit_minor != null ? Number(row.cost_per_unit_minor) : null,
+    reorderQty: row.reorder_qty != null ? Number(row.reorder_qty) : null,
+    supplier: row.supplier || null,
+    valuation: row.cost_per_unit_minor != null ? Math.round(Number(row.quantity ?? 0) * Number(row.cost_per_unit_minor)) : null,
+};
 
 const findAll = async (tenantId, { search, lowStock, includeInactive = false } = {}) => {
     let q = getDb()('inventory').where({ tenant_id: tenantId });
@@ -37,6 +41,9 @@ const create = async (tenantId, data, trx = getDb()) => {
         category: data.category,
         min_qty: data.minQty || 0,
         menu_item_id: data.menuItemId || null,
+        cost_per_unit_minor: data.costPerUnitMinor != null ? Number(data.costPerUnitMinor) : null,
+        reorder_qty: data.reorderQty != null ? Number(data.reorderQty) : null,
+        supplier: data.supplier || null,
     }).returning(cols.concat(['menu_item_id']));
     return { ...mapItem(row), menuItemId: row.menu_item_id };
 };
@@ -48,6 +55,9 @@ const updateById = async (tenantId, id, data, trx = getDb()) => {
     if (data.unit !== undefined) patch.unit = data.unit;
     if (data.category !== undefined) patch.category = data.category;
     if (data.minQty !== undefined) patch.min_qty = data.minQty;
+    if (data.costPerUnitMinor !== undefined) patch.cost_per_unit_minor = Number(data.costPerUnitMinor);
+    if (data.reorderQty !== undefined) patch.reorder_qty = Number(data.reorderQty);
+    if (data.supplier !== undefined) patch.supplier = data.supplier;
     const [row] = await trx('inventory').where({ id, tenant_id: tenantId }).update(patch).returning(cols);
     return row ? mapItem(row) : null;
 };

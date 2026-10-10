@@ -44,11 +44,11 @@ exports.getItem = async (req, res) => {
 exports.createItem = async (req, res) => {
     try {
         if (!requireAdmin(req, res)) return;
-        const { itemName, quantity, unit, category, minQty } = req.body || {};
+        const { itemName, quantity, unit, category, minQty, costPerUnitMinor, reorderQty, supplier } = req.body || {};
         if (!itemName || !unit || !category) {
             return sendResponse(res, 400, false, 'itemName, unit and category are required');
         }
-        const item = await inventoryRepo.create(req.tenantId, { itemName, quantity, unit, category, minQty });
+        const item = await inventoryRepo.create(req.tenantId, { itemName, quantity, unit, category, minQty, costPerUnitMinor, reorderQty, supplier });
         await activityRepo.log({
             tenantId: req.tenantId,
             actorId: req.userId,
