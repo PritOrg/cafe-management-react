@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { settingsAPI, unwrap } from '../services/api';
+import { buildManifest } from '../utils/brandManifest';
 
 const env = import.meta.env || {};
 
@@ -49,18 +50,7 @@ const applyFavicon = (logoUrl) => {
 let manifestUrl = null;
 const applyManifest = (brand) => {
   if (!isBrowser || typeof Blob === 'undefined' || !window.URL?.createObjectURL) return;
-  const manifest = {
-    name: brand.title || 'Restaurant',
-    short_name: (brand.title || 'Restaurant').slice(0, 12),
-    start_url: '.',
-    display: 'standalone',
-    theme_color: brand.primaryColor || DEFAULT_BRAND.primaryColor,
-    background_color: '#ffffff',
-    icons: [
-      { src: '/logo192.png', type: 'image/png', sizes: '192x192' },
-      { src: '/logo512.png', type: 'image/png', sizes: '512x512' },
-    ],
-  };
+  const manifest = buildManifest(brand, window.location.origin);
   const nextUrl = window.URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' }));
   let link = document.querySelector('link[rel="manifest"]');
   if (!link) {

@@ -8,11 +8,14 @@ import MoreVert from '@mui/icons-material/MoreVert';
 import Email from '@mui/icons-material/Email';
 import Phone from '@mui/icons-material/Phone';
 import { staffAPI } from '../../services/api';
+import ErrorState from '../../components/common/ErrorState';
+import LoadingState from '../../components/common/LoadingState';
 
 const AdminStaff = () => {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [error, setError] = useState(null);
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -52,11 +55,13 @@ const AdminStaff = () => {
   const fetchStaff = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await staffAPI.getAll();
       const staffData = response?.data || response || [];
       setStaff(Array.isArray(staffData) ? staffData : []);
     } catch (error) {
       console.error('Error fetching staff:', error);
+      setError(error.message || 'Failed to load staff');
       setStaff([]);
     } finally {
       setLoading(false);
@@ -209,6 +214,12 @@ const AdminStaff = () => {
         </CardContent>
       </Card>
 
+      {error && (
+        <Box sx={{ mb: 2 }}>
+          <ErrorState title="Couldn't load staff" message={error} onRetry={fetchStaff} />
+        </Box>
+      )}
+
       {/* Staff Table */}
       <Card>
         <TableContainer>
@@ -226,8 +237,8 @@ const AdminStaff = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center">
-                    Loading staff...
+                  <TableCell colSpan={6}>
+                    <LoadingState label="Loading staff…" rows={4} />
                   </TableCell>
                 </TableRow>
               ) : filteredStaff.length === 0 ? (

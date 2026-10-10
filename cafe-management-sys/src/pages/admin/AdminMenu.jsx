@@ -32,6 +32,7 @@ import FilterList from '@mui/icons-material/FilterList';
 import { useNavigate } from 'react-router-dom';
 import { menuAPI, activityAPI, unwrap } from '../../services/api';
 import ErrorState from '../../components/common/ErrorState';
+import LoadingState from '../../components/common/LoadingState';
 import { cloudinaryUrl } from '../../utils/cloudinary';
 
 const formatItemPrice = (item) => {
@@ -238,7 +239,7 @@ const AdminMenu = () => {
       <Grid container spacing={3}>
         {loading ? (
           <Grid item xs={12}>
-            <Typography align="center">Loading menu items...</Typography>
+            <LoadingState label="Loading menu…" rows={4} />
           </Grid>
         ) : filteredItems.length === 0 ? (
           <Grid item xs={12}>
