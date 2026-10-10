@@ -31,6 +31,7 @@ const OrderReview = ({
   total,
   cartCount,
   totalPrepTime,
+  estimate,
   onBack,
   onNext,
   isLoading,
@@ -101,7 +102,7 @@ const OrderReview = ({
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Typography color="text.secondary">Tax (GST)</Typography>
-              <Typography>At checkout</Typography>
+              <Typography>{estimate ? `₹${estimate.taxAmount.toFixed(2)}` : 'At checkout'}</Typography>
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Typography color="text.secondary">Prep time</Typography>
@@ -112,7 +113,7 @@ const OrderReview = ({
           <Divider sx={{ my: 2 }} />
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
             <Typography variant="h6">Total</Typography>
-            <Typography variant="h6">₹{total.toFixed(2)}</Typography>
+            <Typography variant="h6">₹{(estimate ? estimate.total : total).toFixed(2)}</Typography>
           </Box>
 
           <Box sx={{ display: 'flex', gap: 2 }}>
