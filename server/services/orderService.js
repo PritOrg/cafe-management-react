@@ -8,6 +8,7 @@ const discountRepo = require('../repositories/discountRepo');
 const tableRepo = require('../repositories/tableRepo');
 const customerRepo = require('../repositories/customerRepo');
 const activityRepo = require('../repositories/activityRepo');
+const settingsRepo = require('../repositories/settingsRepo');
 
 const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 
@@ -155,6 +156,10 @@ const placeOrder = async (req) => {
     const isStaffRole = req.role === 'admin' || req.role === 'staff';
     const placedByStaff = isStaffRole ? req.userId : undefined;
 
+    // Per-tenant feature toggles (stock deductions, loyalty, auto-invoicing).
+    const settings = await settingsRepo.getPublic(tenantId);
+    const ops = settings?.ops || {};
+
     const saved = await getDb().transaction(async (trx) => {
         let customer = null;
         if (phone) {
@@ -188,10 +193,12 @@ const placeOrder = async (req) => {
             await orderRepo.incrementMenuItemOrderCount(tenantId, line.menuItem, trx);
         }
 
-        // Stock deduction: recipe BOM first, then subtract_stock flag
+        // Stock deduction: recipe BOM first, then subtract_stock flag.
+        // Skipped entirely when the tenant disables inventory tracking.
         const inventoryRepo = require('../repositories/inventoryRepo');
         const recipeRepo = require('../repositories/recipeRepo');
-        for (const line of lines) {
+        if (ops.inventory_enabled !== false) {
+            for (const line of lines) {
             const soldMenu = await menuRepo.findByIdLean(tenantId, line.menuItem);
 
             const recipeDeductions = await recipeRepo.deductForOrderLine(
@@ -222,6 +229,7 @@ const placeOrder = async (req) => {
                 refOrderId: order._id,
                 actorId: req.userId,
             }, trx);
+            }
         }
 
         if (parsedTable) {
@@ -250,7 +258,7 @@ const placeOrder = async (req) => {
     });
 
     // Loyalty hook (Phase K): points per ₹10 paid; membership from thresholds
-    if (saved.placedByCustomer) {
+    if (saved.placedByCustomer && ops.loyalty_enabled !== false) {
         const addPoints = Math.floor(finalMinor / 1000);
         const current = await customerRepo.findById(tenantId, saved.placedByCustomer);
         let membershipLevel = current?.membershipLevel || 'Silver';
@@ -272,7 +280,7 @@ const placeOrder = async (req) => {
     // terminals update instantly via the `invoice:issued` event. If GST settings
     // are incomplete this is skipped and can be issued later from Admin → Invoices.
     // Skipped under NODE_ENV=test to keep the shared-DB test suite deterministic.
-    if (process.env.NODE_ENV !== 'test') {
+    if (process.env.NODE_ENV !== 'test' && ops.auto_invoice_enabled !== false) {
         try {
             const invoiceService = require('./invoiceService');
             await invoiceService.issueForOrder(tenantId, saved._id, {
