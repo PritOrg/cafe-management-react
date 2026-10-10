@@ -169,12 +169,12 @@ const AdminInvoices = () => {
           loading={loading}
           emptyMessage="No invoices"
           columns={[
-            { label: 'Invoice #' },
-            { label: 'Date' },
+            { label: 'Invoice #', sortKey: 'invoiceNumber' },
+            { label: 'Date', sortKey: 'issuedAt' },
             { label: 'Status' },
             { label: 'Taxable', align: 'right' },
             { label: 'CGST+SGST', align: 'right' },
-            { label: 'Total', align: 'right' },
+            { label: 'Total', align: 'right', sortKey: 'grandTotal' },
             { label: '', align: 'center' },
           ]}
           renderRow={(inv) => {

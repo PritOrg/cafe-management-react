@@ -315,12 +315,12 @@ const AdminOrders = () => {
           emptyMessage="No orders found"
           columns={[
             { label: '', align: 'center' },
-            { label: 'Order #' },
+            { label: 'Order #', sortKey: 'orderNumber' },
             { label: 'Customer' },
             { label: 'Items' },
-            { label: 'Total' },
+            { label: 'Total', sortKey: 'total' },
             { label: 'Status' },
-            { label: 'Date' },
+            { label: 'Date', sortKey: 'createdAt' },
             { label: '', align: 'center' },
           ]}
           renderRow={(order) => (
