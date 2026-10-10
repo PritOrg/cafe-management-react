@@ -215,12 +215,27 @@ const attachUserIfPresent = (req, _res, next) => {
     }
 };
 
+/**
+ * Print/PDF links are opened in a new tab (window.open), which cannot carry an
+ * Authorization header. Allow a `?token=` query param as a fallback so those
+ * endpoints still authenticate; it is stripped before the request proceeds (and
+ * thus never logged).
+ */
+const attachTokenFromQuery = (req, res, next) => {
+    if (!req.headers.authorization && req.query && typeof req.query.token === 'string') {
+        req.headers.authorization = `Bearer ${req.query.token}`;
+        delete req.query.token;
+    }
+    next();
+};
+
 module.exports = {
     ensureAuthenticated,
     ensureAdmin,
     ensureAdminOrStaff,
     ensurePlatformAdmin,
     attachUserIfPresent,
+    attachTokenFromQuery,
     authRateLimiter,
     generalRateLimiter,
     strictRateLimiter,
