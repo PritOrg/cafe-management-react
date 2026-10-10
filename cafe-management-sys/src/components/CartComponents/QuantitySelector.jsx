@@ -8,7 +8,7 @@ import { styled } from '@mui/material/styles';
 const QuantityContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
-  backgroundColor: theme.palette.background.secondary,
+  backgroundColor: theme.palette.action.hover,
   borderRadius: theme.spacing(1.5),
   padding: theme.spacing(0.5),
   border: `2px solid ${theme.palette.divider}`,
@@ -33,7 +33,7 @@ const QuantityButton = styled(IconButton)(({ theme }) => ({
   },
   
   '&:disabled': {
-    backgroundColor: theme.palette.neutral[300],
+    backgroundColor: theme.palette.action.disabledBackground,
     color: theme.palette.text.disabled,
     transform: 'none',
   },

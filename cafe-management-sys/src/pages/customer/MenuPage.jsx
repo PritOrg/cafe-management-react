@@ -25,6 +25,7 @@ import EmptyState from '../../components/common/EmptyState';
 import ErrorState from '../../components/common/ErrorState';
 import useMenuData from '../../hooks/useMenuData';
 import useFavourites from '../../hooks/useFavourites';
+import { groupByCategory, slugify } from '../../utils/menuCategorise';
 
 const MenuPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -88,15 +89,13 @@ const MenuPage = () => {
     return () => io.disconnect();
   }, [hasMore]);
 
-  // Categorized groupings for the list view.
-  const groups = useMemo(() => {
-    const map = {};
-    visibleItems.forEach((item) => {
-      const cat = item.category || 'Other';
-      (map[cat] = map[cat] || []).push(item);
-    });
-    return Object.keys(map).sort().map((category) => ({ category, items: map[category] }));
-  }, [visibleItems]);
+  // Categorized groupings for the list view (Swiggy-style, with anchor ids).
+  const groups = useMemo(() => groupByCategory(visibleItems), [visibleItems]);
+
+  const scrollToCategory = (slug) => {
+    if (view !== 'list') return;
+    document.getElementById(slug)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const hasFilters = Boolean(categoryFilter || searchQuery || favOnly);
   const clearAllFilters = () => {
@@ -217,7 +216,13 @@ const MenuPage = () => {
               <Chip
                 key={category}
                 label={category}
-                onClick={() => setCategoryFilter(selected ? '' : category)}
+                onClick={() => {
+                  if (view === 'list' && !categoryFilter) {
+                    scrollToCategory(slugify(category));
+                  } else {
+                    setCategoryFilter(selected ? '' : category);
+                  }
+                }}
                 color={selected ? 'primary' : 'default'}
                 variant={selected ? 'filled' : 'outlined'}
               />
@@ -247,7 +252,7 @@ const MenuPage = () => {
           ) : (
             <Stack spacing={3}>
               {groups.map((group) => (
-                <Box key={group.category}>
+                <Box key={group.category} id={group.slug} sx={{ scrollMarginTop: 130 }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
                     {group.category}
                   </Typography>
