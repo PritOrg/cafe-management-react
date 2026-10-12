@@ -70,4 +70,42 @@ const sendLoginNotificationEmail = (to, brand) =>
         html: loginNotificationTemplate(brand),
     });
 
-module.exports = { sendWelcomeEmail, sendLoginNotificationEmail };
+const orderConfirmationTemplate = ({ orderNumber, total, itemCount }, brand) => {
+    const name = escapeHtml(brand?.title || 'Restaurant');
+    return shell(brand, `Order ${orderNumber} received`, `
+      <p>Thanks for ordering with us!</p>
+      <p><strong>Order #:</strong> ${escapeHtml(orderNumber)}<br />
+         <strong>Items:</strong> ${Number(itemCount) || 0}<br />
+         <strong>Total:</strong> ${escapeHtml(String(total))}</p>
+      <p>We're preparing your order — a printed bill is available at the counter.</p>
+      <p>Best regards,<br />The ${name} team</p>
+    `);
+};
+
+const invoiceTemplate = ({ invoiceNumber, grandTotal }, brand) => {
+    const name = escapeHtml(brand?.title || 'Restaurant');
+    return shell(brand, `Invoice ${invoiceNumber}`, `
+      <p>Your bill is ready.</p>
+      <p><strong>Invoice #:</strong> ${escapeHtml(invoiceNumber)}<br />
+         <strong>Total:</strong> ${escapeHtml(String(grandTotal))}</p>
+      <p>The invoice PDF is attached (GST-compliant).</p>
+      <p>Thank you,<br />The ${name} team</p>
+    `);
+};
+
+const sendOrderConfirmationEmail = (to, data, brand) =>
+    sendMail({
+        to,
+        subject: `Order ${data.orderNumber} received`,
+        html: orderConfirmationTemplate(data, brand),
+    });
+
+const sendInvoiceEmail = (to, data, pdfBuffer, brand) =>
+    sendMail({
+        to,
+        subject: `Invoice ${data.invoiceNumber}`,
+        html: invoiceTemplate(data, brand),
+        attachments: [{ filename: `${data.invoiceNumber}.pdf`, content: Buffer.from(pdfBuffer) }],
+    });
+
+module.exports = { sendWelcomeEmail, sendLoginNotificationEmail, sendOrderConfirmationEmail, sendInvoiceEmail };

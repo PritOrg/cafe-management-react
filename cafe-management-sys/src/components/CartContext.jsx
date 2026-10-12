@@ -146,6 +146,9 @@ export const CartProvider = ({ children }) => {
             if (options.customerName) {
                 orderData.customerName = String(options.customerName).trim();
             }
+            if (options.email) {
+                orderData.email = String(options.email).trim();
+            }
             if (options.discountCode) {
                 orderData.discountCode = String(options.discountCode).trim();
             }

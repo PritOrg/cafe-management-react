@@ -65,7 +65,7 @@ const resolveDiscount = async (tenantId, discountCode, lines, subtotalMinor) => 
 
 const placeOrder = async (req) => {
     const tenantId = req.tenantId;
-    const { tableNumber, items, tipAmount, discountCode, paymentMethod, phone, customerName, clientOrderId } = req.body || {};
+    const { tableNumber, items, tipAmount, discountCode, paymentMethod, phone, email, customerName, clientOrderId } = req.body || {};
 
     if (!tenantId) {
         return { status: 400, message: 'Tenant context is required' };
@@ -168,6 +168,7 @@ const placeOrder = async (req) => {
                 phone: String(phone).trim(),
                 firstName: parts[0],
                 lastName: parts.slice(1).join(' ') || undefined,
+                email: email ? String(email).trim() : undefined,
             }, trx);
         }
 
@@ -275,6 +276,24 @@ const placeOrder = async (req) => {
     }
 
     const fullOrder = await orderRepo.findByIdForOwner(tenantId, saved._id);
+
+    // Best-effort order confirmation email (non-blocking) when the guest shared
+    // an email at checkout and the tenant has mail configured.
+    if (email && ops.auto_email_enabled !== false) {
+        try {
+            const { isMailConfigured } = require('../middleware/nodemailer');
+            if (isMailConfigured()) {
+                const { sendOrderConfirmationEmail } = require('../mail/customerMail');
+                await sendOrderConfirmationEmail(String(email).trim(), {
+                    orderNumber: saved.orderNumber,
+                    total: money.fromMinor(finalMinor),
+                    itemCount: lines.reduce((s, l) => s + (l.quantity || 1), 0),
+                }, settings.brand);
+            }
+        } catch (mailError) {
+            console.warn('Order confirmation email skipped:', mailError.message);
+        }
+    }
 
     // Best-effort: issue the GST bill immediately so it's ready and admin
     // terminals update instantly via the `invoice:issued` event. If GST settings

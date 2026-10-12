@@ -12,6 +12,7 @@ export const useCheckoutFlow = (createOrder, initialCustomer = {}) => {
   const [customerInfo, setCustomerInfo] = useState({
     name: initialCustomer.name || '',
     phone: initialCustomer.phone || '',
+    email: initialCustomer.email || '',
     tableNumber: initialCustomer.tableNumber || '',
     orderType: initialCustomer.orderType || 'dinein',
   });
@@ -29,6 +30,7 @@ export const useCheckoutFlow = (createOrder, initialCustomer = {}) => {
       await createOrder(paymentMethod, {
         phone: customerInfo.phone,
         customerName: customerInfo.name,
+        email: customerInfo.email,
         tableNumber: customerInfo.tableNumber,
         ...extra,
       });

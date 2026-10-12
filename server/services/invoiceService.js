@@ -155,6 +155,30 @@ const issueForOrder = async (tenantId, orderId, { interState = false, paymentMet
         invoiceNumber: saved.invoice_number,
     });
 
+    // Best-effort invoice email with the PDF attached, to the guest's captured
+    // email (non-blocking; requires mail config + the auto_email toggle).
+    if (settings.ops?.auto_email_enabled !== false && order.placedByCustomer && order.placedByCustomer !== '0000000000000000000000aa') {
+        try {
+            const customerRepo = require('../repositories/customerRepo');
+            const customer = await customerRepo.findById(tenantId, order.placedByCustomer);
+            const email = customer && (customer.email || customer.emailAddress) ? (customer.email || customer.emailAddress) : null;
+            if (email) {
+                const { isMailConfigured } = require('../middleware/nodemailer');
+                if (isMailConfigured()) {
+                    const { renderInvoicePdf } = require('./invoicePdf');
+                    const { buffer } = await renderInvoicePdf(mapInvoice(saved), { format: 'a4' });
+                    const { sendInvoiceEmail } = require('../mail/customerMail');
+                    await sendInvoiceEmail(String(email).trim(), {
+                        invoiceNumber: saved.invoice_number,
+                        grandTotal: grand,
+                    }, buffer, settings.brand);
+                }
+            }
+        } catch (mailError) {
+            console.warn('Invoice email skipped:', mailError.message);
+        }
+    }
+
     return {
         invoice: mapInvoice(saved),
         alreadyIssued: false,
