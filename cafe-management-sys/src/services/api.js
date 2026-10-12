@@ -156,6 +156,12 @@ export const authAPI = {
       isFormData: true,
     }),
 
+  changePassword: ({ currentPassword, newPassword }) =>
+    apiRequest('/auth/password', {
+      method: 'PUT',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
+
   logout: () => {
     ['token', 'user', 'userType'].forEach((key) => {
       sessionStorage.removeItem(key);

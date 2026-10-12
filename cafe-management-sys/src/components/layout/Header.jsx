@@ -18,8 +18,17 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
+import PasswordIcon from '@mui/icons-material/Password';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
 import { useAuth } from '../../contexts/AuthContext';
 import { useThemeContext } from '../../contexts/ThemeContext';
+import { authAPI } from '../../services/api';
+import { useToast } from '../ui';
 import RealtimeStatus from './RealtimeStatus';
 
 const DRAWER_WIDTH = 280;
@@ -33,11 +42,34 @@ const Header = ({ toggleDrawer, pageTitle }) => {
   const openProfile = useCallback((event) => setAnchorEl(event.currentTarget), []);
   const closeProfile = useCallback(() => setAnchorEl(null), []);
 
-  const handleLogout = useCallback(() => {
-    setAnchorEl(null);
+const handleLogout = useCallback(() => {
+    closeProfile();
     logout();
     navigate('/login-register');
-  }, [logout, navigate]);
+  }, [logout, navigate, closeProfile]);
+
+  const toast = useToast();
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pw, setPw] = useState({ current: '', next: '' });
+
+  const savePassword = async () => {
+    if (!pw.current || !pw.next || pw.next.length < 8) {
+      toast.error('Enter your current password and a new one at least 8 characters long');
+      return;
+    }
+    try {
+      setPwSaving(true);
+      await authAPI.changePassword({ currentPassword: pw.current, newPassword: pw.next });
+      toast.success('Password updated');
+      setPwOpen(false);
+      setPw({ current: '', next: '' });
+    } catch (err) {
+      toast.error(err.message || 'Could not update password');
+    } finally {
+      setPwSaving(false);
+    }
+  };
 
   const initial = (user?.firstName || user?.email || 'A').charAt(0).toUpperCase();
 
@@ -130,12 +162,41 @@ const Header = ({ toggleDrawer, pageTitle }) => {
           <ListItemIcon><StorefrontIcon fontSize="small" /></ListItemIcon>
           <ListItemText>View storefront</ListItemText>
         </MenuItem>
+        <MenuItem onClick={() => { closeProfile(); setPwOpen(true); }}>
+          <ListItemIcon><PasswordIcon fontSize="small" /></ListItemIcon>
+          <ListItemText>Change password</ListItemText>
+        </MenuItem>
         <Divider />
         <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
           <ListItemIcon><LogoutIcon fontSize="small" color="error" /></ListItemIcon>
           <ListItemText>Sign out</ListItemText>
         </MenuItem>
       </Menu>
+      <Dialog open={pwOpen} onClose={() => setPwOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Change password</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '16px !important' }}>
+          <TextField
+            fullWidth
+            label="Current password"
+            type="password"
+            value={pw.current}
+            onChange={(e) => setPw((p) => ({ ...p, current: e.target.value }))}
+          />
+          <TextField
+            fullWidth
+            label="New password (min 8 characters)"
+            type="password"
+            value={pw.next}
+            onChange={(e) => setPw((p) => ({ ...p, next: e.target.value }))}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setPwOpen(false)}>Cancel</Button>
+          <Button variant="contained" disabled={pwSaving} onClick={savePassword}>
+            {pwSaving ? 'Saving…' : 'Update'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </AppBar>
   );
 };
