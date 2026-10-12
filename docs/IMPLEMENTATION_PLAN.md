@@ -528,7 +528,7 @@ Foundations start right after V (framework cleanup is build-adjacent); flow poli
 - [ ] E2E (stretch): Playwright smoke — login → place order → invoice PDF returns 200 + bytes > 0; 5–10 tests max
 
 **What to test first (highest leverage)**
-- [ ] Unit: `money.js` (bps tax, CGST/SGST split, rounding, `moneyToWordsINR` lakh/crore edge cases), FY invoice numbering + concurrency (parallel `nextNumber` → no dup), status machine transitions, GST state-code/regex validation, modifier price aggregation
+- [x] Unit: `money.js` bps / CGST-SGST / rounding + `moneyToWordsINR` lakh·crore·paise (`test/money.test.js`); FY numbering + concurrency (`test/fiscalYear.test.js`, invoice parallel-issue test); status machine (`test/statusMachine.test.js`); GST validation (`test/gstValidation.test.js`). Modifier aggregation covered by frontend `cartPricing.test.js`
 - [ ] Integration (supertest): `placeOrder` (server-side pricing, rejects bad size/qty, stock deducted once), `POST /orders/:id/invoice` idempotency, inventory movements sign rules, activity rows written with no password leakage, settings-driven tax
 - [x] Frontend: `formatMoney`, API→view adapters, `AuthContext` role logic, customization dialog with fixture modifier data, checkout no-address flow
 
