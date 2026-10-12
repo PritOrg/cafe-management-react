@@ -3,17 +3,24 @@ const nodemailer = require('nodemailer');
 const BREVO_HOST = 'smtp-relay.brevo.com';
 
 const buildTransport = () => {
-    const brevo = process.env.BREVO_API_KEY;
-    const smtpHost = process.env.SMTP_HOST || (brevo ? BREVO_HOST : '');
-    if (!smtpHost) return null;
+    const smtpHost = process.env.SMTP_HOST || '';
+    // Brevo relay auto-selected when no generic SMTP host is configured and a
+    // Brevo login/key is present.
+    const brevo = !smtpHost && (process.env.BREVO_API_KEY || process.env.BREVO_SMTP_LOGIN);
+    const host = smtpHost || (brevo ? BREVO_HOST : '');
+    if (!host) return null;
 
-    const user = process.env.SMTP_USER || process.env.BREVO_SMTP_LOGIN || process.env.MAIL_FROM || '';
-    const pass = process.env.SMTP_PASS || (brevo ? brevo : undefined);
-    // Brevo always requires a login email + the key (502 'authenticate' otherwise).
-    if (brevo && (!user || !pass)) return null;
+    const user = brevo
+        ? (process.env.BREVO_SMTP_LOGIN || process.env.SMTP_USER || process.env.MAIL_FROM || '')
+        : (process.env.SMTP_USER || process.env.MAIL_FROM || '');
+    const pass = brevo
+        ? (process.env.BREVO_API_KEY || process.env.SMTP_PASS)
+        : process.env.SMTP_PASS;
+    // Credentialed relays (Brevo, or generic SMTP with a user) need login + pass.
+    if ((brevo || user) && (!user || !pass)) return null;
 
     return nodemailer.createTransport({
-        host: smtpHost,
+        host,
         port: Number(process.env.SMTP_PORT) || 587,
         secure: process.env.SMTP_SECURE === 'true',
         auth: user ? { user, pass } : undefined,
