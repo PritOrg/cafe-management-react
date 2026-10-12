@@ -47,7 +47,7 @@
 - Money helpers: `server/utils/money.js` (minor units, `applyBps`, `splitCgstSgst`, `TAX_BPS=500`).
 - Settings: `GET /api/settings/public`, `GET/PUT /api/settings` (admin). Activity log via `activityRepo.log`.
 - Customer auth **removed**. `POST /api/orders` public+tenant-scoped (`phone`+`customerName` upsert guest). History: `GET /api/orders/history?phone=`. Staff login only (`authService.verifyPassword`). Frontend AuthContext staff-only; `AdminTenants` at `/admin/tenants`.
-- Lazy drivers: `STORAGE_DRIVER=local|cloudinary` (Cloudinary used when configured); mail only if `SMTP_HOST` set. Rate limiters no-op when `NODE_ENV=test`. Backend tests refuse to run against a non-local DB host unless `ALLOW_REMOTE_TEST_DB=true` (`server/test/setup.js`).
+- Lazy drivers: `STORAGE_DRIVER=local|cloudinary` (Cloudinary used when configured); mail via `SMTP_HOST` (generic) or **Brevo** (`BREVO_API_KEY` → smtp-relay.brevo.com) when set. Rate limiters no-op when `NODE_ENV=test`. Backend tests refuse to run against a non-local DB host unless `ALLOW_REMOTE_TEST_DB=true` (`server/test/setup.js`).
 - Bcrypt hashing: `services/authService.js` (called explicitly from staffRepo.create / login — no pre-save hook).
 
 ## Native modules / WSL

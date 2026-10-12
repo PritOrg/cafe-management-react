@@ -622,7 +622,7 @@ const AdminSettings = () => {
             <CardContent>
               <Typography variant="h6" gutterBottom>SMTP (email)</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Configured from the server environment: SMTP_HOST / SMTP_PORT / SMTP_SECURE / SMTP_USER / SMTP_PASS.
+                Configured from the server environment: `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS`, or the **Brevo relay** via `BREVO_API_KEY`. Watch the server console/logs for send errors.
               </Typography>
               {integrations?.mail ? (
                 <Alert severity={integrations.mail.configured ? 'success' : 'warning'} sx={{ mb: 2 }}>

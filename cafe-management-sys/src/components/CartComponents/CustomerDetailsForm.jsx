@@ -110,6 +110,17 @@ const CustomerDetailsForm = ({
                   />
                 </Grid2>
               )}
+              <Grid2 xs={12}>
+                <TextField
+                  fullWidth
+                  label="Email (optional — for order & bill by mail)"
+                  type="email"
+                  name="email"
+                  value={customerInfo.email}
+                  onChange={onCustomerChange}
+                  inputProps={{ autoComplete: 'email' }}
+                />
+              </Grid2>
             </Grid2>
           </CardContent>
         </Card>

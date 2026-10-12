@@ -86,7 +86,8 @@ See `server/.env.example` for the full list. Key variables:
 | `PUBLIC_DOMAIN` / `CORS_ORIGINS` | Allowed browser origins |
 | `STORAGE_DRIVER` | `local` (serves `/uploads`) or `cloudinary` (auto when configured) |
 | `CLOUDINARY_*` | Cloudinary upload credentials |
-| `SMTP_*` | Outgoing email (optional) |
+| `SMTP_*` | Outgoing email via generic SMTP (optional) |
+| `BREVO_API_KEY` | **Brevo SMTP relay** — used automatically when `SMTP_HOST` is empty. Login = `SMTP_USER` / `BREVO_SMTP_LOGIN` / `MAIL_FROM`; password = this key. Sending still needs a recipient address (guests are phone-only). |
 
 ## 6. Backup
 
