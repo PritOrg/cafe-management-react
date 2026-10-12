@@ -1,5 +1,12 @@
 /** Server-side HTML print views (Tier 1) — A4 + thermal widths, browser print */
 
+/** Two-initial monogram (fallback when no logo is uploaded). */
+const initialsOf = (name = '') => {
+    const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    const initials = parts.slice(0, 2).map((w) => (w[0] || '').toUpperCase()).join('');
+    return initials || 'CA';
+};
+
 const esc = (s) => String(s ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -46,6 +53,9 @@ const renderInvoiceHtml = (inv, { mode = 'a4' } = {}) => {
 
     const header = `
       <div class="brand">
+        ${brand.logoUrl
+        ? `<img class="brand-logo" src="${esc(brand.logoUrl)}" alt="" />`
+        : `<div class="monogram" style="width:48px;height:48px;border-radius:50%;margin:0 auto 6px;background:${esc(brand.primaryColor || '#ff6b35')};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16pt">${esc(initialsOf(brand.title || gst.legalName || 'Cafe'))}</div>`}
         <div class="name">${esc(brand.title || 'Cafe')}</div>
         ${gst.legalName ? `<div>${esc(gst.legalName)}</div>` : ''}
         ${gst.legalAddress ? `<div>${esc(gst.legalAddress)}</div>` : ''}
@@ -115,4 +125,4 @@ const renderInvoiceHtml = (inv, { mode = 'a4' } = {}) => {
 </html>`;
 };
 
-module.exports = { renderInvoiceHtml };
+module.exports = { renderInvoiceHtml, initialsOf };

@@ -69,6 +69,15 @@ const updateById = async (tenantId, id, data) => {
     return row ? mapStaff(toPublic(row)) : null;
 };
 
+/** Self-service password change (already-hashed value). */
+const updatePassword = async (tenantId, id, passwordHash) => {
+    const [row] = await getDb()('staff_admins')
+        .where({ id, tenant_id: tenantId })
+        .update({ password: passwordHash, updated_at: new Date() })
+        .returning(cols);
+    return row ? mapStaff(toPublic(row)) : null;
+};
+
 const deleteById = async (tenantId, id) => {
     const [row] = await getDb()('staff_admins')
         .where({ id, tenant_id: tenantId })
@@ -89,6 +98,7 @@ module.exports = {
     create,
     findById,
     updateById,
+    updatePassword,
     deleteById,
     touchLogin,
 };

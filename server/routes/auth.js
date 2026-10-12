@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const { registerStaffOrAdmin, login } = require('../controllers/authController');
-const { authRateLimiter } = require('../middleware/auth');
+const { registerStaffOrAdmin, login, changePassword } = require('../controllers/authController');
+const { authRateLimiter, ensureAuthenticated } = require('../middleware/auth');
 
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -24,5 +24,7 @@ router.post('/register/staff',
 );
 
 router.post('/login', authRateLimiter, login);
+
+router.put('/password', ensureAuthenticated, changePassword);
 
 module.exports = router;
