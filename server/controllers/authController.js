@@ -139,3 +139,28 @@ exports.login = async (req, res) => {
         return sendResponse(res, 500, false, 'Login failed. Please try again later.');
     }
 };
+
+exports.changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body || {};
+        if (!currentPassword || !newPassword) {
+            return sendResponse(res, 400, false, 'currentPassword and newPassword are required');
+        }
+        if (String(newPassword).length < 8) {
+            return sendResponse(res, 400, false, 'New password must be at least 8 characters');
+        }
+        const { getDb } = require('../db/pool');
+        const [row] = await getDb()('staff_admins')
+            .where({ id: req.userId, tenant_id: req.tenantId })
+            .first('password');
+        if (!row) return sendResponse(res, 404, false, 'Account not found');
+        const ok = await authService.verifyPassword(currentPassword, row.password);
+        if (!ok) return sendResponse(res, 400, false, 'Current password is incorrect');
+        const hashed = await authService.hashPassword(newPassword);
+        await staffRepo.updatePassword(req.tenantId, req.userId, hashed);
+        return sendResponse(res, 200, true, 'Password updated');
+    } catch (err) {
+        console.error('Error changing password:', err);
+        return sendResponse(res, 500, false, err.message || 'Server error');
+    }
+};
