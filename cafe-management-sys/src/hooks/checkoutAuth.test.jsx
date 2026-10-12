@@ -29,6 +29,7 @@ describe('useCheckoutFlow', () => {
         expect(createOrder).toHaveBeenCalledWith('cash', {
             phone: '',
             customerName: '',
+            email: '',
             tableNumber: '',
         });
         expect(result.current.openDialog).toBe(true);
