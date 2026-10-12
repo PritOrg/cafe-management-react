@@ -18,13 +18,23 @@ describe('mail driver (SMTP + Brevo)', () => {
         expect(m.getTransporter()).toBeNull();
     });
 
-    it('uses the Brevo relay when only BREVO_API_KEY is set', async () => {
-        const m = await loadMail({ BREVO_API_KEY: 'brevo-key-123', MAIL_FROM: 'orders@mysite.com' });
+    it('reports unconfigured when only a Brevo key is set (login email missing)', async () => {
+        const m = await loadMail({ BREVO_API_KEY: 'brevo-key-123' });
+        expect(m.isMailConfigured()).toBe(false);
+        expect(m.getTransporter()).toBeNull();
+    });
+
+    it('uses the Brevo relay when the key AND a login email are present', async () => {
+        const m = await loadMail({
+            BREVO_API_KEY: 'brevo-key-123',
+            MAIL_FROM: 'orders@mysite.com',
+            BREVO_SMTP_LOGIN: 'smtp@mysite.com',
+        });
         expect(m.isMailConfigured()).toBe(true);
         const t = m.getTransporter();
         expect(t.options.host).toBe('smtp-relay.brevo.com');
         expect(t.options.port).toBe(587);
-        expect(t.options.auth.user).toBe('orders@mysite.com');
+        expect(t.options.auth.user).toBe('smtp@mysite.com'); // SMTP_USER || BREVO_SMTP_LOGIN || MAIL_FROM
         expect(t.options.auth.pass).toBe('brevo-key-123');
     });
 

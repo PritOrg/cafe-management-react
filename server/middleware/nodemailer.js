@@ -3,15 +3,20 @@ const nodemailer = require('nodemailer');
 const BREVO_HOST = 'smtp-relay.brevo.com';
 
 const buildTransport = () => {
-    const smtpHost = process.env.SMTP_HOST || (process.env.BREVO_API_KEY ? BREVO_HOST : '');
+    const brevo = process.env.BREVO_API_KEY;
+    const smtpHost = process.env.SMTP_HOST || (brevo ? BREVO_HOST : '');
     if (!smtpHost) return null;
+
     const user = process.env.SMTP_USER || process.env.BREVO_SMTP_LOGIN || process.env.MAIL_FROM || '';
-    const pass = process.env.SMTP_PASS || (process.env.BREVO_API_KEY && user ? process.env.BREVO_API_KEY : undefined);
+    const pass = process.env.SMTP_PASS || (brevo ? brevo : undefined);
+    // Brevo always requires a login email + the key (502 'authenticate' otherwise).
+    if (brevo && (!user || !pass)) return null;
+
     return nodemailer.createTransport({
         host: smtpHost,
         port: Number(process.env.SMTP_PORT) || 587,
         secure: process.env.SMTP_SECURE === 'true',
-        auth: user && pass ? { user, pass } : undefined,
+        auth: user ? { user, pass } : undefined,
     });
 };
 
@@ -23,7 +28,7 @@ const getTransporter = () => {
     return transporter;
 };
 
-const isMailConfigured = () => !!process.env.SMTP_HOST || !!process.env.BREVO_API_KEY;
+const isMailConfigured = () => !!getTransporter();
 
 /** Send an email via the configured SMTP driver. Throws if mail is not configured. */
 const sendMail = async ({ to, subject, html, text, from }) => {
