@@ -74,6 +74,7 @@ export default defineConfig({
     globals: true,
     setupFiles: './src/vitest.setup.js',
     passWithNoTests: true,
+    exclude: ['node_modules/**', 'build/**', 'e2e/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
