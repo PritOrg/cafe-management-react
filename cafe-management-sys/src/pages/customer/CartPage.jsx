@@ -1,5 +1,5 @@
-import React, { useCallback, useContext, useMemo } from 'react';
-import { Container } from '@mui/material';
+import React, { useCallback, useContext, useMemo, useState } from 'react';
+import { Container, Box, TextField } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import CartContext from '../../components/CartContext';
 import { estimateTotals } from '../../utils/cartPricing';
@@ -45,6 +45,7 @@ const CartPage = () => {
   } = useCheckoutFlow(createOrder, { name, phone, tableNumber });
 
   const estimate = useMemo(() => estimateTotals(cartItems), [cartItems]);
+  const [discountCode, setDiscountCode] = useState('');
 
   const steps = ['Cart', 'Details', 'Payment', 'Review'];
 
@@ -61,8 +62,8 @@ const CartPage = () => {
     // Remember the customer so their phone links future order history.
     setCustomer({ phone: customerInfo.phone, name: customerInfo.name });
     setTable(customerInfo.tableNumber);
-    await handleCheckout();
-  }, [customerInfo, handleCheckout, setCustomer, setTable]);
+    await handleCheckout({ discountCode });
+  }, [customerInfo, discountCode, handleCheckout, setCustomer, setTable]);
 
   if (cartItems.length === 0 && activeStep === 0) {
     return <EmptyCart />;
@@ -72,18 +73,30 @@ const CartPage = () => {
     switch (activeStep) {
       case 0:
         return (
-          <CartItems
-            cartItems={cartItems}
-            onQuantityChange={handleQuantityChange}
-            onRemoveItem={removeCartItem}
-            onClearCart={clearCart}
-            onUpdateCustomization={handleUpdateCustomization}
-            total={total}
-            cartCount={cartCount}
-            totalPrepTime={totalPrepTime}
-            onNext={handleNext}
-            isLoading={isLoading}
-          />
+          <>
+            <CartItems
+              cartItems={cartItems}
+              onQuantityChange={handleQuantityChange}
+              onRemoveItem={removeCartItem}
+              onClearCart={clearCart}
+              onUpdateCustomization={handleUpdateCustomization}
+              total={total}
+              cartCount={cartCount}
+              totalPrepTime={totalPrepTime}
+              onNext={handleNext}
+              isLoading={isLoading}
+            />
+            <Box sx={{ mt: 2, maxWidth: 420 }}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Discount / promo code (optional)"
+                value={discountCode}
+                onChange={(e) => setDiscountCode(e.target.value)}
+                helperText="Applied by the server when the order is placed."
+              />
+            </Box>
+          </>
         );
       case 1:
         return (
