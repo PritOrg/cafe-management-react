@@ -127,13 +127,13 @@ jobs:
           npm ci
           npm run db:migrate
           npm run db:seed
-          npm run test:coverage || true    # record, don't gate yet
+          npm run test:coverage    # enforces thresholds (job is non-blocking)
 
       - name: Frontend coverage
         working-directory: cafe-management-sys
         run: |
           npm ci
-          CI=true npx vitest run --coverage || true # record, don't gate yet
+          CI=true npx vitest run --coverage    # enforces thresholds (job is non-blocking)
 
       - name: Upload coverage reports
         if: always()

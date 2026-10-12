@@ -27,9 +27,11 @@
   Linux: backend (`npm run test:coverage` against the Postgres service) + frontend
   (`npx vitest run --coverage`), prints the v8 table, uploads `coverage/` reports
   as the `coverage-reports` artifact.
-- **Baseline (fill from the latest job artifact)**: server Stmts / Branch / Funcs /
-  Lines ≈ _%_; frontend ≈ _%. After 2–3 stable runs, enable the thresholds as
-  fail-gates (`--coverage.thresholds.*`) and ratchet upward.
+- **Baseline (first reliable CI run, 2026-10-12)**:
+  server ≈ Stmts **65** / Branch **49** / Funcs **66** / Lines **68**;
+  frontend ≈ Stmts **56** / Branch **58** / Funcs **58** / Lines **58**.
+  Floors are set ~1pt under these, enforced by the coverage job (non-blocking).
+  Ratchet upward once a floor stays comfortable for several runs.
 
 ## CI
 
