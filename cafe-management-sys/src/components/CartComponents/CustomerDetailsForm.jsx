@@ -113,12 +113,13 @@ const CustomerDetailsForm = ({
               <Grid2 xs={12}>
                 <TextField
                   fullWidth
-                  label="Email (optional — for order & bill by mail)"
+                  label="Email (optional)"
                   type="email"
                   name="email"
                   value={customerInfo.email}
                   onChange={onCustomerChange}
                   inputProps={{ autoComplete: 'email' }}
+                  helperText="Want a copy of the bill? Add your email and we'll send the invoice by mail."
                 />
               </Grid2>
             </Grid2>

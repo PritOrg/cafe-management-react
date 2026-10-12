@@ -122,6 +122,7 @@ const upsertByPhone = async (tenantId, { phone, firstName, lastName, email }, tr
         const patch = { updated_at: new Date() };
         if (firstName) patch.first_name = firstName;
         if (lastName) patch.last_name = lastName;
+        if (email) patch.email = String(email).trim(); // replace a fabricated/old email with the real one
         const [updated] = await trx('customers').where({ id: row.id }).update(patch).returning('*');
         return mapCustomer(updated);
     }
@@ -130,7 +131,8 @@ const upsertByPhone = async (tenantId, { phone, firstName, lastName, email }, tr
         phone,
         first_name: firstName || 'Guest',
         last_name: lastName || 'Customer',
-        email: email || `guest+${String(phone).replace(/\D/g, '')}@guest.local`,
+        // Never fabricate an email — keep it null until the guest shares one.
+        email: email ? String(email).trim() : null,
     }).returning('*');
     return mapCustomer(inserted);
 };
