@@ -40,7 +40,7 @@ const AdminSettings = () => {
   });
   const [gstError, setGstError] = useState('');
   const [gstSaving, setGstSaving] = useState(false);
-  const [ops, setOps] = useState({ timezone: 'Asia/Kolkata', currency: 'INR', activity_retention_days: 365, inventory_enabled: true, loyalty_enabled: true, auto_invoice_enabled: true });
+  const [ops, setOps] = useState({ timezone: 'Asia/Kolkata', currency: 'INR', activity_retention_days: 365, inventory_enabled: true, loyalty_enabled: true, auto_invoice_enabled: true, auto_email_enabled: true });
   const [print, setPrint] = useState({ default_paper: 'a4', printer_host: '' });
   const [opsSaving, setOpsSaving] = useState(false);
   const [printSaving, setPrintSaving] = useState(false);
@@ -107,6 +107,7 @@ const AdminSettings = () => {
           inventory_enabled: data.ops.inventory_enabled !== false,
           loyalty_enabled: data.ops.loyalty_enabled !== false,
           auto_invoice_enabled: data.ops.auto_invoice_enabled !== false,
+          auto_email_enabled: data.ops.auto_email_enabled !== false,
         });
       }
       if (data.print) {
@@ -143,6 +144,7 @@ const AdminSettings = () => {
           inventory_enabled: ops.inventory_enabled,
           loyalty_enabled: ops.loyalty_enabled,
           auto_invoice_enabled: ops.auto_invoice_enabled,
+          auto_email_enabled: ops.auto_email_enabled,
         },
         print: { default_paper: print.default_paper, printer_host: print.printer_host },
       });
@@ -604,6 +606,10 @@ const AdminSettings = () => {
                     <FormControlLabel
                       control={<Switch checked={ops.auto_invoice_enabled} onChange={(e) => setOps({ ...ops, auto_invoice_enabled: e.target.checked })} />}
                       label="Auto-issue the GST bill at checkout"
+                    />
+                    <FormControlLabel
+                      control={<Switch checked={ops.auto_email_enabled} onChange={(e) => setOps({ ...ops, auto_email_enabled: e.target.checked })} />}
+                      label="Order & bill emails (when a guest shares an email)"
                     />
                   </Stack>
                 </Grid>
