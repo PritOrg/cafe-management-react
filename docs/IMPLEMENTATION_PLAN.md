@@ -528,7 +528,7 @@ Foundations start right after V (framework cleanup is build-adjacent); flow poli
 - [ ] E2E (stretch): Playwright smoke — login → place order → invoice PDF returns 200 + bytes > 0; 5–10 tests max
 
 **What to test first (highest leverage)**
-- [ ] Unit: `money.js` (bps tax, CGST/SGST split, rounding, `moneyToWordsINR` lakh/crore edge cases), FY invoice numbering + concurrency (parallel `nextNumber` → no dup), status machine transitions, GST state-code/regex validation, modifier price aggregation
+- [x] Unit: `money.js` bps / CGST-SGST / rounding + `moneyToWordsINR` lakh·crore·paise (`test/money.test.js`); FY numbering + concurrency (`test/fiscalYear.test.js`, invoice parallel-issue test); status machine (`test/statusMachine.test.js`); GST validation (`test/gstValidation.test.js`). Modifier aggregation covered by frontend `cartPricing.test.js`
 - [ ] Integration (supertest): `placeOrder` (server-side pricing, rejects bad size/qty, stock deducted once), `POST /orders/:id/invoice` idempotency, inventory movements sign rules, activity rows written with no password leakage, settings-driven tax
 - [x] Frontend: `formatMoney`, API→view adapters, `AuthContext` role logic, customization dialog with fixture modifier data, checkout no-address flow
 
@@ -538,11 +538,11 @@ Foundations start right after V (framework cleanup is build-adjacent); flow poli
 - [x] Tests never touch a remote DB: `server/test/setup.js` refuses a non-local `DATABASE_URL` unless `ALLOW_REMOTE_TEST_DB=true`
 
 **Coverage gates (70–80% target)**
-- [ ] `vitest run --coverage` (v8 provider) with thresholds in config, **ratchet not regress**:
+- [x] `vitest run --coverage` (v8 provider) with thresholds in config (configured; not yet a fail-gate)
   - Global floor: **lines 70%**, branches 65%
   - Per-area floors: `server/services|utils|repositories` **85%** · `server/controllers|middleware` **75%** · frontend `utils|adapters|contexts|hooks` **80%** · components **70%** · pages **60%** (JSX-heavy) — overall lands 70–80%
   - CI fails below floor; weekly (or per-PR) raising the number until 80 global
-- [ ] Exclusions (explicit, listed in config): `public/`, `vite.config.js`, `prisma/seed.ts` beyond smoke, generated; **dead code is deleted, not excluded** (A19 cleanup feeds this)
+- [x] Exclusions (explicit, listed in config): `public/`, `vite.config.js`, `prisma/seed.ts` beyond smoke, generated; **dead code is deleted, not excluded** (A19 cleanup feeds this)
 - [ ] Report: coverage summary comment on PRs; badge optional
 
 **CI (none exists today)**
