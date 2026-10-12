@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -93,20 +93,55 @@ const AdminInvoices = () => {
     }
   };
 
-  const printInvoice = (inv, mode = paper) => {
-    const id = inv._id || inv.id;
-    const qp = new URLSearchParams({ mode });
-    const token = getAuthToken();
-    if (token) qp.set('token', token);
-    window.open(`${API_BASE_URL}/invoices/${id}/print?${qp.toString()}`, '_blank');
-  };
+  const paperFormat = (p) => (p === 'thermal' ? 'thermal80' : 'a4');
 
-  const downloadPdf = (inv, format = 'a4') => {
+  const pdfUrl = (inv, format) => {
     const id = inv._id || inv.id;
     const qp = new URLSearchParams({ format, download: '1' });
     const token = getAuthToken();
     if (token) qp.set('token', token);
-    window.open(`${API_BASE_URL}/invoices/${id}/pdf?${qp.toString()}`, '_blank');
+    return `${API_BASE_URL}/invoices/${id}/pdf?${qp.toString()}`;
+  };
+
+  const downloadPdf = (inv, format = paperFormat(paper)) => {
+    window.open(pdfUrl(inv, format), '_blank');
+  };
+
+  // In-app print: preview the server-rendered print page in a dialog (no new tab).
+  const [printTarget, setPrintTarget] = useState(null);
+  const [printMode, setPrintMode] = useState('a4');
+  const [previewHtml, setPreviewHtml] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const iframeRef = useRef(null);
+
+  const openPrint = async (inv, mode) => {
+    const format = mode || paperFormat(paper);
+    const id = inv._id || inv.id;
+    setPrintTarget(inv);
+    setPrintMode(format);
+    setPreviewHtml('');
+    setPreviewLoading(true);
+    try {
+      const modeParam = format.startsWith('thermal') ? 'thermal' : 'a4';
+      const resp = await fetch(`${API_BASE_URL}/invoices/${id}/print?mode=${modeParam}&chrome=0`, {
+        headers: { Authorization: `Bearer ${getAuthToken() || ''}` },
+      });
+      if (!resp.ok) throw new Error('Failed to load preview');
+      setPreviewHtml(await resp.text());
+    } catch (err) {
+      console.error('Failed to load print preview:', err);
+      setPreviewHtml('');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const printFromDialog = () => {
+    try {
+      iframeRef.current?.contentWindow?.print();
+    } catch (err) {
+      console.error('Iframe print not available', err);
+    }
   };
 
   return (
@@ -200,8 +235,8 @@ const AdminInvoices = () => {
                 <TableCell align="right">{formatMoney(tax)}</TableCell>
                 <TableCell align="right">{formatMoney(inv.grandTotal)}</TableCell>
                 <TableCell align="center">
-                  <Button size="medium" startIcon={<Print />} onClick={() => printInvoice(inv)}>Print</Button>
-                  <Button size="medium" startIcon={<Download />} onClick={() => downloadPdf(inv, 'a4')}>PDF</Button>
+                  <Button size="medium" startIcon={<Print />} onClick={() => openPrint(inv)}>Print</Button>
+                  <Button size="medium" startIcon={<Download />} onClick={() => downloadPdf(inv)}>PDF</Button>
                 </TableCell>
               </TableRow>
             );
@@ -230,8 +265,8 @@ const AdminInvoices = () => {
                     Total: {formatMoney(inv.grandTotal)}
                   </Typography>
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, mt: 1 }}>
-                    <Button size="medium" startIcon={<Print />} onClick={() => printInvoice(inv)}>Print</Button>
-                    <Button size="medium" startIcon={<Download />} onClick={() => downloadPdf(inv, 'a4')}>PDF</Button>
+                    <Button size="medium" startIcon={<Print />} onClick={() => openPrint(inv)}>Print</Button>
+                    <Button size="medium" startIcon={<Download />} onClick={() => downloadPdf(inv)}>PDF</Button>
                   </Box>
                 </CardContent>
               </Card>
@@ -266,8 +301,8 @@ const AdminInvoices = () => {
               </Grid>
 
               <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
-                <Button size="small" variant="outlined" startIcon={<Print />} onClick={() => printInvoice(selected, 'a4')}>Print A4</Button>
-                <Button size="small" variant="outlined" startIcon={<Print />} onClick={() => printInvoice(selected, 'thermal')}>Print thermal</Button>
+                <Button size="small" variant="outlined" startIcon={<Print />} onClick={() => openPrint(selected, 'a4')}>Print A4</Button>
+                <Button size="small" variant="outlined" startIcon={<Print />} onClick={() => openPrint(selected, 'thermal80')}>Print thermal</Button>
                 <Button size="small" variant="outlined" startIcon={<Download />} onClick={() => downloadPdf(selected, 'thermal80')}>PDF 80mm</Button>
                 <Button size="small" variant="outlined" startIcon={<Download />} onClick={() => downloadPdf(selected, 'thermal58')}>PDF 58mm</Button>
               </Box>
@@ -295,6 +330,58 @@ const AdminInvoices = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setSelected(null)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    <Dialog open={!!printTarget} onClose={() => setPrintTarget(null)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', pr: 1 }}>
+          <Box sx={{ flexGrow: 1 }}>Print preview — {printTarget?.invoiceNumber}</Box>
+        </DialogTitle>
+        <DialogContent dividers sx={{ bgcolor: 'action.hover' }}>
+          {previewLoading ? (
+            <LinearProgress />
+          ) : previewHtml ? (
+            <Box
+              ref={iframeRef}
+              component="iframe"
+              srcDoc={previewHtml}
+              sandbox="allow-same-origin allow-scripts"
+              title={`Invoice ${printTarget?.invoiceNumber}`}
+              sx={{ width: '100%', height: { xs: 460, md: 560 }, border: 0, borderRadius: 2, bgcolor: 'background.paper' }}
+            />
+          ) : (
+            <Typography align="center" color="text.secondary" sx={{ py: 6 }}>
+              Couldn't load the print preview.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
+          <TextField
+            select
+            size="small"
+            label="Paper"
+            value={printMode}
+            sx={{ mr: 'auto', minWidth: 170 }}
+            onChange={(e) => {
+              const f = e.target.value;
+              setPrintMode(f);
+              if (printTarget) openPrint(printTarget, f);
+            }}
+          >
+            <MenuItem value="a4">A4</MenuItem>
+            <MenuItem value="thermal80">80mm thermal</MenuItem>
+            <MenuItem value="thermal58">58mm thermal</MenuItem>
+          </TextField>
+          <Button variant="outlined" onClick={() => setPrintTarget(null)}>Close</Button>
+          <Button
+            variant="outlined"
+            startIcon={<Download />}
+            onClick={() => printTarget && window.open(pdfUrl(printTarget, printMode), '_blank')}
+          >
+            Download PDF
+          </Button>
+          <Button variant="contained" startIcon={<Print />} onClick={printFromDialog}>
+            Print
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
