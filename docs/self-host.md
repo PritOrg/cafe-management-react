@@ -87,7 +87,7 @@ See `server/.env.example` for the full list. Key variables:
 | `STORAGE_DRIVER` | `local` (serves `/uploads`) or `cloudinary` (auto when configured) |
 | `CLOUDINARY_*` | Cloudinary upload credentials |
 | `SMTP_*` | Outgoing email via generic SMTP (optional) |
-| `BREVO_API_KEY` | **Brevo SMTP relay** — used automatically when `SMTP_HOST` is empty. Login = `SMTP_USER` / `BREVO_SMTP_LOGIN` / `MAIL_FROM`; password = this key. Sending still needs a recipient address (guests are phone-only). |
+| `BREVO_API_KEY` | **Brevo SMTP relay** — used automatically when `SMTP_HOST` is empty. Login = `SMTP_USER` / `BREVO_SMTP_LOGIN` / `MAIL_FROM`; password = this key. **Use the Brevo *master SMTP key*** (Settings → SMTP & API → SMTP Key), *not* a transactional API key — `535 5.7.8 Authentication failed` means you've used the wrong key. `SMTP_PASS` wins over `BREVO_API_KEY`. Sending still needs a recipient address (guests are phone-only). |
 
 ## 6. Backup
 
