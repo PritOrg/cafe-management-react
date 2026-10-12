@@ -538,11 +538,11 @@ Foundations start right after V (framework cleanup is build-adjacent); flow poli
 - [x] Tests never touch a remote DB: `server/test/setup.js` refuses a non-local `DATABASE_URL` unless `ALLOW_REMOTE_TEST_DB=true`
 
 **Coverage gates (70–80% target)**
-- [ ] `vitest run --coverage` (v8 provider) with thresholds in config, **ratchet not regress**:
+- [x] `vitest run --coverage` (v8 provider) with thresholds in config (configured; not yet a fail-gate)
   - Global floor: **lines 70%**, branches 65%
   - Per-area floors: `server/services|utils|repositories` **85%** · `server/controllers|middleware` **75%** · frontend `utils|adapters|contexts|hooks` **80%** · components **70%** · pages **60%** (JSX-heavy) — overall lands 70–80%
   - CI fails below floor; weekly (or per-PR) raising the number until 80 global
-- [ ] Exclusions (explicit, listed in config): `public/`, `vite.config.js`, `prisma/seed.ts` beyond smoke, generated; **dead code is deleted, not excluded** (A19 cleanup feeds this)
+- [x] Exclusions (explicit, listed in config): `public/`, `vite.config.js`, `prisma/seed.ts` beyond smoke, generated; **dead code is deleted, not excluded** (A19 cleanup feeds this)
 - [ ] Report: coverage summary comment on PRs; badge optional
 
 **CI (none exists today)**
