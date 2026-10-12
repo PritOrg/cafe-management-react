@@ -9,6 +9,13 @@ import ThemeProvider from './components/common/ThemeProvider';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
+// PWA offline shell — only in production builds (dev relies on Vite HMR).
+if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
 root.render(
   <React.StrictMode>
     <BrowserRouter>
