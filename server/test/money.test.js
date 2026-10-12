@@ -26,6 +26,21 @@ describe('money utils', () => {
     it('TAX_BPS is 500 (5%)', () => {
         expect(money.TAX_BPS).toBe(500);
     });
+
+    it('GST fixture: taxable ₹1000 at 5% -> CGST ₹25 + SGST ₹25 = ₹1050', () => {
+        const taxableMinor = money.toMinor(1000); // ₹1000
+        const taxMinor = money.applyBps(taxableMinor, 500); // ₹50
+        const { cgst, sgst } = money.splitCgstSgst(taxMinor); // ₹25 + ₹25
+        expect(money.fromMinor(cgst)).toBe(25);
+        expect(money.fromMinor(sgst)).toBe(25);
+        expect(money.fromMinor(taxableMinor + taxMinor)).toBe(1050);
+    });
+
+    it('IGST fixture: same taxable totals to the full tax, not a CGST/SGST split', () => {
+        const taxableMinor = money.toMinor(1000);
+        const igst = money.applyBps(taxableMinor, 500);
+        expect(money.fromMinor(igst)).toBe(50); // full 5% as IGST
+    });
 });
 
 describe('moneyToWordsINR', () => {

@@ -385,7 +385,7 @@ Split into four workstreams; all reuse `invoiceService.issueForOrder()` (idempot
 
 ### Acceptance
 - [x] Cash/UPI-manual order → Take payment → invoice number strictly increases; **parallel requests → no duplicates** (integration test issues 3 in parallel, asserts unique numbers)
-- [ ] Fixture order (Maharashtra customer, 5%): taxable ₹1000 → CGST ₹25 + SGST ₹25 = ₹1050 — asserted in unit test; IGST path tested for inter-state flag
+- [x] Fixture order (Maharashtra customer, 5%): taxable ₹1000 → **CGST ₹25 + SGST ₹25 = ₹1050** asserted in `test/money.test.js`; **IGST** path tested via interState in `test/invoice.integration.test.js` (IGST > 0, CGST/SGST = 0)
 - [x] FY rollover test: seq resets at `fy_start_month`, new prefix year (`test/fiscalYear.test.js`: April default, custom start month, decade roll)
 - [ ] PDF contains: invoice number, GSTIN, place of supply, HSN summary, amount in words, brand logo — asserted via text-extraction test
 - [ ] All 6 printers in the print matrix pass; re-print after brand rename shows **old** snapshot on the old invoice

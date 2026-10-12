@@ -120,3 +120,22 @@ describe('invoiceService + PDF integration', () => {
 
 // local alias to avoid TDZ
 let inv;
+
+    it('issues IGST when interState, with zero CGST/SGST', async () => {
+        const placed = await placeOrder({
+            tenantId: tenant._id,
+            role: 'customer',
+            userId: '0000000000000000000000aa',
+            body: {
+                items: [{ menuItemId: menu._id, size: 'medium', quantity: 1 }],
+                paymentMethod: 'cash',
+                phone: `97${Date.now()}`,
+                customerName: 'Inter State',
+            },
+        });
+        const { invoice } = await issueForOrder(tenant._id, placed.data.order._id, { interState: true });
+        expect(invoice.igstAmount).toBeGreaterThan(0);
+        expect(invoice.cgstAmount).toBe(0);
+        expect(invoice.sgstAmount).toBe(0);
+        expect(invoice.interState).toBe(true);
+    });
