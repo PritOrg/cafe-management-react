@@ -86,3 +86,61 @@ jobs:
           name: frontend-dist
           path: cafe-management-sys/build
           retention-days: 7
+
+  coverage:
+    # Phase P ratchet: measure + report coverage on native Linux (WSL/the local
+    # D: mount makes the v8 reporter unreliable). NON-BLOCKING (warn) until the
+    # floors are stable — then add `--coverage.thresholds.*` / every-commit gates.
+    name: Coverage (non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: cafe
+          POSTGRES_PASSWORD: cafe
+          POSTGRES_DB: cafe
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Backend coverage
+        working-directory: server
+        env:
+          DATABASE_URL: postgresql://cafe:cafe@127.0.0.1:5432/cafe
+          DIRECT_DATABASE_URL: postgresql://cafe:cafe@127.0.0.1:5432/cafe
+          JWT_SECRET: ci-test-secret
+          STORAGE_DRIVER: local
+          DEFAULT_TENANT_SLUG: cafe1
+          NODE_ENV: test
+        run: |
+          npm ci
+          npm run db:migrate
+          npm run db:seed
+          npm run test:coverage    # enforces thresholds (job is non-blocking)
+
+      - name: Frontend coverage
+        working-directory: cafe-management-sys
+        run: |
+          npm ci
+          CI=true npx vitest run --coverage    # enforces thresholds (job is non-blocking)
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            server/coverage
+            cafe-management-sys/coverage
+          retention-days: 7

@@ -18,6 +18,21 @@
   **22 test files** covering utils, adapters, contexts, hooks, and key services.
 - Coverage: `npm run test:coverage` (v8; thresholds in `vite.config.js`).
 
+## Coverage ratchet (Phase P)
+
+- Floors are **configured** in `vitest.config.js` / `vite.config.js` but not yet
+  enforced as CI fail-gates (the v8 reporter is unreliable on the WSL `D:` mount,
+  so a local measurement isn't trustworthy).
+- CI runs a **non-blocking `coverage` job** (`.github/workflows/ci.yml`) on native
+  Linux: backend (`npm run test:coverage` against the Postgres service) + frontend
+  (`npx vitest run --coverage`), prints the v8 table, uploads `coverage/` reports
+  as the `coverage-reports` artifact.
+- **Baseline (first reliable CI run, 2026-10-12)**:
+  server ≈ Stmts **65** / Branch **49** / Funcs **66** / Lines **68**;
+  frontend ≈ Stmts **56** / Branch **58** / Funcs **58** / Lines **58**.
+  Floors are set ~1pt under these, enforced by the coverage job (non-blocking).
+  Ratchet upward once a floor stays comfortable for several runs.
+
 ## CI
 
 `.github/workflows/ci.yml` runs both suites (plus lint + `vite build`) on every PR.
