@@ -157,11 +157,18 @@ const issueForOrder = async (tenantId, orderId, { interState = false, paymentMet
 
     // Best-effort invoice email with the PDF attached, to the guest's captured
     // email (non-blocking; requires mail config + the auto_email toggle).
-    if (settings.ops?.auto_email_enabled !== false && order.placedByCustomer && order.placedByCustomer !== '0000000000000000000000aa') {
+    // `orderRepo.findById` may return placedByCustomer as either an id or the
+    // joined customer object — normalize it before use.
+    const customerId = order && order.placedByCustomer
+        ? (typeof order.placedByCustomer === 'string'
+            ? order.placedByCustomer
+            : (order.placedByCustomer.id || order.placedByCustomer._id))
+        : null;
+    if (settings.ops?.auto_email_enabled !== false && customerId && customerId !== '0000000000000000000000aa') {
         try {
             const customerRepo = require('../repositories/customerRepo');
-            const customer = await customerRepo.findById(tenantId, order.placedByCustomer);
-            const email = customer && (customer.email || customer.emailAddress) ? (customer.email || customer.emailAddress) : null;
+            const customer = await customerRepo.findById(tenantId, customerId);
+            const email = customer ? (customer.email || customer.emailAddress || null) : null;
             if (email) {
                 const { isMailConfigured } = require('../middleware/nodemailer');
                 if (isMailConfigured()) {
