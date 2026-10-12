@@ -518,7 +518,7 @@ Foundations start right after V (framework cleanup is build-adjacent); flow poli
 
 **Policy**
 - [ ] **New code (G, H, I, J, K, L, M + logic in N/O): strict TDD** — write failing test → implement → refactor; same PR; PR template checkbox "tests first". No new feature merges without tests that would have failed pre-implementation
-- [ ] **Old code (A1–A26 fixes, P0/P1)**: *characterization tests first* — pin current behavior (even buggy) where cheap, then fix under green; prioritize: `money` math, `placeOrder` totals, status transitions, auth middleware, menu CRUD
+- [x] **Old code (A1–A26 fixes, P0/P1)**: characterization tests in place for money math, status transitions, orderStatus/stock, invoice engine, and `ensureAuthenticated` (test/authGuard.test.js); remaining: placeOrder totals + menu CRUD pinning
 - [x] Convert/delete `server/test-*.js` throwaway scripts (task in F) — none remain
 
 **Stack (one runner: Vitest, from V)**
