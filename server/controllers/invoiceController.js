@@ -99,6 +99,7 @@ exports.getInvoicePrint = async (req, res) => {
 <script>document.body.classList.add('print-page');</script>`;
 
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        if (req.query.chrome === '0') return res.send(html);
         return res.send(html.replace('</body>', `${chrome}</body>`));
     } catch (err) {
         console.error('Error rendering invoice HTML:', err);
