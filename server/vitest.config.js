@@ -22,8 +22,8 @@ export default defineConfig({
             exclude: ['test/**', 'node_modules/**', 'logs/**'],
             thresholds: {
                 statements: 64,
-                branches: 48,
-                functions: 64,
+                branches: 49,
+                functions: 65,
                 lines: 66,
             },
         },

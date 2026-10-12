@@ -74,6 +74,7 @@ export default defineConfig({
     globals: true,
     setupFiles: './src/vitest.setup.js',
     passWithNoTests: true,
+    exclude: ['node_modules/**', 'build/**', 'e2e/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
@@ -85,10 +86,10 @@ export default defineConfig({
         'src/hooks/**',
       ],
       thresholds: {
-        statements: 54,
-        branches: 56,
-        functions: 57,
-        lines: 56,
+        statements: 55,
+        branches: 57,
+        functions: 58,
+        lines: 57,
       },
     },
   },
