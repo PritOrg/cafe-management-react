@@ -28,7 +28,9 @@
     "lint": "eslint src --ext .js,.jsx",
     "verify": "bash ../scripts/verify.sh",
     "dev:clean": "rm -rf /tmp/cafe-vite-cache && vite",
-    "clean": "rm -rf /tmp/cafe-vite-cache build node_modules/.vite"
+    "clean": "rm -rf /tmp/cafe-vite-cache build node_modules/.vite",
+    "e2e": "playwright test",
+    "e2e:install": "playwright install chromium"
   },
   "eslintConfig": {
     "root": true,
@@ -70,6 +72,7 @@
     }
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@vitejs/plugin-react": "^6.1.2",
     "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^8.57.1",

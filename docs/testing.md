@@ -31,7 +31,8 @@
   server ≈ Stmts **65** / Branch **49** / Funcs **66** / Lines **68**;
   frontend ≈ Stmts **56** / Branch **58** / Funcs **58** / Lines **58**.
   Floors are set ~1pt under these, enforced by the coverage job (non-blocking).
-  Ratchet upward once a floor stays comfortable for several runs.
+  **Ratchet 2 (2026-10-12)**: floors raised to server 64/49/65/67 and frontend
+  55/57/58/57 — still under the measured actuals.
 
 ## CI
 

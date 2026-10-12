@@ -144,3 +144,18 @@ jobs:
             server/coverage
             cafe-management-sys/coverage
           retention-days: 7
+
+  tdd-check:
+    # Phase P policy: app-code changes must come with tests. Non-blocking.
+    name: TDD (tests-first)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check tests-first
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || 'origin/main' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || 'HEAD' }}
+        run: node scripts/check-tests-first.mjs

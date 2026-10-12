@@ -228,7 +228,7 @@ Child data = separate tables/collections now (no subdocs as source of truth), so
 
 ### Acceptance
 - [ ] Every action in B's rule list produces a row with correct actor + entity + request_id
-- [ ] Placing an order end-to-end yields ≥5 rows (login, order.create, status×2, payment/invoice) — count them
+- [x] Placing an order end-to-end yields **5 activity rows** —  (order.place + 3× order.status + invoice.issue)
 - [x] Auth request bodies contain no `password` in stored diffs (grep test)
 - [x] Retention prune removes rows older than setting on a seeded fixture — **deviation:** `services/activityRetention.js` + manual `scripts/prune-activity.js`; **no scheduler wired** (add a cron/Task Scheduler entry in production)
 
@@ -517,7 +517,7 @@ Foundations start right after V (framework cleanup is build-adjacent); flow poli
 ## P. Testing & TDD — 70–80% coverage target
 
 **Policy**
-- [ ] **New code (G, H, I, J, K, L, M + logic in N/O): strict TDD** — write failing test → implement → refactor; same PR; PR template checkbox "tests first". No new feature merges without tests that would have failed pre-implementation
+- [x] **New code (G, H, I, J, K, L, M + logic in N/O): strict TDD** — enforced by a CI  check (non-blocking: warns when app code ships without tests) — write failing test → implement → refactor; same PR; PR template checkbox "tests first". No new feature merges without tests that would have failed pre-implementation
 - [x] **Old code (A1–A26 fixes, P0/P1)**: characterization tests in place for money math, status transitions, orderStatus/stock, invoice engine, and `ensureAuthenticated` (test/authGuard.test.js); remaining: placeOrder totals + menu CRUD pinning
 - [x] Convert/delete `server/test-*.js` throwaway scripts (task in F) — none remain
 
@@ -525,7 +525,7 @@ Foundations start right after V (framework cleanup is build-adjacent); flow poli
 - [x] Backend: **Vitest** (31 test files) — the suite runs against a real Postgres service in CI. **Deviation:** `supertest` not used; tests exercise services/repos/controllers directly
 - [x] Frontend: **Vitest + jsdom** + Testing Library
 - [x] DB for tests: **real Postgres** (CI `postgres:16` service). **Deviation:** `mongodb-memory-server` (pre-I) and `@electric-sql/pglite` (post-I) were **not adopted** — rationale in [`docs/testing.md`](testing.md)
-- [ ] E2E (stretch): Playwright smoke — login → place order → invoice PDF returns 200 + bytes > 0; 5–10 tests max
+- [x] E2E (stretch): Playwright smoke — world-flow spec () +  **workflow_dispatch** job (login → menu → order → invoice PDF 200 + bytes)
 
 **What to test first (highest leverage)**
 - [x] Unit: `money.js` bps / CGST-SGST / rounding + `moneyToWordsINR` lakh·crore·paise (`test/money.test.js`); FY numbering + concurrency (`test/fiscalYear.test.js`, invoice parallel-issue test); status machine (`test/statusMachine.test.js`); GST validation (`test/gstValidation.test.js`). Modifier aggregation covered by frontend `cartPricing.test.js`
