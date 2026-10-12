@@ -26,6 +26,16 @@ const { trackRequestMetrics, healthCheckHandler, metricsHandler } = require('./m
 // Handle uncaught exceptions before anything else
 handleUncaughtException();
 
+// Runtime maintenance: daily activity-log prune (respects settings
+// ops.activity_retention_days; best-effort per-tenant).
+const { pruneOldActivity } = require('./services/activityRetention');
+setInterval(() => {
+    pruneOldActivity().catch((err) => console.warn('Activity prune failed:', err.message));
+}, 24 * 60 * 60 * 1000);
+setTimeout(() => {
+    pruneOldActivity().catch(() => {});
+}, 30 * 1000);
+
 const swaggerDocument = yaml.load(fs.readFileSync(path.join(__dirname, 'swagger.yaml'), 'utf8'));
 
 // Enhanced Swagger setup

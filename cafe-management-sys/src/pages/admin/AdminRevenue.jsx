@@ -8,6 +8,7 @@ import Download from '@mui/icons-material/Download';
 import Refresh from '@mui/icons-material/Refresh';
 import { analyticsAPI, unwrap } from '../../services/api';
 import LoadingState from '../../components/common/LoadingState';
+import { toCsv, downloadCsv } from '../../utils/dashboardCsv';
 import { formatMoney } from '../../utils/formatMoney';
 
 const AdminRevenue = () => {
@@ -125,7 +126,19 @@ const AdminRevenue = () => {
           <IconButton onClick={fetchRevenueData} disabled={loading}>
             <Refresh />
           </IconButton>
-          <Button variant="outlined" startIcon={<Download />}>
+          <Button
+            variant="outlined"
+            startIcon={<Download />}
+            onClick={() =>
+              downloadCsv(`revenue-${period}.csv`, toCsv([
+                { label: 'Total revenue', value: revenueData?.total ?? '' },
+                { label: 'Change %', value: revenueData?.change ?? '' },
+                { label: 'Total orders', value: revenueData?.totalOrders ?? '' },
+                ...(revenueData?.dailyRevenue || []).map((d) => ({ label: `Daily ${d.date}`, value: d.amount ?? '' })),
+                ...(revenueData?.breakdown || []).map((b) => ({ label: `${b.category} (category)`, value: b.amount ?? '' })),
+              ]))
+            }
+          >
             Export
           </Button>
         </Box>

@@ -146,6 +146,9 @@ export const CartProvider = ({ children }) => {
             if (options.customerName) {
                 orderData.customerName = String(options.customerName).trim();
             }
+            if (options.discountCode) {
+                orderData.discountCode = String(options.discountCode).trim();
+            }
 
             const body = await ordersAPI.create(orderData);
             const data = body?.data ?? body;

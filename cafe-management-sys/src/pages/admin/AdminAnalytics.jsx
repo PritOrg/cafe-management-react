@@ -10,6 +10,7 @@ import PieChart from '@mui/icons-material/PieChart';
 import { analyticsAPI, unwrap } from '../../services/api';
 import { formatMoney } from '../../utils/formatMoney';
 import LoadingState from '../../components/common/LoadingState';
+import { toCsv, downloadCsv } from '../../utils/dashboardCsv';
 
 const AdminAnalytics = () => {
   const [loading, setLoading] = useState(true);
@@ -135,7 +136,21 @@ const AdminAnalytics = () => {
           <IconButton onClick={fetchAnalyticsData} disabled={loading}>
             <Refresh />
           </IconButton>
-          <Button variant="outlined" startIcon={<Download />}>
+          <Button
+            variant="outlined"
+            startIcon={<Download />}
+            onClick={() =>
+              downloadCsv(`analytics-${period}.csv`, toCsv([
+                { label: 'Revenue', value: analyticsData?.dashboard?.revenue ?? '' },
+                { label: 'Orders', value: analyticsData?.dashboard?.ordersCount ?? '' },
+                { label: 'AOV', value: analyticsData?.dashboard?.aov ?? '' },
+                ...(analyticsData?.productPerformance || []).map((p) => ({
+                  label: p.name,
+                  value: `${p.orders} orders | ${p.revenue}`,
+                })),
+              ]))
+            }
+          >
             Export Report
           </Button>
         </Box>

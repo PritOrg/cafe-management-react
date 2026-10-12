@@ -24,12 +24,13 @@ export const useCheckoutFlow = (createOrder, initialCustomer = {}) => {
     setCustomerInfo((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (extra = {}) => {
     try {
       await createOrder(paymentMethod, {
         phone: customerInfo.phone,
         customerName: customerInfo.name,
         tableNumber: customerInfo.tableNumber,
+        ...extra,
       });
       setOpenDialog(true);
     } catch (error) {
