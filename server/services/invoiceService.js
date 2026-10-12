@@ -171,6 +171,7 @@ const issueForOrder = async (tenantId, orderId, { interState = false, paymentMet
                     await sendInvoiceEmail(String(email).trim(), {
                         invoiceNumber: saved.invoice_number,
                         grandTotal: grand,
+                        items: lineItems.map((li) => ({ name: li.description, qty: li.quantity, amount: li.amount })),
                     }, buffer, settings.brand);
                 }
             }
