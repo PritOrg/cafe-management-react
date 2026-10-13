@@ -175,11 +175,11 @@ const issueForOrder = async (tenantId, orderId, { interState = false, paymentMet
                     const { renderInvoicePdf } = require('./invoicePdf');
                     const { buffer } = await renderInvoicePdf(mapInvoice(saved), { format: 'a4' });
                     const { sendInvoiceEmail } = require('../mail/customerMail');
-                    await sendInvoiceEmail(String(email).trim(), {
+                    sendInvoiceEmail(String(email).trim(), {
                         invoiceNumber: saved.invoice_number,
                         grandTotal: grand,
                         items: lineItems.map((li) => ({ name: li.description, qty: li.quantity, amount: li.amount })),
-                    }, buffer, settings.brand);
+                    }, buffer, settings.brand).catch(() => {});
                 }
             }
         } catch (mailError) {

@@ -43,7 +43,12 @@ const MenuPage = () => {
 
   const updateSearch = (value) => {
     setSearchQuery(value);
-    setSearchParams(value ? { q: value } : {}, { replace: true });
+    // Debounce the URL sync so each keystroke doesn't trigger navigation
+    // (which can steal focus/blur the input on some browsers).
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setSearchParams(value ? { q: value } : {}, { replace: true });
+    }, 350);
   };
 
   const categories = useMemo(
@@ -66,6 +71,7 @@ const MenuPage = () => {
   const [visibleCount, setVisibleCount] = useState(12);
   const PAGE = 12;
   const sentinelRef = useRef(null);
+  const debounceRef = useRef(null);
 
   // Reset progressive rendering whenever the filter set changes.
   useEffect(() => {

@@ -122,7 +122,14 @@ const AdminKitchen = () => {
     toast.info(`New ticket${payload?.orderNumber ? ` ${payload.orderNumber}` : ''}`);
   }, [fetchOrders, toast]);
 
-  useOpsEvents({ 'order:created': handleNewOrder, 'order:status': fetchOrders });
+  const handleStatusEvent = useCallback((payload) => {
+    fetchOrders();
+    if (payload && payload.status) {
+      toast.success((payload.orderNumber ? `${payload.orderNumber} ` : 'Ticket ') + payload.status.charAt(0).toUpperCase() + payload.status.slice(1));
+    }
+  }, [fetchOrders, toast]);
+
+  useOpsEvents({ 'order:created': handleNewOrder, 'order:status': handleStatusEvent });
 
   // Flattened in column order so shortcut 1..9 matches the board left→right.
   const byStatus = useMemo(() => {

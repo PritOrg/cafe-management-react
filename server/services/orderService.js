@@ -284,11 +284,11 @@ const placeOrder = async (req) => {
             const { isMailConfigured } = require('../middleware/nodemailer');
             if (isMailConfigured()) {
                 const { sendOrderConfirmationEmail } = require('../mail/customerMail');
-                await sendOrderConfirmationEmail(String(email).trim(), {
+                sendOrderConfirmationEmail(String(email).trim(), {
                     orderNumber: saved.orderNumber,
                     total: money.fromMinor(finalMinor),
                     itemCount: lines.reduce((s, l) => s + (l.quantity || 1), 0),
-                }, settings.brand);
+                }, settings.brand).catch(() => {});
             }
         } catch (mailError) {
             console.warn('Order confirmation email skipped:', mailError.message);
