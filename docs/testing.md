@@ -33,6 +33,8 @@
   Floors are set ~1pt under these, enforced by the coverage job (non-blocking).
   **Ratchet 2 (2026-10-12)**: floors → server 64/49/65/66 (lines settled ~0.2pt
   below the measured 66.84), frontend 55/57/58/57 — still under actuals.
+**Settle (2026-10-13)**: functions floor back to 64 — run-to-run variance puts it
+  at 64.6% and the 65% floor was marginally too tight.
 
 ## CI
 

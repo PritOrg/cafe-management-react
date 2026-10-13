@@ -41,7 +41,14 @@ const isMailConfigured = () => !!getTransporter();
 const sendMail = async ({ to, subject, html, text, from }) => {
     const client = getTransporter();
     if (!client) throw new Error('SMTP is not configured');
-    const sender = from || process.env.SMTP_FROM || process.env.SMTP_USER || process.env.MAIL_FROM || 'no-reply@localhost';
+    // For a credentialed relay (Brevo/Gmail) the envelope must be a verified
+    // sender: prefer an explicit MAIL_FROM / relay login over a legacy SMTP_USER.
+    const sender = from
+        || process.env.SMTP_FROM
+        || process.env.MAIL_FROM
+        || process.env.BREVO_SMTP_LOGIN
+        || process.env.SMTP_USER
+        || 'no-reply@localhost';
     return client.sendMail({ from: sender, to, subject, html, text });
 };
 
