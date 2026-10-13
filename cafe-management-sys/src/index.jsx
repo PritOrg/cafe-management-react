@@ -16,9 +16,11 @@ if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && import.m
   });
 }
 
+// StrictMode double-invokes renders/effects in dev — suspected cause of the
+// one-char-then-blur on inputs when running the dev server. Removed for the
+// experiment; production builds are unaffected either way.
 root.render(
-  <React.StrictMode>
-    <BrowserRouter>
+  <BrowserRouter>
       <AuthProvider>
         <BrandProvider>
           <CustomerProvider>
@@ -33,5 +35,4 @@ root.render(
         </BrandProvider>
       </AuthProvider>
     </BrowserRouter>
-  </React.StrictMode>
 );
