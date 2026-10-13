@@ -99,6 +99,8 @@ exports.getOrders = async (req, res) => {
         const query = {};
         if (status) query.status = status;
         if (staffId) query.staffId = staffId;
+        const limit = parseInt(req.query.limit, 10);
+        if (Number.isInteger(limit) && limit > 0) query.limit = Math.min(limit, 100);
         if (today === 'true') {
             const start = new Date();
             start.setHours(0, 0, 0, 0);
@@ -169,6 +171,7 @@ exports.updateOrderStatus = async (req, res) => {
         events.emit('order:status', {
             tenantId: req.tenantId,
             orderId: order._id,
+            orderNumber: order.orderNumber,
             status: order.status,
         });
 

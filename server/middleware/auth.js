@@ -158,17 +158,27 @@ const authRateLimiter = process.env.NODE_ENV === 'test'
     ? (req, res, next) => next()
     : createRateLimiter(
         15 * 60 * 1000,
-        5,
+        10,
         'Too many authentication attempts. Please try again in 15 minutes.'
     );
 
+// General limiter: only FAILED requests count (skipSuccessfulRequests), so
+// normal reads (polling, menu, realtime refetches) never trigger 429 — abuse
+// still does. Window+cap also raised to give plenty of headroom.
 const generalRateLimiter = process.env.NODE_ENV === 'test'
     ? (req, res, next) => next()
-    : createRateLimiter(
-        15 * 60 * 1000,
-        100,
-        'Too many requests. Please try again in 15 minutes.'
-    );
+    : rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: 600,
+        message: {
+            success: false,
+            message: 'Too many requests. Please try again in 15 minutes.',
+            timestamp: new Date().toISOString(),
+        },
+        standardHeaders: true,
+        legacyHeaders: false,
+        skipSuccessfulRequests: true,
+    });
 
 const strictRateLimiter = process.env.NODE_ENV === 'test'
     ? (req, res, next) => next()

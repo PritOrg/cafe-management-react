@@ -46,6 +46,7 @@ const loadFull = async (db, tenantId, query = {}) => {
         if (query.placedAt.$gte) q = q.andWhere('o.placed_at', '>=', query.placedAt.$gte);
         if (query.placedAt.$lte) q = q.andWhere('o.placed_at', '<=', query.placedAt.$lte);
     }
+    if (query.limit) q = q.limit(query.limit);
     const rows = await q.orderBy('o.placed_at', 'desc');
     const paired = await attachPeople(db, rows);
     const shaped = paired.map(({ row, customer, staff }) => mapOrder(row, { customer, staff, items: [] }));
