@@ -344,7 +344,7 @@ const AdminInvoices = () => {
               ref={iframeRef}
               component="iframe"
               srcDoc={previewHtml}
-              sandbox="allow-same-origin allow-scripts"
+              sandbox="allow-scripts"
               title={`Invoice ${printTarget?.invoiceNumber}`}
               sx={{ width: '100%', height: { xs: 460, md: 560 }, border: 0, borderRadius: 2, bgcolor: 'background.paper' }}
             />
