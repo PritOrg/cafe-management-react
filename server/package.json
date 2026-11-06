@@ -44,6 +44,7 @@
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^8.57.1",
+    "pdf-parse": "^2.4.5",
     "vitest": "^4.1.11"
   }
 }
